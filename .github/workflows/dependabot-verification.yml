@@ -1,0 +1,122 @@
+name: Dependabot verification metadata
+
+# Dependabot doesn't update gradle/verification-metadata.xml, so its Gradle PRs would always fail CI.
+# This workflow regenerates the checksums on those PRs and pushes them to the Dependabot branch.
+#
+# Security: the job that runs Gradle (and so the updated dependencies) has a read-only token. The job
+# that pushes runs no project code: it only takes the single XML file produced by the first job.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions: {}
+
+concurrency:
+  group: dependabot-verification-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    name: Regenerate checksums
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && startsWith(github.head_ref, 'dependabot/gradle/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Set up build
+        uses: ./.github/actions/setup-build
+
+      # Same tasks as CI, so every resolved artifact is recorded. --continue: a failing check must not stop
+      # resolution; CI reports real failures on the PR.
+      - name: Write verification metadata
+        run: >-
+          ./gradlew --no-configuration-cache --continue
+          --write-verification-metadata sha256
+          spotlessCheck build :koverVerifyUnit
+          || echo "::warning::Build failed; checksums were still written for everything that resolved."
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet -- gradle/verification-metadata.xml; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload metadata
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: verification-metadata
+          path: gradle/verification-metadata.xml
+          retention-days: 1
+          if-no-files-found: error
+
+  push:
+    name: Push checksums
+    needs: generate
+    if: needs.generate.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # push the commit to the Dependabot branch
+      actions: write # start CI on the new commit (pushes made with GITHUB_TOKEN don't trigger workflows)
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Download metadata
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: verification-metadata
+          path: ${{ runner.temp }}/metadata
+
+      - name: Validate and apply
+        env:
+          FILE: ${{ runner.temp }}/metadata/verification-metadata.xml
+        run: |
+          python3 - "$FILE" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+
+          root = ET.parse(sys.argv[1]).getroot()
+          expected = "{https://schema.gradle.org/dependency-verification}verification-metadata"
+          if root.tag != expected:
+              sys.exit(f"unexpected root element {root.tag}")
+          PY
+          cp "$FILE" gradle/verification-metadata.xml
+          git status --porcelain
+          test "$(git status --porcelain)" = " M gradle/verification-metadata.xml"
+
+      - name: Commit and push
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update Gradle verification metadata" -- gradle/verification-metadata.xml
+          git push origin "HEAD:refs/heads/${HEAD_REF}"
+
+      - name: Run CI on the new commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$HEAD_REF"
+          gh workflow run codeql.yml --repo "$GITHUB_REPOSITORY" --ref "$HEAD_REF"
