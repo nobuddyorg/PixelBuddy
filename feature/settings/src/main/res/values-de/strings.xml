@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_about">Über</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="action_back">Zurück</string>
+
+    <string name="crash_reports_title">Absturzberichte</string>
+    <string name="crash_reports_privacy">Berichte bleiben auf diesem Gerät. Es wird nichts gesendet, außer du teilst einen Bericht selbst.</string>
+    <string name="crash_reports_empty">Keine Absturzberichte. Bisher ist nichts abgestürzt.</string>
+    <string name="crash_reports_delete_all">Alle löschen</string>
+    <string name="crash_report_title">Absturzbericht</string>
+    <string name="crash_report_share">Teilen</string>
+    <string name="crash_report_share_title">Absturzbericht teilen</string>
+    <string name="crash_report_delete">Löschen</string>
+</resources>

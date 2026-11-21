@@ -2,4 +2,5 @@
 <resources>
     <!-- Announced by TalkBack when the home screen appears. -->
     <string name="home_screen_title">Home screen</string>
+    <string name="home_open_settings">Open settings</string>
 </resources>

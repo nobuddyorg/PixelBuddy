@@ -1,3 +1,4 @@
+import com.android.build.api.dsl.Lint
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension
@@ -13,6 +14,9 @@ class JvmLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             pluginManager.apply("org.jetbrains.kotlin.jvm")
+            // Android Lint for pure JVM modules, so `:app:lintDebug` analyzes them as well.
+            pluginManager.apply("com.android.lint")
+            extensions.configure<Lint> { configureStrictLint() }
 
             extensions.configure<JavaPluginExtension> {
                 sourceCompatibility = javaTarget
