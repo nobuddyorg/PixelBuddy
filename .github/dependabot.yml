@@ -1,0 +1,43 @@
+version: 2
+
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    groups:
+      # Kotlin and the Compose compiler plugin share one version.
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin*"
+      android-gradle-plugin:
+        patterns:
+          - "com.android*"
+      androidx:
+        patterns:
+          - "androidx.*"
+      test:
+        patterns:
+          - "junit:*"
+          - "org.junit*"
+          - "org.robolectric:*"
+      build-tooling:
+        patterns:
+          - "com.diffplug.spotless*"
+          - "com.pinterest.ktlint*"
+          - "org.jetbrains.kotlinx.kover*"
+          - "com.slack.lint*"
+
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /.github/actions/*
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      github-actions:
+        patterns:
+          - "*"
