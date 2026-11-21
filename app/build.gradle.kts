@@ -3,13 +3,30 @@ plugins {
     alias(libs.plugins.pixelbuddy.android.compose)
 }
 
+/**
+ * Release version: `-Ppixelbuddy.versionName=X.Y.Z` (set by the release workflow from the tag `vX.Y.Z`).
+ * versionCode = X·1,000,000 + Y·1,000 + Z, so every release updates over the previous one.
+ * Release APKs are built unsigned and signed afterwards with apksigner, so Gradle never sees the keystore
+ * (see docs/RELEASING.md).
+ */
+val releaseVersion: String = providers.gradleProperty("pixelbuddy.versionName").getOrElse("0.0.1")
+
+fun versionCodeOf(version: String): Int {
+    val match =
+        Regex("""(\d{1,4})\.(\d{1,3})\.(\d{1,3})""").matchEntire(version)
+            ?: error("pixelbuddy.versionName must look like X.Y.Z, was '$version'")
+    val (major, minor, patch) = match.destructured.toList().map(String::toInt)
+    require(major <= 2099) { "major version too large for a versionCode: $major" }
+    return major * 1_000_000 + minor * 1_000 + patch
+}
+
 android {
     namespace = "io.github.nobuddyorg.pixelbuddy"
 
     defaultConfig {
         applicationId = "io.github.nobuddyorg.pixelbuddy"
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = versionCodeOf(releaseVersion)
+        versionName = releaseVersion
     }
 
     androidResources {

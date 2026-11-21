@@ -1,6 +1,12 @@
 name: Set up build
 description: JDK, Gradle (with wrapper validation and cache) and the Android SDK packages the build needs.
 
+inputs:
+  cache-disabled:
+    description: Disable the Gradle cache, e.g. for release builds.
+    required: false
+    default: "false"
+
 runs:
   using: composite
   steps:
@@ -15,6 +21,7 @@ runs:
       with:
         # Open-source cache based on actions/cache; writes only from the default branch.
         cache-provider: basic
+        cache-disabled: ${{ inputs.cache-disabled }}
 
     - name: Install Android SDK packages
       shell: bash
