@@ -24,8 +24,10 @@ internal fun Project.configureAndroidCommon(extension: CommonExtension) {
         testOptions.apply {
             unitTests.isIncludeAndroidResources = true
         }
+        lint.configureStrictLint()
     }
     configureKotlinCompilation()
+    configureKover(sourceVariant = "debug")
 
     dependencies {
         add("testImplementation", libs.findLibrary("junit4").get())

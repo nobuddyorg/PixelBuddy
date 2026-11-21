@@ -22,6 +22,7 @@ class AndroidComposeConventionPlugin : Plugin<Project> {
                 add("implementation", libs.findLibrary("compose-foundation").get())
                 add("implementation", libs.findLibrary("compose-ui-tooling-preview").get())
                 add("debugImplementation", libs.findLibrary("compose-ui-tooling").get())
+                add("lintChecks", libs.findLibrary("compose-lint-checks").get())
             }
         }
     }

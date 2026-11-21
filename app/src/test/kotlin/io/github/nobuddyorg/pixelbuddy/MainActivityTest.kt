@@ -30,7 +30,11 @@ class MainActivityTest {
 
     @Before
     fun resetFirstStart() {
-        app.getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE).edit().clear().commit()
+        app
+            .getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .clear()
+            .commit()
     }
 
     @Test

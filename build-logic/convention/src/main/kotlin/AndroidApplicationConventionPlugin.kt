@@ -10,6 +10,8 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
 
             extensions.configure<ApplicationExtension> {
                 configureAndroidCommon(this)
+                // One lint run on :app covers all modules it depends on.
+                lint.checkDependencies = true
                 defaultConfig {
                     targetSdk {
                         version = release(libs.intVersion("sdk-target"))

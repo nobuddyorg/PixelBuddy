@@ -63,15 +63,21 @@ class MainActivity : ComponentActivity() {
         if (prefs.getBoolean(KEY_HOME_ROLE_ASKED, false)) return
 
         when (val action = HomeRole.nextAction(this)) {
-            HomeRoleAction.None -> Unit
-            is HomeRoleAction.RequestRole ->
+            HomeRoleAction.None -> {
+                // Already the default home app.
+            }
+
+            is HomeRoleAction.RequestRole -> {
                 try {
                     roleRequest.launch(action.intent)
                 } catch (_: ActivityNotFoundException) {
                     openDefaultAppsSettings()
                 }
+            }
 
-            is HomeRoleAction.OpenDefaultAppsSettings -> openDefaultAppsSettings()
+            is HomeRoleAction.OpenDefaultAppsSettings -> {
+                openDefaultAppsSettings()
+            }
         }
         prefs.edit { putBoolean(KEY_HOME_ROLE_ASKED, true) }
     }

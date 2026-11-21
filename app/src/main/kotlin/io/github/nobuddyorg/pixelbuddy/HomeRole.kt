@@ -11,22 +11,31 @@ sealed interface HomeRoleAction {
     data object None : HomeRoleAction
 
     /** Ask for the role with the system dialog. */
-    data class RequestRole(val intent: Intent) : HomeRoleAction
+    data class RequestRole(
+        val intent: Intent,
+    ) : HomeRoleAction
 
     /** The role can't be requested: open the default-apps settings screen instead. */
-    data class OpenDefaultAppsSettings(val intent: Intent) : HomeRoleAction
+    data class OpenDefaultAppsSettings(
+        val intent: Intent,
+    ) : HomeRoleAction
 }
 
 object HomeRole {
     fun nextAction(context: Context): HomeRoleAction {
         val roleManager = context.getSystemService(RoleManager::class.java)
         return when {
-            roleManager == null || !roleManager.isRoleAvailable(RoleManager.ROLE_HOME) ->
+            roleManager == null || !roleManager.isRoleAvailable(RoleManager.ROLE_HOME) -> {
                 HomeRoleAction.OpenDefaultAppsSettings(defaultAppsSettingsIntent())
+            }
 
-            roleManager.isRoleHeld(RoleManager.ROLE_HOME) -> HomeRoleAction.None
+            roleManager.isRoleHeld(RoleManager.ROLE_HOME) -> {
+                HomeRoleAction.None
+            }
 
-            else -> HomeRoleAction.RequestRole(roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME))
+            else -> {
+                HomeRoleAction.RequestRole(roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME))
+            }
         }
     }
 

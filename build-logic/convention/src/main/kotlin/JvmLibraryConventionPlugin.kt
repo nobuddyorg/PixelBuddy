@@ -25,6 +25,7 @@ class JvmLibraryConventionPlugin : Plugin<Project> {
                 }
             }
             configureKotlinCompilation()
+            configureKover(sourceVariant = "jvm")
 
             tasks.withType<Test>().configureEach {
                 useJUnitPlatform()
