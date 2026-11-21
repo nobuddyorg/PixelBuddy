@@ -26,6 +26,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppSorter
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppSource
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
+import io.github.nobuddyorg.pixelbuddy.core.designsystem.BatteryState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import org.junit.Rule
@@ -34,6 +35,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowToast
+import java.time.LocalDateTime
 import java.util.Locale
 import kotlin.test.assertEquals
 
@@ -80,7 +82,11 @@ class HomeScreenTest {
         apps: List<AppListEntry> = sampleApps,
         onAppClick: (LauncherApp) -> Unit = {},
         onOpenSettings: () -> Unit = {},
-    ) = compose.setContent { HomeScreen(apps, onAppClick, onOpenSettings) }
+    ) = compose.setContent {
+        HomeScreen(apps, onAppClick, onOpenSettings) {
+            HomeHeader(LocalDateTime.of(2026, 11, 6, 21, 45), true, BatteryState(58, charging = false), {}, {})
+        }
+    }
 
     @Test
     fun `apps are listed in order`() {
@@ -91,10 +97,9 @@ class HomeScreenTest {
                 .onAllNodesWithContentDescription("", substring = true)
                 .fetchSemanticsNodes()
                 .mapNotNull { it.config.getOrNull(SemanticsProperties.ContentDescription)?.single() }
-        assertEquals(
-            sampleApps.map { it.app }.map { if (it.isMainProfile) it.label else "${it.label}, work profile" },
-            labels,
-        )
+        val expected = sampleApps.map { it.app }.map { if (it.isMainProfile) it.label else "${it.label}, work profile" }
+        // The header (clock, battery) has descriptions too; compare only the app rows.
+        assertEquals(expected, labels.filter { it in expected })
     }
 
     @Test

@@ -15,20 +15,20 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyColors
+import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelFont
 
-// Minimal building blocks until the design system (#5) brings the pixel font and components.
+// Minimal settings building blocks in the pixel font; the full settings follow in #12.
 
-internal val TextColor = Color(0xFFF2EEFF)
-internal val MutedTextColor = Color(0xFFB4ADCF)
+internal val TextColor = PixelBuddyColors.Text
+internal val MutedTextColor = PixelBuddyColors.TextMuted
 
-internal val TitleStyle = TextStyle(color = TextColor, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-internal val SectionStyle = TextStyle(color = PixelBuddyColors.Orange, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-internal val BodyStyle = TextStyle(color = TextColor, fontSize = 16.sp)
-internal val MutedStyle = TextStyle(color = MutedTextColor, fontSize = 14.sp)
+internal val TitleStyle = TextStyle(color = TextColor, fontSize = 24.sp, fontFamily = PixelFont)
+internal val SectionStyle = TextStyle(color = PixelBuddyColors.Orange, fontSize = 14.sp, fontFamily = PixelFont)
+internal val BodyStyle = TextStyle(color = TextColor, fontSize = 16.sp, fontFamily = PixelFont)
+internal val MutedStyle = TextStyle(color = MutedTextColor, fontSize = 14.sp, fontFamily = PixelFont)
 
 @Composable
 internal fun Title(
@@ -66,7 +66,7 @@ internal fun TextButton(
                 .clickable(role = Role.Button, onClick = onClick)
                 .padding(end = 16.dp),
     ) {
-        BasicText("▶ $text", style = BodyStyle.copy(color = color, fontWeight = FontWeight.Bold))
+        BasicText("▶ $text", style = BodyStyle.copy(color = color))
     }
 }
 

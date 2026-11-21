@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Shared Android Lint configuration for all modules (wired up in build-logic). -->
+<lint>
+    <!-- The theme's style local is the one CompositionLocal we allow, like MaterialTheme does. -->
+    <issue id="ComposeCompositionLocalUsage">
+        <option name="allowed-composition-locals" value="LocalPixelBuddyStyle" />
+    </issue>
+</lint>

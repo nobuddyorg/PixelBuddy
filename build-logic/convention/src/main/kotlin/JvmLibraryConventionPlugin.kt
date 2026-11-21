@@ -16,7 +16,7 @@ class JvmLibraryConventionPlugin : Plugin<Project> {
             pluginManager.apply("org.jetbrains.kotlin.jvm")
             // Android Lint for pure JVM modules, so `:app:lintDebug` analyzes them as well.
             pluginManager.apply("com.android.lint")
-            extensions.configure<Lint> { configureStrictLint() }
+            extensions.configure<Lint> { configureStrictLint(rootProject.file("lint.xml")) }
 
             extensions.configure<JavaPluginExtension> {
                 sourceCompatibility = javaTarget

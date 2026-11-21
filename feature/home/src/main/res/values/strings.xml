@@ -7,4 +7,9 @@
     <!-- Marker after apps from the work profile. -->
     <string name="home_work_app">Work</string>
     <string name="home_work_app_description">%1$s, work profile</string>
+    <string name="home_open_alarms">Open alarms</string>
+    <string name="home_open_calendar">Open calendar</string>
+    <string name="home_battery">Battery %1$s</string>
+    <string name="home_battery_charging">Battery %1$s, charging</string>
+    <string name="home_battery_full">Battery full</string>
 </resources>

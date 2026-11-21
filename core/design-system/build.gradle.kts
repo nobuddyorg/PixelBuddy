@@ -6,3 +6,7 @@ plugins {
 android {
     namespace = "io.github.nobuddyorg.pixelbuddy.core.designsystem"
 }
+
+dependencies {
+    implementation(libs.androidx.core.ktx)
+}
