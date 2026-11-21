@@ -3,9 +3,11 @@ package io.github.nobuddyorg.pixelbuddy.feature.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -49,6 +51,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     header: @Composable () -> Unit = {},
+    icon: @Composable (LauncherApp) -> Unit = {},
 ) {
     val title = stringResource(R.string.home_screen_title)
     val openSettingsLabel = stringResource(R.string.home_open_settings)
@@ -75,7 +78,7 @@ fun HomeScreen(
                 modifier = Modifier.weight(1f),
             ) {
                 items(apps, key = { it.app.key.id }) { entry ->
-                    AppRow(entry.app, onClick = { onAppClick(entry.app) })
+                    AppRow(entry.app, icon = { icon(entry.app) }, onClick = { onAppClick(entry.app) })
                 }
             }
         }
@@ -85,6 +88,7 @@ fun HomeScreen(
 @Composable
 private fun AppRow(
     app: LauncherApp,
+    icon: @Composable () -> Unit,
     onClick: () -> Unit,
 ) {
     val workLabel = stringResource(R.string.home_work_app)
@@ -97,16 +101,18 @@ private fun AppRow(
                 app.label,
             )
         }
-    Box(
-        contentAlignment = Alignment.CenterStart,
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
         modifier =
             Modifier
                 .fillMaxWidth()
-                .heightIn(min = 48.dp)
+                .heightIn(min = 56.dp)
                 .clickable(role = Role.Button, onClick = onClick)
-                .semantics { contentDescription = description }
-                .padding(vertical = 6.dp),
+                .semantics(mergeDescendants = true) { contentDescription = description }
+                .padding(vertical = 4.dp),
     ) {
+        icon()
         val style = PixelText.body
         val badge = SpanStyle(color = PixelBuddyTheme.style.accent, fontSize = PixelText.small.fontSize)
         BasicText(

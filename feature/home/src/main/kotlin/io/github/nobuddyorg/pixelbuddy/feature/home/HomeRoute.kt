@@ -15,13 +15,18 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LaunchResult
+import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconStyle
 
 /** Home with state. Apps, time and battery are only observed while home is visible (no background work). */
 @Composable
 fun HomeRoute(
     repository: AppRepository,
+    icons: IconRepository,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    iconStyle: IconStyle = IconPreset.Default.style,
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -41,6 +46,7 @@ fun HomeRoute(
         onOpenSettings = onOpenSettings,
         modifier = modifier,
         header = { LiveHomeHeader(onClockClick = context::openAlarms, onDateClick = context::openCalendar) },
+        icon = { app -> AppIcon(app, icons, iconStyle) },
     )
 }
 

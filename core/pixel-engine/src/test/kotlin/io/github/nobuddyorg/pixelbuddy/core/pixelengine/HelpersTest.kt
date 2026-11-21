@@ -121,6 +121,42 @@ class HelpersTest {
     }
 
     @Test
+    fun `rounded mask cuts the corners and keeps the middle`() {
+        val mask = RoundedMask.of(16, inset = 0)
+
+        assertTrue(!mask[0] && !mask[15] && !mask[15 * 16] && !mask[255])
+        assertTrue(mask[8 * 16 + 8] && mask[8 * 16] && mask[8])
+        // Symmetric in both directions.
+        for (y in 0 until 16) for (x in 0 until 16) assertEquals(mask[y * 16 + x], mask[y * 16 + 15 - x])
+        for (y in 0 until 16) for (x in 0 until 16) assertEquals(mask[y * 16 + x], mask[(15 - y) * 16 + x])
+    }
+
+    @Test
+    fun `inset mask leaves a free border`() {
+        val mask = RoundedMask.of(16, inset = 1)
+
+        for (i in 0 until 16) {
+            assertTrue(!mask[i] && !mask[i * 16] && !mask[15 * 16 + i] && !mask[i * 16 + 15])
+        }
+        assertTrue(mask[1 * 16 + 8])
+    }
+
+    @Test
+    fun `free-standing icons are not masked`() {
+        val full = PixelImage(64, 64, IntArray(64 * 64) { 0xFF3FA7D6.toInt() })
+
+        val masked = PixelEngine.render(full, IconStyle(grid = 16, palette = Palette.Original))
+        val free =
+            PixelEngine.render(
+                full,
+                IconStyle(grid = 16, palette = Palette.Original, shape = IconShape.FreeStanding),
+            )
+
+        assertEquals(0, masked[0, 0])
+        assertEquals(0xFF3FA7D6.toInt(), free[0, 0])
+    }
+
+    @Test
     fun `source size is four times the grid`() {
         assertEquals(96, IconStyle(grid = 24).sourceSize)
     }

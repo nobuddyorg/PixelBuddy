@@ -7,7 +7,7 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.pixelEngine)
+    api(projects.core.pixelEngine)
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
 

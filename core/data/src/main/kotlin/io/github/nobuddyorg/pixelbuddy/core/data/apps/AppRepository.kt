@@ -20,6 +20,8 @@ class AppRepository(
     private val hiddenApps: StateFlow<Set<AppKey>>,
     private val locale: () -> Locale = Locale::getDefault,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
+    /** Called before every (re)load, e.g. to let the icon cache re-check icons. */
+    private val onReload: () -> Unit = {},
 ) {
     /** Sorted apps; reloads on every package or profile change. Collect only while home is visible. */
     val apps: Flow<List<AppListEntry>> =
@@ -27,8 +29,10 @@ class AppRepository(
             .changes()
             .onStart { emit(Unit) }
             .conflate()
-            .map { AppSorter(locale()).sort(source.loadApps()) }
-            .flowOn(dispatcher)
+            .map {
+                onReload()
+                AppSorter(locale()).sort(source.loadApps())
+            }.flowOn(dispatcher)
             .combine(hiddenApps) { apps, hidden -> apps.filterNot { it.app.key in hidden } }
             .distinctUntilChanged()
 

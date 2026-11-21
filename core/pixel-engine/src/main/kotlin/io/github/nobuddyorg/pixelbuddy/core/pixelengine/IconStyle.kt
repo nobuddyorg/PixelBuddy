@@ -35,6 +35,15 @@ public sealed interface Palette {
     }
 }
 
+/** Outer shape of the icon. */
+public enum class IconShape {
+    /** Background and foreground clipped to a pixel-rounded square (no system icon frames). */
+    Masked,
+
+    /** Only the drawn shape, no background plate. */
+    FreeStanding,
+}
+
 /**
  * How an icon is pixelated.
  *
@@ -43,6 +52,7 @@ public sealed interface Palette {
  * @property dithering ordered (Bayer) dithering before choosing palette colours.
  * @property outline 1 px outline around the shape in [outlineColor].
  * @property alphaThreshold pixels with at least this alpha (0..255) become opaque, the rest transparent.
+ * @property shape [IconShape.Masked] clips to a pixel-rounded square, inset by 1 px when there is an outline.
  */
 public data class IconStyle(
     val grid: Int = 24,
@@ -52,6 +62,7 @@ public data class IconStyle(
     val outline: Boolean = false,
     val outlineColor: Int = DEFAULT_OUTLINE,
     val alphaThreshold: Int = 128,
+    val shape: IconShape = IconShape.Masked,
 ) {
     init {
         require(grid in GRIDS) { "grid must be one of $GRIDS, was $grid" }
