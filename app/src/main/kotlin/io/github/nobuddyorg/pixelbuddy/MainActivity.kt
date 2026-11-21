@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            HomeScreen()
+            HomeScreen(onOpenSettings = ::openSettings)
         }
 
         if (savedInstanceState == null) {
@@ -44,6 +44,10 @@ class MainActivity : ComponentActivity() {
         if (isHomeIntent(intent)) {
             onHomePressed()
         }
+    }
+
+    private fun openSettings() {
+        startActivity(Intent(this, SettingsActivity::class.java))
     }
 
     /** Home pressed while already on home. Later issues reset the list, rail and search here. */

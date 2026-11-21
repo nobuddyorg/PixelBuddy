@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="action_back">Back</string>
+
+    <string name="crash_reports_title">Crash reports</string>
+    <string name="crash_reports_privacy">Reports stay on this phone. Nothing is sent unless you share a report yourself.</string>
+    <string name="crash_reports_empty">No crash reports. Nothing has crashed so far.</string>
+    <string name="crash_reports_delete_all">Delete all</string>
+    <string name="crash_report_title">Crash report</string>
+    <string name="crash_report_share">Share</string>
+    <string name="crash_report_share_title">Share crash report</string>
+    <string name="crash_report_delete">Delete</string>
+</resources>
