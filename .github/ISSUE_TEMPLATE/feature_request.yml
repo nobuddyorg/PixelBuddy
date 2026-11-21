@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest an idea or an improvement for PixelBuddy.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        PixelBuddy aims to stay minimal, private (no tracking, no accounts) and fast. Please check the
+        [plan](https://github.com/nobuddyorg/PixelBuddy/blob/main/docs/PLAN.md) and existing issues first.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation where you miss this.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: This works without tracking, accounts or sending personal data anywhere.
