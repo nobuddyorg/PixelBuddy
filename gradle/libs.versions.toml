@@ -4,6 +4,9 @@ kotlin = "2.4.21"
 compose-bom = "2026.11.01"
 androidx-activity = "1.13.0"
 androidx-core = "1.19.1"
+androidx-lifecycle = "2.11.1"
+kotlinx-coroutines = "1.11.0"
+turbine = "1.2.1"
 androidx-test-core = "1.7.0"
 androidx-test-junit = "1.3.0"
 junit4 = "4.13.2"
@@ -25,6 +28,10 @@ jvm-target = "17"
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
 compose-foundation = { module = "androidx.compose.foundation:foundation" }
 compose-ui = { module = "androidx.compose.ui:ui" }

@@ -2,4 +2,7 @@
 <resources>
     <string name="home_screen_title">Startbildschirm</string>
     <string name="home_open_settings">Einstellungen öffnen</string>
+    <string name="home_launch_failed">%1$s konnte nicht geöffnet werden</string>
+    <string name="home_work_app">Arbeit</string>
+    <string name="home_work_app_description">%1$s, Arbeitsprofil</string>
 </resources>

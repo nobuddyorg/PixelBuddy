@@ -8,4 +8,11 @@ android {
 
 dependencies {
     implementation(projects.core.pixelEngine)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.kotlinx.coroutines.android)
+
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation(libs.androidx.test.junit)
+    testImplementation(libs.robolectric)
 }

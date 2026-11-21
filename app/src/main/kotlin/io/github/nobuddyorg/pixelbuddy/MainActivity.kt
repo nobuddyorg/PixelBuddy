@@ -9,7 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.edit
-import io.github.nobuddyorg.pixelbuddy.feature.home.HomeScreen
+import io.github.nobuddyorg.pixelbuddy.feature.home.HomeRoute
 
 class MainActivity : ComponentActivity() {
     private val roleRequest =
@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            HomeScreen(onOpenSettings = ::openSettings)
+            HomeRoute(repository = appContainer.appRepository, onOpenSettings = ::openSettings)
         }
 
         if (savedInstanceState == null) {

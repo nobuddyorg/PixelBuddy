@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.role.RoleManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Process
 import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
@@ -100,6 +101,13 @@ class MainActivityTest {
         activity.onBackPressedDispatcher.onBackPressed()
 
         assertFalse(activity.isFinishing)
+    }
+
+    @Test
+    fun `app list works without the broad package visibility permission`() {
+        val info = app.packageManager.getPackageInfo(app.packageName, PackageManager.GET_PERMISSIONS)
+
+        assertFalse(info.requestedPermissions.orEmpty().contains("android.permission.QUERY_ALL_PACKAGES"))
     }
 
     @Test
