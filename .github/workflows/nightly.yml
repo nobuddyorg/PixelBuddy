@@ -1,0 +1,49 @@
+name: Nightly
+
+# Slower checks that don't need to run on every pull request.
+
+on:
+  schedule:
+    - cron: "41 2 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  mutation-tests:
+    name: Mutation tests (Pitest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up build
+        uses: ./.github/actions/setup-build
+
+      - name: Run Pitest
+        run: ./gradlew :core:pixel-engine:pitest
+
+      - name: Summary
+        if: ${{ !cancelled() }}
+        run: |
+          report=core/pixel-engine/build/reports/pitest/mutations.xml
+          if [ -f "$report" ]; then
+            total=$(grep -c '<mutation ' "$report" || true)
+            killed=$(grep -c "status='KILLED'" "$report" || true)
+            echo "### Pitest: pixel engine" >> "$GITHUB_STEP_SUMMARY"
+            echo "$killed of $total mutations killed" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pitest-report
+          path: core/pixel-engine/build/reports/pitest/
+          retention-days: 14
+          if-no-files-found: ignore

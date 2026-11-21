@@ -45,7 +45,7 @@ jobs:
         run: >-
           ./gradlew --no-configuration-cache --continue
           --write-verification-metadata sha256
-          spotlessCheck build :koverVerifyUnit
+          spotlessCheck build :koverVerifyUnit :core:pixel-engine:pitest
           || echo "::warning::Build failed; checksums were still written for everything that resolved."
 
       - name: Check for changes
