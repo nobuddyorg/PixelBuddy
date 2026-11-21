@@ -17,8 +17,9 @@ Dependencies are checked against `gradle/verification-metadata.xml`. After addin
 dependency, refresh the checksums and review the diff:
 
 ```sh
-./gradlew --write-verification-metadata sha256 spotlessCheck build koverVerifyUnit
+./gradlew --no-configuration-cache --write-verification-metadata sha256 spotlessCheck build koverVerifyUnit
 ```
 
-`aapt2` ships one jar per OS. Gradle only records the one for the machine it runs on, so keep the
+`--no-configuration-cache` matters: with a cached configuration Gradle skips resolving the build
+logic and plugin classpath, so their checksums would be missing. `aapt2` ships one jar per OS. Gradle only records the one for the machine it runs on, so keep the
 macOS and Windows entries when the AGP version changes.
