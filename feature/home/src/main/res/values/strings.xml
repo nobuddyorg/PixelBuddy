@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Announced by TalkBack when the home screen appears. -->
+    <string name="home_screen_title">Home screen</string>
+</resources>
