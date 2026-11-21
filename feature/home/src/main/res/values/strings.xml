@@ -3,4 +3,8 @@
     <!-- Announced by TalkBack when the home screen appears. -->
     <string name="home_screen_title">Home screen</string>
     <string name="home_open_settings">Open settings</string>
+    <string name="home_launch_failed">Couldn\'t open %1$s</string>
+    <!-- Marker after apps from the work profile. -->
+    <string name="home_work_app">Work</string>
+    <string name="home_work_app_description">%1$s, work profile</string>
 </resources>
