@@ -19,13 +19,15 @@ The plan and the order of work are in [docs/PLAN.md](docs/PLAN.md) and the
 
 | What | Command |
 |---|---|
-| Everything CI runs | `./gradlew spotlessCheck build :koverVerifyUnit` |
+| Everything CI runs | `./gradlew spotlessCheck build :koverVerifyUnit :core:pixel-engine:koverVerify -Proborazzi.test.verify=true` |
 | Debug APK | `./gradlew :app:assembleDebug` (installs next to a release build as `…pixelbuddy.debug`) |
 | Unit tests | `./gradlew testDebugUnitTest :core:pixel-engine:test` |
 | Lint | `./gradlew :app:lintDebug` (covers all modules) |
 | Format | `./gradlew spotlessApply` |
 | Coverage report | `./gradlew :koverHtmlReportUnit` → `build/reports/kover/htmlUnit/index.html` |
 | Screenshot tests | `./gradlew verifyRoborazziDebug`; after an intended UI change `./gradlew recordRoborazziDebug` |
+| Pixel engine golden images | `./gradlew :core:pixel-engine:test`; after an intended change add `-Dpixelengine.record=true` and review `core/pixel-engine/src/test/resources/golden` |
+| Mutation tests (nightly in CI) | `./gradlew :core:pixel-engine:pitest` → `core/pixel-engine/build/reports/pitest/index.html` |
 
 Reference screenshots are recorded on Linux, like CI. Rendering on macOS or Windows can differ slightly; if
 `verifyRoborazziDebug` fails locally without a UI change, rely on CI.
@@ -45,7 +47,8 @@ Reference screenshots are recorded on Linux, like CI. Rendering on macOS or Wind
 
 - New logic comes with unit tests; Android behaviour with Robolectric tests; UI with Compose UI tests and, for
   visual changes, Roborazzi screenshots.
-- Merged line coverage must stay at 80 % or more (`:koverVerifyUnit`).
+- Merged line coverage must stay at 80 % or more (`:koverVerifyUnit`); the pixel engine at 90 % or more
+  (`:core:pixel-engine:koverVerify`).
 
 ## Dependencies
 
@@ -54,7 +57,7 @@ Reference screenshots are recorded on Linux, like CI. Rendering on macOS or Wind
 - Gradle verifies every dependency against `gradle/verification-metadata.xml`. After adding or updating one:
 
   ```sh
-  ./gradlew --no-configuration-cache --write-verification-metadata sha256 spotlessCheck build :koverVerifyUnit
+  ./gradlew --no-configuration-cache --write-verification-metadata sha256 spotlessCheck build :koverVerifyUnit :core:pixel-engine:pitest
   ```
 
   Review the diff: only the expected artifacts should change. When AGP changes, keep the macOS and Windows `aapt2`

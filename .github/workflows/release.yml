@@ -49,7 +49,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: >-
-          ./gradlew spotlessCheck build :koverVerifyUnit
+          ./gradlew spotlessCheck build :koverVerifyUnit :core:pixel-engine:koverVerify
           -Proborazzi.test.verify=true -Ppixelbuddy.versionName="$VERSION"
 
       - name: APK size budget
