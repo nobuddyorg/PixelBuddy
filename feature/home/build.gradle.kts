@@ -11,4 +11,5 @@ dependencies {
     implementation(projects.core.designSystem)
     implementation(projects.core.data)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.core.ktx)
 }

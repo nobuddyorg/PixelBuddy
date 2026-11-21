@@ -5,4 +5,9 @@
     <string name="home_launch_failed">%1$s konnte nicht geöffnet werden</string>
     <string name="home_work_app">Arbeit</string>
     <string name="home_work_app_description">%1$s, Arbeitsprofil</string>
+    <string name="home_open_alarms">Wecker öffnen</string>
+    <string name="home_open_calendar">Kalender öffnen</string>
+    <string name="home_battery">Akku %1$s</string>
+    <string name="home_battery_charging">Akku %1$s, wird geladen</string>
+    <string name="home_battery_full">Akku voll</string>
 </resources>

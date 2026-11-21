@@ -1,7 +1,9 @@
 import com.android.build.api.dsl.Lint
+import java.io.File
 
-/** Lint is strict: every warning fails the build. */
-internal fun Lint.configureStrictLint() {
+/** Lint is strict: every warning fails the build. [config] is the shared `lint.xml` in the root project. */
+internal fun Lint.configureStrictLint(config: File) {
+    lintConfig = config
     abortOnError = true
     warningsAsErrors = true
     checkReleaseBuilds = false

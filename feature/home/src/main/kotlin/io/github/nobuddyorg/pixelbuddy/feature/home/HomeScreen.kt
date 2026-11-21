@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,7 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -27,21 +27,20 @@ import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppListEntry
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
+import io.github.nobuddyorg.pixelbuddy.core.designsystem.DitheredSky
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyColors
-
-private val AppNameStyle = TextStyle(color = Color(0xFFF2EEFF), fontSize = 20.sp)
-private val BadgeStyle = SpanStyle(color = PixelBuddyColors.Orange, fontSize = 14.sp)
+import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyTheme
+import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelText
 
 /**
- * Home screen: for now a plain alphabetical list of all apps (#4); header, favorites and rail follow in later
- * issues. Tapping an app starts it; a long press on empty space opens the settings.
+ * Home screen: the dithered sky, the [header] (clock and info line) and, for now, a plain alphabetical list of all
+ * apps; favorites and the rail follow in later issues. Tapping an app starts it; a long press on empty space opens
+ * the settings.
  */
 @Composable
 fun HomeScreen(
@@ -49,6 +48,7 @@ fun HomeScreen(
     onAppClick: (LauncherApp) -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    header: @Composable () -> Unit = {},
 ) {
     val title = stringResource(R.string.home_screen_title)
     val openSettingsLabel = stringResource(R.string.home_open_settings)
@@ -67,12 +67,16 @@ fun HomeScreen(
                     }
                 },
     ) {
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = 32.dp, vertical = 24.dp),
-            modifier = Modifier.fillMaxSize().safeDrawingPadding(),
-        ) {
-            items(apps, key = { it.app.key.id }) { entry ->
-                AppRow(entry.app, onClick = { onAppClick(entry.app) })
+        DitheredSky(Modifier.fillMaxSize())
+        Column(Modifier.fillMaxSize().safeDrawingPadding()) {
+            Box(Modifier.padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 16.dp)) { header() }
+            LazyColumn(
+                contentPadding = PaddingValues(horizontal = 32.dp, vertical = 8.dp),
+                modifier = Modifier.weight(1f),
+            ) {
+                items(apps, key = { it.app.key.id }) { entry ->
+                    AppRow(entry.app, onClick = { onAppClick(entry.app) })
+                }
             }
         }
     }
@@ -103,15 +107,17 @@ private fun AppRow(
                 .semantics { contentDescription = description }
                 .padding(vertical = 6.dp),
     ) {
+        val style = PixelText.body
+        val badge = SpanStyle(color = PixelBuddyTheme.style.accent, fontSize = PixelText.small.fontSize)
         BasicText(
             text =
                 buildAnnotatedString {
                     append(app.label)
                     if (!app.isMainProfile) {
-                        withStyle(BadgeStyle) { append("  $workLabel") }
+                        withStyle(badge) { append("  $workLabel") }
                     }
                 },
-            style = AppNameStyle,
+            style = style,
             maxLines = 1,
         )
     }

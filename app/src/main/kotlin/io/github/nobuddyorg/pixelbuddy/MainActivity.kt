@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.edit
+import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyTheme
 import io.github.nobuddyorg.pixelbuddy.feature.home.HomeRoute
 
 class MainActivity : ComponentActivity() {
@@ -30,7 +31,9 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            HomeRoute(repository = appContainer.appRepository, onOpenSettings = ::openSettings)
+            PixelBuddyTheme {
+                HomeRoute(repository = appContainer.appRepository, onOpenSettings = ::openSettings)
+            }
         }
 
         if (savedInstanceState == null) {

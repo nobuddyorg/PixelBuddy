@@ -24,7 +24,7 @@ internal fun Project.configureAndroidCommon(extension: CommonExtension) {
         testOptions.apply {
             unitTests.isIncludeAndroidResources = true
         }
-        lint.configureStrictLint()
+        lint.configureStrictLint(rootProject.file("lint.xml"))
     }
     configureKotlinCompilation()
     configureKover(sourceVariant = "debug")
