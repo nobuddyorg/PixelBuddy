@@ -8,12 +8,8 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Modifier
 import androidx.core.content.edit
-import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyColors
+import io.github.nobuddyorg.pixelbuddy.feature.home.HomeScreen
 
 class MainActivity : ComponentActivity() {
     private val roleRequest =
@@ -34,12 +30,7 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(PixelBuddyColors.Navy),
-            )
+            HomeScreen()
         }
 
         if (savedInstanceState == null) {

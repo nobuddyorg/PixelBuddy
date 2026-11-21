@@ -31,11 +31,11 @@ jobs:
       - name: Format check
         run: ./gradlew spotlessCheck
 
-      - name: Build, lint and unit tests
-        run: ./gradlew build
-
-      - name: Coverage
-        run: ./gradlew :koverXmlReportUnit :koverHtmlReportUnit :koverVerifyUnit
+      # One invocation, so unit tests run once for tests, screenshots and coverage.
+      - name: Build, lint, tests, screenshots and coverage
+        run: >-
+          ./gradlew build :koverXmlReportUnit :koverHtmlReportUnit :koverVerifyUnit
+          -Proborazzi.test.verify=true
 
       - name: Upload reports
         if: ${{ !cancelled() }}
@@ -45,5 +45,6 @@ jobs:
           path: |
             **/build/reports/
             **/build/test-results/
+            **/build/outputs/roborazzi/
           retention-days: 14
           if-no-files-found: ignore

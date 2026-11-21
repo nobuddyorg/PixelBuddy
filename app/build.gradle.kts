@@ -12,6 +12,11 @@ android {
         versionName = "0.1.0"
     }
 
+    androidResources {
+        // Per-app language support: generates locales_config.xml from the values-* folders (#19).
+        generateLocaleConfig = true
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
@@ -35,6 +40,4 @@ dependencies {
     implementation(libs.androidx.activity.compose)
 
     testImplementation(libs.androidx.test.core)
-    testImplementation(libs.androidx.test.junit)
-    testImplementation(libs.robolectric)
 }
