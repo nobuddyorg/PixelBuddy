@@ -70,13 +70,13 @@ class SettingsSerializer(
     }
 
     companion object {
-        /** [setting] as JSON, e.g. to keep an unsaved draft across configuration changes. */
-        fun encode(setting: IconStyleSetting): String = json.encodeToString(IconStyleSetting.serializer(), setting)
+        /** [choice] as JSON, e.g. to keep an unsaved draft across configuration changes. */
+        fun encode(choice: IconChoice): String = json.encodeToString(IconChoice.serializer(), choice)
 
-        /** The setting [encode] wrote, or null if [text] isn't one. */
-        fun decodeIconStyle(text: String): IconStyleSetting? =
+        /** The choice [encode] wrote, or null if [text] isn't one. */
+        fun decodeIconChoice(text: String): IconChoice? =
             try {
-                json.decodeFromString(IconStyleSetting.serializer(), text)
+                json.decodeFromString(IconChoice.serializer(), text)
             } catch (_: IllegalArgumentException) {
                 null
             }

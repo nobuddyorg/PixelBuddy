@@ -3,6 +3,7 @@ package io.github.nobuddyorg.pixelbuddy.core.data.settings
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppKey
+import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconLayer
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
@@ -224,6 +225,34 @@ class SettingsRepositoryTest {
             assertEquals(IconPreset.Neon.style, styles.styleFor(bahn))
             job.cancel()
         }
+
+    @Test
+    fun `an app's own icon wins over the global style and only for that app`() {
+        val picture = "0".repeat(64)
+        val settings =
+            Settings(iconStyle = IconStyleSetting.of(IconPreset.Neon))
+                .withIconOverride(maps, IconChoice(IconStyleSetting.of(IconPreset.Mono), IconLayer.Foreground))
+                .withIconOverride(maps, IconChoice(IconStyleSetting.of(IconPreset.Pocket), image = picture))
+        val styles = IconStyles(settings.iconStyle.style, settings.iconOverrides.associate { it.app to it.look })
+
+        // Setting it again replaced the first override.
+        assertEquals(1, settings.iconOverrides.size)
+        assertEquals(IconLook(IconPreset.Pocket.style, image = picture), styles.lookFor(maps))
+        assertEquals(IconLook(IconPreset.Neon.style), styles.lookFor(bahn))
+        assertEquals(setOf(picture), settings.iconImages)
+        assertEquals(settings.iconOverrideFor(maps)?.choice?.image, picture)
+
+        val reset = settings.withoutIconOverride(maps)
+        assertEquals(null, reset.iconOverrideFor(maps))
+        assertEquals(emptySet(), reset.iconImages)
+    }
+
+    @Test
+    fun `a picture name that isn't one of ours is ignored`() {
+        val override = IconOverride(maps, image = "../../shared_prefs/x")
+
+        assertEquals(null, override.look.image)
+    }
 
     @Test
     fun `settings survive a restart`() =

@@ -57,6 +57,8 @@ fun HomeRoute(
     weather: WeatherRepository? = null,
     /** Clock settings; colours and text size come from the theme. */
     appearance: Appearance = Appearance(),
+    /** Opens the editor for an app's own icon (#14). */
+    onEditIcon: (LauncherApp) -> Unit = {},
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -110,6 +112,10 @@ fun HomeRoute(
                     scope.launch { settings.moveFavorite(app.key, action.offset) }
                 }
 
+                is AppAction.EditIcon -> {
+                    onEditIcon(app)
+                }
+
                 is AppAction.Hide -> {
                     scope.launch { settings.hide(app.key) }
                     toast(R.string.home_app_hidden, app)
@@ -158,7 +164,7 @@ fun HomeRoute(
                 }
             }
         },
-        icon = { app -> AppIcon(app, icons, iconStyles.styleFor(app.key)) },
+        icon = { app -> AppIcon(app, icons, iconStyles.lookFor(app.key)) },
     )
 }
 

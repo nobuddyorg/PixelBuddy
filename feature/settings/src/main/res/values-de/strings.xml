@@ -167,4 +167,23 @@
     <string name="icons_discard_title">Änderungen verwerfen?</string>
     <string name="icons_discard">Verwerfen</string>
     <string name="icons_keep">Weiter bearbeiten</string>
+    <string name="icons_for_app">Symbol von %1$s</string>
+    <string name="icons_compare_global">Alle Apps</string>
+    <string name="icons_compare_app">Diese App</string>
+    <string name="icons_source">Bild</string>
+    <string name="icons_source_label">Gezeichnet aus</string>
+    <string name="icons_source_full">Ganzes Symbol</string>
+    <string name="icons_source_foreground">Nur Vordergrund</string>
+    <string name="icons_source_monochrome">Einfarbige Ebene</string>
+    <string name="icons_source_picture">Eigenes Bild</string>
+    <string name="icons_image_choose_other">Anderes Bild wählen</string>
+    <string name="icons_image_too_large">Das Bild ist zu groß (bis 20 MB und 16384 Pixel pro Seite).</string>
+    <string name="icons_image_unreadable">Die Datei konnte nicht als Bild gelesen werden.</string>
+    <string name="icons_image_empty">Das Bild ist vollständig durchsichtig.</string>
+    <string name="icons_reset_global">Wie alle Symbole</string>
+    <string name="icons_single_apps">Symbole einzelner Apps</string>
+    <string name="icons_single_apps_summary">Apps mit eigenem Symbol: %1$d</string>
+    <string name="icons_single_apps_text">Gib einer App einen eigenen Stil oder ein eigenes Bild. Das gilt vor dem Stil aller Symbole.</string>
+    <string name="icons_app_own">Eigenes Symbol</string>
+    <string name="icons_app_global">Wie alle Symbole</string>
 </resources>

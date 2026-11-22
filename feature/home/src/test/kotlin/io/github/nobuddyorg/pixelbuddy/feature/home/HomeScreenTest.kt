@@ -554,6 +554,16 @@ class HomeScreenTest {
     }
 
     @Test
+    fun `the menu opens the editor for the app's own icon`() {
+        showAll()
+
+        compose.onNodeWithContentDescription("Signal").performTouchInput { longClick() }
+        compose.onNodeWithText("Edit icon", substring = true).performClick()
+
+        assertEquals(listOf<AppAction>(AppAction.EditIcon(app("Signal"))), actions)
+    }
+
+    @Test
     fun `the menu is reachable with accessibility services`() {
         showAll()
 

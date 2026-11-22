@@ -57,6 +57,11 @@ sealed interface AppAction {
         override val app: LauncherApp,
     ) : AppAction
 
+    /** Opens the editor for this app's own icon (#14). */
+    data class EditIcon(
+        override val app: LauncherApp,
+    ) : AppAction
+
     data class AppInfo(
         override val app: LauncherApp,
     ) : AppAction
@@ -126,6 +131,7 @@ internal fun AppMenu(
                 }
                 MenuItem(stringResource(R.string.home_menu_remove_favorite)) { pick(AppAction.RemoveFavorite(app)) }
             }
+            MenuItem(stringResource(R.string.home_menu_edit_icon)) { pick(AppAction.EditIcon(app)) }
             MenuItem(stringResource(R.string.home_menu_hide)) { pick(AppAction.Hide(app)) }
             MenuItem(stringResource(R.string.home_menu_app_info)) { pick(AppAction.AppInfo(app)) }
             if (app.canUninstall) {

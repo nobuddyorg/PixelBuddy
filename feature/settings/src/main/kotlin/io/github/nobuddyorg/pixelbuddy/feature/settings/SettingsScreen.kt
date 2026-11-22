@@ -37,6 +37,8 @@ enum class SettingsPage {
     Appearance,
     Clock,
     Icons,
+    AppIcons,
+    AppIconEditor,
     Apps,
     Gestures,
     Wallpaper,
@@ -53,6 +55,7 @@ enum class SettingsPage {
             when (this) {
                 Main -> Main
                 WeatherPlace, WeatherTap -> Weather
+                AppIconEditor -> AppIcons
                 Licenses, CrashReports -> About
                 else -> Main
             }
@@ -73,6 +76,8 @@ data class SettingsState(
     val fontLicense: String? = null,
     /** Whether "Run setup again" is offered. */
     val canRunSetup: Boolean = true,
+    /** Every app, for choosing one to give its own icon. */
+    val apps: List<LauncherApp> = emptyList(),
 )
 
 /** Something the user did in the settings. */
@@ -98,6 +103,11 @@ sealed interface SettingsAction {
 
     /** Starts the first-start setup again, on home. */
     data object RunSetup : SettingsAction
+
+    /** Opens the editor for one app's own icon. */
+    data class EditAppIcon(
+        val app: LauncherApp,
+    ) : SettingsAction
 
     data class OpenReport(
         val id: String,
@@ -186,6 +196,8 @@ private fun PageContent(
 
         SettingsPage.Clock -> ClockPage(state.settings.appearance, state.systemIs24Hour, update)
 
+        SettingsPage.AppIcons -> AppIconsPage(state.apps, state.settings, onAction)
+
         SettingsPage.Apps -> AppsPage(state.favorites, state.hiddenApps, update)
 
         SettingsPage.Gestures -> GesturesPage(state.settings.gestures, update)
@@ -201,7 +213,7 @@ private fun PageContent(
         SettingsPage.CrashReports -> CrashReportsPage(state.reports, zone, onAction)
 
         // Shown by SettingsRoute, which holds their state.
-        SettingsPage.Icons, SettingsPage.WeatherPlace, SettingsPage.WeatherTap -> Unit
+        SettingsPage.Icons, SettingsPage.AppIconEditor, SettingsPage.WeatherPlace, SettingsPage.WeatherTap -> Unit
     }
 }
 
@@ -211,7 +223,8 @@ private val SettingsPage.title: Int
             SettingsPage.Main -> R.string.settings_title
             SettingsPage.Appearance -> R.string.settings_appearance
             SettingsPage.Clock -> R.string.settings_clock
-            SettingsPage.Icons -> R.string.settings_icons
+            SettingsPage.Icons, SettingsPage.AppIconEditor -> R.string.settings_icons
+            SettingsPage.AppIcons -> R.string.icons_single_apps
             SettingsPage.Apps -> R.string.settings_apps
             SettingsPage.Gestures -> R.string.settings_gestures
             SettingsPage.Wallpaper -> R.string.settings_wallpaper

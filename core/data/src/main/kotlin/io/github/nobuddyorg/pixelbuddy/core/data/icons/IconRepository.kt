@@ -5,6 +5,8 @@ import android.content.pm.LauncherApps
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconLook
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyles
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconShape
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconStyle
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.PixelEngine
@@ -74,6 +76,8 @@ class IconRepository(
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(2),
     /** For [prewarm]: one at a time, so icons on screen keep [dispatcher] to themselves. */
     private val background: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(1),
+    /** Pictures imported as app icons (#14). */
+    private val images: CustomIconStore? = null,
 ) {
     /** Drawn sources for [preview], by app, density, size and shape: drawn once per editor session. */
     private val previewSources = ConcurrentHashMap<String, Pair<IconShape, PixelImage>>()
@@ -97,17 +101,27 @@ class IconRepository(
         style: IconStyle,
         densityDpi: Int,
         layer: IconLayer = IconLayer.Full,
-    ): Bitmap? = withContext(dispatcher) { cachedIcon(app, style, densityDpi, layer) }
+    ): Bitmap? = icon(app, IconLook(style, layer), densityDpi)
+
+    /** The pixelated icon of [app] as [look] says; an imported picture that is gone falls back to the app's icon. */
+    suspend fun icon(
+        app: LauncherApp,
+        look: IconLook,
+        densityDpi: Int,
+    ): Bitmap? = withContext(dispatcher) { cachedIcon(app, look, densityDpi) }
 
     private fun cachedIcon(
         app: LauncherApp,
-        style: IconStyle,
+        look: IconLook,
         densityDpi: Int,
-        layer: IconLayer,
     ): Bitmap? {
+        val image = look.image
+        if (image != null) imageIcon(app, look.style, image, densityDpi)?.let { return it }
+        val style = look.style
+        val layer = look.layer
         val id = app.key.id
         val session = "$id|$densityDpi"
-        val styleKey = styleKey(style, layer)
+        val styleKey = styleKey(IconLook(style, layer))
         verified[session]?.let { base -> cache.get(id, base, styleKey)?.let { return it } }
 
         val drawable = loader.load(app, densityDpi) ?: return null
@@ -124,6 +138,23 @@ class IconRepository(
         return bitmap
     }
 
+    /** [app] drawn from the imported picture [image], or null if the picture is gone. */
+    private fun imageIcon(
+        app: LauncherApp,
+        style: IconStyle,
+        image: String,
+        densityDpi: Int,
+    ): Bitmap? {
+        val base = "image|$image|$densityDpi"
+        val styleKey = styleKey(IconLook(style, image = image))
+        cache.get(app.key.id, base, styleKey)?.let { return it }
+        val source = images?.load(image, style.sourceSize) ?: return null
+        val bitmap = PixelEngine.render(source, style).toBitmap()
+        renderCount++
+        cache.put(app.key.id, base, styleKey, bitmap)
+        return bitmap
+    }
+
     /**
      * [app] in [style] for the icon editor's live preview. The source is drawn once per session ([endPreview]
      * forgets it) and nothing is cached on disk, so trying styles leaves no files behind. A cancelled preview stops
@@ -133,15 +164,27 @@ class IconRepository(
         app: LauncherApp,
         style: IconStyle,
         densityDpi: Int,
+    ): Bitmap? = preview(app, IconLook(style), densityDpi)
+
+    /** Like [preview] for a whole [look]: another layer of the app's icon or an imported picture. */
+    suspend fun preview(
+        app: LauncherApp,
+        look: IconLook,
+        densityDpi: Int,
     ): Bitmap? =
         withContext(dispatcher) {
-            val key = "${app.key.id}|$densityDpi|${style.sourceSize}|${style.shape}"
+            val style = look.style
+            val key = "${app.key.id}|$densityDpi|${style.sourceSize}|${style.shape}|${look.layer}|${look.image}"
             val (shape, source) =
                 previewSources[key] ?: run {
-                    val drawable = loader.load(app, densityDpi) ?: return@withContext null
-                    val shape = IconSourceRenderer.shapeFor(drawable, style.shape)
-                    (shape to IconSourceRenderer.render(drawable, style.sourceSize, IconLayer.Full, shape))
-                        .also { previewSources[key] = it }
+                    val image = look.image?.let { images?.load(it, style.sourceSize) }
+                    if (image != null) {
+                        style.shape to image
+                    } else {
+                        val drawable = loader.load(app, densityDpi) ?: return@withContext null
+                        val shape = IconSourceRenderer.shapeFor(drawable, style.shape)
+                        shape to IconSourceRenderer.render(drawable, style.sourceSize, look.layer, shape)
+                    }.also { previewSources[key] = it }
                 }
             ensureActive()
             PixelEngine.render(source, style.copy(shape = shape)).toBitmap()
@@ -168,19 +211,23 @@ class IconRepository(
      */
     suspend fun prewarm(
         apps: List<LauncherApp>,
-        styles: Set<IconStyle>,
+        styles: IconStyles,
         densityDpi: Int,
     ) {
+        val inUse = HashSet<String>()
         for (app in apps) {
-            for (style in styles) withContext(background) { cachedIcon(app, style, densityDpi, IconLayer.Full) }
+            val look = styles.lookFor(app.key)
+            inUse += styleKey(look)
+            // The app's own icon stays too, in case the picture is gone.
+            if (look.image != null) inUse += styleKey(look.copy(image = null))
+            withContext(background) { cachedIcon(app, look, densityDpi) }
         }
-        withContext(background) { cache.retainStyles(styles.mapTo(HashSet()) { styleKey(it, IconLayer.Full) }) }
+        withContext(background) { cache.retainStyles(inUse) }
     }
 
-    private fun styleKey(
-        style: IconStyle,
-        layer: IconLayer,
-    ) = "$style|$layer"
+    /** The cache key of a look: style and either the layer or the imported picture (#14). */
+    private fun styleKey(look: IconLook) =
+        if (look.image != null) "${look.style}|image|${look.image}" else "${look.style}|${look.layer}"
 
     private fun PixelImage.toBitmap(): Bitmap = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
 

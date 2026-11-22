@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconLook
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconStyle
 
 /**
@@ -29,7 +30,7 @@ fun snappedIconPx(
     grid: Int,
 ): Int = maxOf(1, (targetPx / grid).toInt()) * grid
 
-/** A pixelated app icon, loaded off the main thread and drawn without filtering. */
+/** A pixelated app icon in [style], loaded off the main thread and drawn without filtering. */
 @Composable
 fun AppIcon(
     app: LauncherApp,
@@ -37,12 +38,23 @@ fun AppIcon(
     style: IconStyle,
     modifier: Modifier = Modifier,
     size: Dp = 48.dp,
+) = AppIcon(app, repository, IconLook(style), modifier, size)
+
+/** A pixelated app icon as [look] says (the app's own icon, #14, or the style of all). */
+@Composable
+fun AppIcon(
+    app: LauncherApp,
+    repository: IconRepository,
+    look: IconLook,
+    modifier: Modifier = Modifier,
+    size: Dp = 48.dp,
 ) {
+    val style = look.style
     val density = LocalDensity.current
     val densityDpi = LocalConfiguration.current.densityDpi
     val generation by repository.generation.collectAsStateWithLifecycle()
-    val bitmap by produceState<ImageBitmap?>(null, app.key, style, densityDpi, generation) {
-        value = repository.icon(app, style, densityDpi)?.asImageBitmap()
+    val bitmap by produceState<ImageBitmap?>(null, app.key, look, densityDpi, generation) {
+        value = repository.icon(app, look, densityDpi)?.asImageBitmap()
     }
     val sidePx = snappedIconPx(with(density) { size.toPx() }, style.grid)
     Box(modifier.size(with(density) { sidePx.toDp() })) {

@@ -3,10 +3,12 @@ package io.github.nobuddyorg.pixelbuddy.feature.settings
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,8 +24,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReportStore
+import io.github.nobuddyorg.pixelbuddy.core.data.icons.CustomIconStore
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
-import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyleSetting
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconChoice
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.TemperatureUnit
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherPlace
@@ -59,8 +62,14 @@ fun SettingsRoute(
     onRunSetup: (() -> Unit)? = null,
     /** Renders the icon editor's previews; none without it. */
     icons: IconRepository? = null,
-    /** A new icon style was applied, e.g. to render the remaining icons ahead. */
-    onIconStyleApplied: (IconStyleSetting) -> Unit = {},
+    /** Keeps pictures picked as app icons (#14); none can be picked without it. */
+    customIcons: CustomIconStore? = null,
+    /** Icons changed (style applied, app icon set or reset), e.g. to render the remaining icons ahead. */
+    onIconsChanged: () -> Unit = {},
+    /** Opens the editor for this app's own icon (key id) right away, e.g. from home's long-press menu. */
+    editIconOf: String? = null,
+    /** Leaving the editor opened with [editIconOf] ends the settings. */
+    onDone: () -> Unit = {},
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
@@ -71,7 +80,18 @@ fun SettingsRoute(
     val favorites by favoriteApps.collectAsStateWithLifecycle(initialValue = emptyList())
     val hidden by hiddenApps.collectAsStateWithLifecycle(initialValue = emptyList())
     val allApps by apps.collectAsStateWithLifecycle(initialValue = emptyList())
-    var page by rememberSaveable { mutableStateOf(SettingsPage.Main) }
+    var page by rememberSaveable {
+        mutableStateOf(
+            if (editIconOf !=
+                null
+            ) {
+                SettingsPage.AppIconEditor
+            } else {
+                SettingsPage.Main
+            },
+        )
+    }
+    var iconApp by rememberSaveable { mutableStateOf(editIconOf) }
     var locationDenied by remember { mutableStateOf(false) }
     var wallpaper by remember { mutableStateOf(WallpaperStatus.Idle) }
     var fontLicense by remember { mutableStateOf<String?>(null) }
@@ -134,16 +154,58 @@ fun SettingsRoute(
         SettingsPage.Icons -> {
             val favoriteKeys = favorites.mapTo(HashSet()) { it.key }
             IconEditorRoute(
-                saved = current.iconStyle,
+                saved = IconChoice(current.iconStyle),
                 icons = icons,
                 apps = (favorites + allApps.filterNot { it.key in favoriteKeys }).take(PREVIEW_APPS),
-                onApply = { setting ->
-                    onUpdate { it.copy(iconStyle = setting) }
-                    onIconStyleApplied(setting)
+                onApply = { choice ->
+                    onUpdate { it.copy(iconStyle = choice.style) }
+                    onIconsChanged()
                 },
                 onLeave = { page = SettingsPage.Main },
                 modifier = modifier,
             )
+            return
+        }
+
+        SettingsPage.AppIconEditor -> {
+            val leave = {
+                if (editIconOf != null && iconApp == editIconOf) onDone() else page = SettingsPage.AppIcons
+            }
+            val app = allApps.firstOrNull { it.key.id == iconApp }
+            if (app == null) {
+                // Still loading, or the app is gone.
+                if (allApps.isNotEmpty()) LaunchedEffect(Unit) { leave() }
+                SettingsFrame(modifier) {}
+                return
+            }
+            val override = current.iconOverrideFor(app.key)
+            // A new key per app, so the editor starts afresh for each.
+            key(app.key.id) {
+                IconEditorRoute(
+                    saved = override?.choice ?: IconChoice(current.iconStyle),
+                    icons = icons,
+                    apps = listOf(app),
+                    onApply = { choice ->
+                        onUpdate { it.withIconOverride(app.key, choice) }
+                        onIconsChanged()
+                    },
+                    onLeave = leave,
+                    modifier = modifier,
+                    forApp =
+                        AppIconContext(
+                            app = app,
+                            global = current.iconStyle.style,
+                            hasOverride = override != null,
+                            importImage = { uri ->
+                                withContext(ioDispatcher) { context.importIcon(customIcons, uri) }
+                            },
+                            onResetToGlobal = {
+                                onUpdate { it.withoutIconOverride(app.key) }
+                                onIconsChanged()
+                            },
+                        ),
+                )
+            }
             return
         }
 
@@ -212,6 +274,7 @@ fun SettingsRoute(
             systemIs24Hour = systemIs24Hour,
             fontLicense = fontLicense,
             canRunSetup = onRunSetup != null,
+            apps = allApps,
         )
 
     SettingsScreen(
@@ -222,6 +285,11 @@ fun SettingsRoute(
                 is SettingsAction.Navigate -> {
                     page = action.page
                     wallpaper = WallpaperStatus.Idle
+                }
+
+                is SettingsAction.EditAppIcon -> {
+                    iconApp = action.app.key.id
+                    page = SettingsPage.AppIconEditor
                 }
 
                 is SettingsAction.Update -> {
@@ -286,6 +354,21 @@ private const val SOURCE_URL = "https://github.com/nobuddyorg/PixelBuddy"
 
 /** Bundled by the design system together with the font. */
 private const val FONT_LICENSE_ASSET = "licenses/departure_mono_OFL.txt"
+
+/** Imports the picture at [uri] into [store], reading it once; anything that goes wrong means unreadable. */
+private fun Context.importIcon(
+    store: CustomIconStore?,
+    uri: Uri,
+): CustomIconStore.ImportResult {
+    if (store == null) return CustomIconStore.ImportResult.Unreadable
+    return try {
+        contentResolver.openInputStream(uri)?.use(store::import) ?: CustomIconStore.ImportResult.Unreadable
+    } catch (_: IOException) {
+        CustomIconStore.ImportResult.Unreadable
+    } catch (_: SecurityException) {
+        CustomIconStore.ImportResult.Unreadable
+    }
+}
 
 private fun Context.readAsset(path: String): String? =
     try {

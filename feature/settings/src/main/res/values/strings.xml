@@ -168,4 +168,23 @@
     <string name="icons_discard_title">Discard your changes?</string>
     <string name="icons_discard">Discard</string>
     <string name="icons_keep">Keep editing</string>
+    <string name="icons_for_app">Icon of %1$s</string>
+    <string name="icons_compare_global">All apps</string>
+    <string name="icons_compare_app">This app</string>
+    <string name="icons_source">Picture</string>
+    <string name="icons_source_label">Drawn from</string>
+    <string name="icons_source_full">Whole icon</string>
+    <string name="icons_source_foreground">Foreground only</string>
+    <string name="icons_source_monochrome">Monochrome layer</string>
+    <string name="icons_source_picture">Own picture</string>
+    <string name="icons_image_choose_other">Choose another picture</string>
+    <string name="icons_image_too_large">That picture is too large (up to 20 MB and 16384 pixels per side).</string>
+    <string name="icons_image_unreadable">That file couldn\'t be read as a picture.</string>
+    <string name="icons_image_empty">That picture is completely transparent.</string>
+    <string name="icons_reset_global">Like all icons</string>
+    <string name="icons_single_apps">Icons for single apps</string>
+    <string name="icons_single_apps_summary">Apps with their own icon: %1$d</string>
+    <string name="icons_single_apps_text">Give an app its own style or picture. It wins over the style of all icons.</string>
+    <string name="icons_app_own">Own icon</string>
+    <string name="icons_app_global">Like all icons</string>
 </resources>

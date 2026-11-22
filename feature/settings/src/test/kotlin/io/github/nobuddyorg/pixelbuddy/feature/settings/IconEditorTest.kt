@@ -1,31 +1,41 @@
 package io.github.nobuddyorg.pixelbuddy.feature.settings
 
+import android.app.Activity
 import android.content.ComponentName
+import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
+import android.net.Uri
 import android.os.Process
+import androidx.activity.ComponentActivity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.core.graphics.createBitmap
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppKey
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReportStore
+import io.github.nobuddyorg.pixelbuddy.core.data.icons.CustomIconStore
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconCache
+import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconLayer
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconLoader
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconChoice
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyleSetting
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.PaletteChoice
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
@@ -38,6 +48,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import kotlin.test.assertEquals
@@ -49,7 +60,7 @@ import kotlin.test.assertTrue
 @Config(qualifiers = "w411dp-h891dp-420dpi")
 class IconEditorTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = createAndroidComposeRule<ComponentActivity>()
 
     @get:Rule
     val folder = TemporaryFolder()
@@ -91,7 +102,9 @@ class IconEditorTest {
     private val icons by lazy { IconRepository(loader, IconCache(folder.newFolder("icons")), Dispatchers.Unconfined) }
     private val apps = listOf("Signal", "Maps", "Bahn", "Notes", "Music", "Camera").map(::launcherApp)
     private val settings = MutableStateFlow(Settings(favorites = listOf(apps[1].key)))
-    private val applied = mutableListOf<IconStyleSetting>()
+    private var changes = 0
+    private val images by lazy { CustomIconStore(folder.newFolder("images")) }
+    private var done = 0
 
     private fun launcherApp(label: String): LauncherApp {
         val pkg = "pkg." + label.lowercase()
@@ -106,7 +119,7 @@ class IconEditorTest {
 
     private val favoriteApps = settings.map { s -> s.favorites.map { key -> apps.single { it.key == key } } }
 
-    private fun showEditor() {
+    private fun showSettings(editIconOf: String? = null) {
         compose.setContent {
             SettingsRoute(
                 store = CrashReportStore(folder.newFolder("crashes")),
@@ -116,12 +129,27 @@ class IconEditorTest {
                 favoriteApps = favoriteApps,
                 apps = flowOf(apps),
                 icons = icons,
-                onIconStyleApplied = { applied += it },
+                customIcons = images,
+                onIconsChanged = { changes++ },
+                editIconOf = editIconOf,
+                onDone = { done++ },
                 ioDispatcher = Dispatchers.Unconfined,
             )
         }
+    }
+
+    private fun showEditor() {
+        showSettings()
         compose.onNodeWithText("App icons").performClick()
     }
+
+    private fun showAppEditor(label: String) {
+        showSettings()
+        compose.onNodeWithText("Icons for single apps").performScrollTo().performClick()
+        compose.onNodeWithText(label).performScrollTo().performClick()
+    }
+
+    private val maps get() = apps.single { it.label == "Maps" }
 
     private val stored get() = settings.value.iconStyle
 
@@ -141,7 +169,7 @@ class IconEditorTest {
         compose.onNodeWithText("▶ Apply").performClick()
         assertEquals(12, stored.style.grid)
         assertEquals("SixteenBit", stored.preset)
-        assertEquals(listOf(stored), applied)
+        assertEquals(1, changes)
         compose.onNodeWithText("▶ Apply").assertIsNotEnabled()
     }
 
@@ -218,7 +246,7 @@ class IconEditorTest {
 
         compose.onNodeWithText("Appearance & themes").assertIsDisplayed()
         assertEquals(IconStyleSetting(), stored)
-        assertEquals(emptyList(), applied)
+        assertEquals(0, changes)
     }
 
     @Test
@@ -255,7 +283,101 @@ class IconEditorTest {
         }
 
         compose.onNodeWithText("Custom (based on Neon)").assertIsDisplayed()
-        assertNull(applied.firstOrNull())
+    }
+
+    // One app's own icon (#14)
+
+    @Test
+    fun `an app gets its own icon and can go back to the style of all`() {
+        showAppEditor("Maps")
+        compose.onNodeWithText("Icon of Maps").assertIsDisplayed()
+
+        compose.onNodeWithText("Foreground only").performScrollTo().performClick()
+        compose.onNodeWithText("Neon").performScrollTo().performClick()
+        compose.onNodeWithText("▶ Apply").performClick()
+
+        val override = settings.value.iconOverrideFor(maps.key)!!
+        assertEquals(IconLayer.Foreground, override.layer)
+        assertEquals(PaletteChoice.Neon, override.style.custom?.palette)
+        // Only Maps changed.
+        assertEquals(IconStyleSetting(), stored)
+        assertEquals(1, settings.value.iconOverrides.size)
+        assertEquals(1, changes)
+
+        compose.onNodeWithText("▶ Like all icons").performClick()
+        assertNull(settings.value.iconOverrideFor(maps.key))
+        assertEquals(2, changes)
+        compose.onNodeWithText("Icons for single apps").assertIsDisplayed()
+    }
+
+    @Test
+    fun `apps with their own icon are listed first`() {
+        settings.value = settings.value.withIconOverride(apps[4].key, IconChoice(IconStyleSetting.of(IconPreset.Mono)))
+        showSettings()
+        compose.onNodeWithText("Apps with their own icon: 1").assertIsDisplayed()
+
+        compose.onNodeWithText("Icons for single apps").performScrollTo().performClick()
+
+        compose.onNodeWithText("Own icon · Mono").assertIsDisplayed()
+        compose.onAllNodesWithText("Like all icons")[0].assertIsDisplayed()
+    }
+
+    private fun pickPicture(file: java.io.File) {
+        val activity = shadowOf(compose.activity)
+        compose.onNodeWithText("Own picture").performScrollTo().performClick()
+        val request = activity.nextStartedActivityForResult
+        activity.receiveResult(request.intent, Activity.RESULT_OK, Intent().setData(Uri.fromFile(file)))
+        compose.waitForIdle()
+    }
+
+    private fun pictureFile(
+        name: String,
+        bitmap: Bitmap,
+    ): java.io.File =
+        folder.newFile(name).also { file ->
+            file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
+
+    @Test
+    fun `a picture from the photo picker becomes the app's icon`() {
+        showAppEditor("Maps")
+        val picture = createBitmap(200, 200).apply { eraseColor(0xFF39FF14.toInt()) }
+
+        pickPicture(pictureFile("picture.png", picture))
+        compose.onNodeWithText("▶ Choose another picture").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("▶ Apply").performClick()
+
+        val image = settings.value.iconOverrideFor(maps.key)!!.image!!
+        assertTrue(CustomIconStore.isValidName(image))
+        assertEquals(32, images.load(image, 32)!!.width)
+    }
+
+    @Test
+    fun `a file that isn't a picture is explained`() {
+        showAppEditor("Maps")
+        val corrupt = folder.newFile("broken.png").apply { writeText("not a picture") }
+
+        pickPicture(corrupt)
+
+        compose.onNodeWithText("That file couldn't be read as a picture.").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("▶ Apply").assertIsNotEnabled()
+    }
+
+    @Test
+    fun `the editor opened from home's menu ends the settings when left`() {
+        showSettings(editIconOf = maps.key.id)
+
+        compose.onNodeWithText("Icon of Maps").assertIsDisplayed()
+        compose.onNodeWithText("▶ Back").performScrollTo().performClick()
+
+        assertEquals(1, done)
+    }
+
+    @Test
+    fun `screenshot one app's icon`() {
+        settings.value = settings.value.withIconOverride(maps.key, IconChoice(IconStyleSetting.of(IconPreset.Neon)))
+        showAppEditor("Maps")
+        compose.onRoot().captureRoboImage("IconEditor_app.png")
     }
 
     private fun screenshot(

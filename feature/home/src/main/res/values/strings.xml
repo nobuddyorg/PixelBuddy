@@ -22,6 +22,7 @@
     <string name="home_menu_remove_favorite">Remove from favorites</string>
     <string name="home_menu_move_up">Move up</string>
     <string name="home_menu_move_down">Move down</string>
+    <string name="home_menu_edit_icon">Edit icon</string>
     <string name="home_menu_hide">Hide</string>
     <string name="home_menu_app_info">App info</string>
     <string name="home_menu_uninstall">Uninstall</string>
