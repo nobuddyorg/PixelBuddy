@@ -56,6 +56,8 @@ jobs:
   # Accessibility Test Framework checks the settings screens.
   emulator:
     name: Emulator tests (API ${{ matrix.api }})
+    # After the build: no emulator time on a broken build, and fewer downloads at once (Maven Central rate-limits).
+    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -99,6 +101,10 @@ jobs:
           disable-animations: true
           script: ./gradlew :app:connectedDebugAndroidTest
 
+      - name: Show failed tests
+        if: ${{ failure() }}
+        run: find app/build/outputs/androidTest-results -name "*.xml" -print -exec cat {} \;
+
       - name: Upload reports
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -111,6 +117,7 @@ jobs:
   # Cold startup with a freshly generated baseline profile, against .github/startup-budget-ms (#15).
   startup:
     name: Startup benchmark
+    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -156,7 +163,7 @@ jobs:
           name: startup
           path: |
             app/src/release/generated/baselineProfiles/
-            baseline-profile/build/outputs/
+            baseline-profile/build/outputs/connected_android_test_additional_output/**/*.json
           retention-days: 14
           if-no-files-found: ignore
 
