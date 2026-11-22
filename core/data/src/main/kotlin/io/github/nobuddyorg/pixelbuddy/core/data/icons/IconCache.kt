@@ -70,6 +70,22 @@ class IconCache(
         File(directory, hash(app)).deleteRecursively()
     }
 
+    /** Removes cached icons of every style but [styles], in memory and on disk (e.g. after a style change). */
+    fun retainStyles(styles: Set<String>) {
+        val keep = styles.mapTo(HashSet()) { "_" + hash(it) + ".png" }
+        memory
+            .snapshot()
+            .keys
+            .filter { key -> styles.none { key.endsWith("|$it") } }
+            .forEach(memory::remove)
+        directory
+            .listFiles()
+            .orEmpty()
+            .flatMap { it.listFiles().orEmpty().asList() }
+            .filter { file -> keep.none { file.name.endsWith(it) } }
+            .forEach { it.delete() }
+    }
+
     fun clearMemory() = memory.evictAll()
 
     /** Number of icons in memory, for tests. */

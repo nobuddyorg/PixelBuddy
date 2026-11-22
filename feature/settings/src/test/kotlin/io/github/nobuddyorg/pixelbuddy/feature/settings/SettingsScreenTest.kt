@@ -36,7 +36,6 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.Sky
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.TemperatureUnit
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherPlace
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherSettings
-import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -212,18 +211,6 @@ class SettingsScreenTest {
         compose.onNodeWithText("Text size on home").performScrollTo().performClick()
         compose.onNodeWithText("Text size on home").performClick()
         assertEquals(SizeStep.Small, settings.value.appearance.textSize)
-    }
-
-    @Test
-    fun `one icon style for all icons`() {
-        showRoute()
-        open("App icons")
-
-        compose.onNodeWithText("16-bit").assertIsSelected()
-        compose.onNodeWithText("Neon").performClick()
-
-        assertEquals(IconPreset.Neon.name, settings.value.iconStyle.preset)
-        compose.onNodeWithText("Neon").assertIsSelected()
     }
 
     // Favorites and hidden apps

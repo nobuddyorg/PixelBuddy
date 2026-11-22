@@ -22,6 +22,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReportStore
+import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyleSetting
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.TemperatureUnit
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherPlace
@@ -55,6 +57,10 @@ fun SettingsRoute(
     searchPlaces: suspend (String) -> List<WeatherPlace> = { emptyList() },
     /** Runs the setup again (it shows on home); null leaves the entry out. */
     onRunSetup: (() -> Unit)? = null,
+    /** Renders the icon editor's previews; none without it. */
+    icons: IconRepository? = null,
+    /** A new icon style was applied, e.g. to render the remaining icons ahead. */
+    onIconStyleApplied: (IconStyleSetting) -> Unit = {},
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
@@ -122,6 +128,22 @@ fun SettingsRoute(
                     message = if (locationDenied) stringResource(R.string.weather_location_denied) else null,
                 )
             }
+            return
+        }
+
+        SettingsPage.Icons -> {
+            val favoriteKeys = favorites.mapTo(HashSet()) { it.key }
+            IconEditorRoute(
+                saved = current.iconStyle,
+                icons = icons,
+                apps = (favorites + allApps.filterNot { it.key in favoriteKeys }).take(PREVIEW_APPS),
+                onApply = { setting ->
+                    onUpdate { it.copy(iconStyle = setting) }
+                    onIconStyleApplied(setting)
+                },
+                onLeave = { page = SettingsPage.Main },
+                modifier = modifier,
+            )
             return
         }
 

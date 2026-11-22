@@ -15,8 +15,11 @@ import io.github.nobuddyorg.pixelbuddy.core.weather.PlatformLocationSource
 import io.github.nobuddyorg.pixelbuddy.core.weather.UrlConnectionHttpGet
 import io.github.nobuddyorg.pixelbuddy.core.weather.WeatherCache
 import io.github.nobuddyorg.pixelbuddy.core.weather.WeatherRepository
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Locale
 
@@ -52,6 +55,28 @@ class AppContainer(
             cache = WeatherCache(File(context.noBackupFilesDir, "weather.json")),
             location = PlatformLocationSource(context),
         )
+
+    /** Work that should finish even if the screen that started it closes; lives as long as the process. */
+    val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /**
+     * After an icon style change: renders all apps in the styles now in use, in the background, and removes cached
+     * icons of other styles. Home renders the icons on screen itself, first.
+     */
+    fun refreshIcons(densityDpi: Int) {
+        appScope.launch {
+            val current = settings.settings.first()
+            val styles = setOf(current.iconStyle.style) + current.iconOverrides.map { it.style.style }
+            iconRepository.prewarm(
+                appRepository.home
+                    .first()
+                    .apps
+                    .map { it.app },
+                styles,
+                densityDpi,
+            )
+        }
+    }
 
     /** Places by name, for the weather (network: only while the user searches). */
     suspend fun searchPlaces(name: String): List<WeatherPlace> =

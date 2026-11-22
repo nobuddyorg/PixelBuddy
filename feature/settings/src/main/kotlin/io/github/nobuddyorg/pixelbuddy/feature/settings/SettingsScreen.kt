@@ -186,8 +186,6 @@ private fun PageContent(
 
         SettingsPage.Clock -> ClockPage(state.settings.appearance, state.systemIs24Hour, update)
 
-        SettingsPage.Icons -> IconsPage(state.settings.iconStyle, update)
-
         SettingsPage.Apps -> AppsPage(state.favorites, state.hiddenApps, update)
 
         SettingsPage.Gestures -> GesturesPage(state.settings.gestures, update)
@@ -203,7 +201,7 @@ private fun PageContent(
         SettingsPage.CrashReports -> CrashReportsPage(state.reports, zone, onAction)
 
         // Shown by SettingsRoute, which holds their state.
-        SettingsPage.WeatherPlace, SettingsPage.WeatherTap -> Unit
+        SettingsPage.Icons, SettingsPage.WeatherPlace, SettingsPage.WeatherTap -> Unit
     }
 }
 

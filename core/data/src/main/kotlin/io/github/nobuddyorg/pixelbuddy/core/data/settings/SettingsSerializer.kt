@@ -70,6 +70,17 @@ class SettingsSerializer(
     }
 
     companion object {
+        /** [setting] as JSON, e.g. to keep an unsaved draft across configuration changes. */
+        fun encode(setting: IconStyleSetting): String = json.encodeToString(IconStyleSetting.serializer(), setting)
+
+        /** The setting [encode] wrote, or null if [text] isn't one. */
+        fun decodeIconStyle(text: String): IconStyleSetting? =
+            try {
+                json.decodeFromString(IconStyleSetting.serializer(), text)
+            } catch (_: IllegalArgumentException) {
+                null
+            }
+
         internal val json =
             Json {
                 // Forward compatible: properties and enum values from newer versions don't make the file unreadable.

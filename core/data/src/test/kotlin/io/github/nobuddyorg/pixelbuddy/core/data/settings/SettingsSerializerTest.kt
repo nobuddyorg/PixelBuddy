@@ -3,6 +3,8 @@ package io.github.nobuddyorg.pixelbuddy.core.data.settings
 import androidx.datastore.core.CorruptionException
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppKey
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconShape
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.Palette
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -97,6 +99,49 @@ class SettingsSerializerTest {
             assertEquals(Appearance(scanlines = true), settings.appearance)
             assertEquals(Gestures(longPress = GestureAction.Search), settings.gestures)
         }
+
+    @Test
+    fun `every preset survives the editor unchanged`() {
+        IconPreset.entries.forEach { preset ->
+            assertEquals(preset.style, CustomIconStyle.from(preset.style).toStyle(), preset.name)
+        }
+    }
+
+    @Test
+    fun `editing a preset makes a custom style based on it`() {
+        val edited = IconStyleSetting.of(IconPreset.Neon).edited { it.copy(grid = 32) }
+
+        assertEquals(IconPreset.Neon, edited.basePreset)
+        assertEquals(IconPreset.Neon.style.copy(grid = 32), edited.style)
+        assertEquals(edited.style.copy(dithering = true), edited.edited { it.copy(dithering = true) }.style)
+    }
+
+    @Test
+    fun `damaged custom values are brought into range`() =
+        runTest {
+            val settings =
+                SettingsSerializer().read(
+                    """{"version":1,"iconStyle":{"preset":"Pocket","custom":{"grid":7,"palette":"Adaptive",""" +
+                        """"colors":900,"intensity":4.5,"outlineColor":0,"masked":false}}}""",
+                )
+
+            val style = settings.iconStyle.style
+            assertEquals(24, style.grid)
+            assertEquals(Palette.Adaptive(32), style.palette)
+            assertEquals(1f, style.intensity)
+            assertEquals(0xFF000000.toInt(), style.outlineColor)
+            assertEquals(IconShape.FreeStanding, style.shape)
+            assertEquals(Palette.MonochromeTint(0xFFF2EEFF.toInt(), 2), PaletteChoice.Mono.toPalette(1))
+            assertEquals(Palette.Original, PaletteChoice.Original.toPalette(5))
+        }
+
+    @Test
+    fun `icon styles survive a JSON round trip, other text gives null`() {
+        val setting = IconStyleSetting.of(IconPreset.Mono).edited { it.copy(colors = 6) }
+
+        assertEquals(setting, SettingsSerializer.decodeIconStyle(SettingsSerializer.encode(setting)))
+        assertEquals(null, SettingsSerializer.decodeIconStyle("not json"))
+    }
 
     @Test
     fun `older files are upgraded step by step`() =

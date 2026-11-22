@@ -73,17 +73,11 @@
     <string name="size_large">Large</string>
     <string name="preview">Preview</string>
 
-    <string name="icons_style">Style for all icons</string>
     <string name="icon_preset_eight_bit">8-bit</string>
-    <string name="icon_preset_eight_bit_summary">Chunky, 16 fixed retro colours</string>
     <string name="icon_preset_sixteen_bit">16-bit</string>
-    <string name="icon_preset_sixteen_bit_summary">Detailed, colours per icon, outline (default)</string>
     <string name="icon_preset_pocket">Pocket</string>
-    <string name="icon_preset_pocket_summary">Four greens, like an old handheld</string>
     <string name="icon_preset_neon">Neon</string>
-    <string name="icon_preset_neon_summary">Bright colours with a dark outline</string>
     <string name="icon_preset_mono">Mono</string>
-    <string name="icon_preset_mono_summary">Shades of the text colour</string>
 
     <string name="favorites_title">Favorites</string>
     <string name="favorites_empty">No favorites. Long-press an app on home to add one.</string>
@@ -147,4 +141,31 @@
     <string name="setup_weather_place">Choose a place</string>
     <string name="settings_run_setup">Run setup again</string>
     <string name="settings_run_setup_summary">Home app, favorites, weather</string>
+    <string name="icons_custom">Custom (based on %1$s)</string>
+    <string name="icons_preview">Preview of your icons in this style</string>
+    <string name="icons_preview_originals">Your icons as the apps draw them</string>
+    <string name="icons_show_originals">Show originals</string>
+    <string name="icons_show_originals_summary">Or touch and hold the preview</string>
+    <string name="icons_presets">Presets</string>
+    <string name="icons_adjust">Adjust</string>
+    <string name="icons_grid">Pixels per side</string>
+    <string name="icons_palette">Palette</string>
+    <string name="palette_adaptive">Per icon</string>
+    <string name="palette_original">Original</string>
+    <string name="palette_retro16">Retro 16</string>
+    <string name="palette_pocket">Pocket</string>
+    <string name="palette_neon">Neon</string>
+    <string name="palette_mono">Mono</string>
+    <string name="icons_colors">Colours</string>
+    <string name="icons_intensity">Palette strength</string>
+    <string name="icons_dithering_summary">Mixes palette colours in a pixel pattern</string>
+    <string name="icons_outline">Outline</string>
+    <string name="icons_outline_summary">A dark 1-pixel edge</string>
+    <string name="icons_masked">Rounded square plate</string>
+    <string name="icons_masked_summary">Off: only the drawn shape</string>
+    <string name="icons_apply">Apply</string>
+    <string name="icons_reset">Reset</string>
+    <string name="icons_discard_title">Discard your changes?</string>
+    <string name="icons_discard">Discard</string>
+    <string name="icons_keep">Keep editing</string>
 </resources>

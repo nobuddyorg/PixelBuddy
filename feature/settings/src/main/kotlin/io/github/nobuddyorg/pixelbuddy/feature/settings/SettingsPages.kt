@@ -84,7 +84,7 @@ internal fun MainPage(
         R.string.settings_clock,
         clockFormatLabel(appearance.clockFormat, state.systemIs24Hour),
     )
-    Category(SettingsPage.Icons, R.string.settings_icons, stringResource(settings.iconStyle.presetOrDefault.label))
+    Category(SettingsPage.Icons, R.string.settings_icons, iconStyleName(settings.iconStyle))
     Category(
         SettingsPage.Apps,
         R.string.settings_apps,
@@ -176,23 +176,6 @@ internal fun ClockPage(
         subtitle = stringResource(appearance.textSize.label) + " · " + stringResource(R.string.text_size_summary),
         onClick = { update.appearance { it.copy(textSize = it.textSize.next()) } },
     )
-}
-
-@Composable
-internal fun IconsPage(
-    iconStyle: IconStyleSetting,
-    update: Update,
-) {
-    SectionHeader(stringResource(R.string.icons_style))
-    val current = iconStyle.presetOrDefault
-    IconPreset.entries.forEach { preset ->
-        OptionRow(
-            title = stringResource(preset.label),
-            subtitle = stringResource(preset.summary),
-            selected = preset == current,
-            onClick = { update { it.copy(iconStyle = IconStyleSetting.of(preset)) } },
-        )
-    }
 }
 
 @Composable
@@ -474,8 +457,11 @@ private fun clockFormatLabel(
         }
     }
 
-private val IconStyleSetting.presetOrDefault: IconPreset
-    get() = IconPreset.entries.firstOrNull { it.name == preset } ?: IconPreset.Default
+@Composable
+internal fun iconStyleName(setting: IconStyleSetting): String {
+    val preset = stringResource(setting.basePreset.label)
+    return if (setting.custom == null) preset else stringResource(R.string.icons_custom, preset)
+}
 
 private val Accent.label: Int
     get() =
@@ -516,7 +502,7 @@ private val GestureAction.label: Int
             GestureAction.Settings -> R.string.gesture_settings
         }
 
-private val IconPreset.label: Int
+internal val IconPreset.label: Int
     get() =
         when (this) {
             IconPreset.EightBit -> R.string.icon_preset_eight_bit
@@ -524,16 +510,6 @@ private val IconPreset.label: Int
             IconPreset.Pocket -> R.string.icon_preset_pocket
             IconPreset.Neon -> R.string.icon_preset_neon
             IconPreset.Mono -> R.string.icon_preset_mono
-        }
-
-private val IconPreset.summary: Int
-    get() =
-        when (this) {
-            IconPreset.EightBit -> R.string.icon_preset_eight_bit_summary
-            IconPreset.SixteenBit -> R.string.icon_preset_sixteen_bit_summary
-            IconPreset.Pocket -> R.string.icon_preset_pocket_summary
-            IconPreset.Neon -> R.string.icon_preset_neon_summary
-            IconPreset.Mono -> R.string.icon_preset_mono_summary
         }
 
 private val WallpaperTarget.label: Int
