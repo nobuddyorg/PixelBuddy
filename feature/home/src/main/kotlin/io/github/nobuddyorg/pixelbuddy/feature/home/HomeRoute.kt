@@ -34,6 +34,8 @@ fun HomeRoute(
     icons: IconRepository,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Changes whenever Home is pressed on home: back to the favorites. */
+    resetKey: Int = 0,
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -82,6 +84,7 @@ fun HomeRoute(
         },
         onOpenSettings = onOpenSettings,
         modifier = modifier,
+        resetKey = resetKey,
         header = { LiveHomeHeader(onClockClick = context::openAlarms, onDateClick = context::openCalendar) },
         icon = { app -> AppIcon(app, icons, iconStyles.styleFor(app.key)) },
     )
