@@ -34,6 +34,8 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -45,8 +47,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.roundToIntRect
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.HomeApps
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
@@ -71,7 +75,7 @@ internal const val SEARCH = "search"
 @Composable
 fun HomeScreen(
     home: HomeApps,
-    onAppClick: (LauncherApp) -> Unit,
+    onAppClick: (LauncherApp, LaunchFrom?) -> Unit,
     onAppAction: (AppAction) -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
@@ -118,8 +122,8 @@ fun HomeScreen(
             home = home,
             menuOpen = rowId == menuRow,
             icon = icon,
-            onAppClick = {
-                onAppClick(it)
+            onAppClick = { app, from ->
+                onAppClick(app, from)
                 // A search is done once an app starts.
                 if (view == SEARCH) view = Rail.FAVORITES
             },
@@ -152,7 +156,8 @@ fun HomeScreen(
             SearchPanel(
                 apps = home.apps,
                 onLaunch = { app ->
-                    onAppClick(app)
+                    // Enter in the search: no icon was tapped.
+                    onAppClick(app, null)
                     view = Rail.FAVORITES
                 },
                 entry = entry,
@@ -340,7 +345,7 @@ private fun AppEntry(
     home: HomeApps,
     menuOpen: Boolean,
     icon: @Composable (LauncherApp) -> Unit,
-    onAppClick: (LauncherApp) -> Unit,
+    onAppClick: (LauncherApp, LaunchFrom?) -> Unit,
     onAppAction: (AppAction) -> Unit,
     onMenu: (LauncherApp?) -> Unit,
     highlight: List<IntRange> = emptyList(),
@@ -349,7 +354,7 @@ private fun AppEntry(
     AppRow(
         app = app,
         icon = { icon(app) },
-        onClick = { onAppClick(app) },
+        onClick = { from -> onAppClick(app, from) },
         onLongClick = { onMenu(app) },
         highlight = highlight,
         top = top,
@@ -373,11 +378,13 @@ private fun HomeApps.favoritePosition(app: LauncherApp): FavoritePosition? {
 private fun AppRow(
     app: LauncherApp,
     icon: @Composable () -> Unit,
-    onClick: () -> Unit,
+    onClick: (LaunchFrom?) -> Unit,
     onLongClick: () -> Unit,
     highlight: List<IntRange> = emptyList(),
     top: Boolean = false,
 ) {
+    // Where the icon is, so the app can open out of it.
+    var iconBounds by remember { mutableStateOf<IntRect?>(null) }
     val workLabel = stringResource(R.string.home_work_app)
     val optionsLabel = stringResource(R.string.home_app_options)
     val description =
@@ -400,13 +407,13 @@ private fun AppRow(
                     role = Role.Button,
                     onLongClickLabel = optionsLabel,
                     onLongClick = onLongClick,
-                    onClick = onClick,
+                    onClick = { onClick(iconBounds?.let(::LaunchFrom)) },
                 ).semantics(mergeDescendants = true) { contentDescription = description }
                 // The top search result is what Enter opens.
                 .then(if (top) Modifier.background(PixelBuddyTheme.style.accent.copy(alpha = 0.16f)) else Modifier)
                 .padding(vertical = 4.dp),
     ) {
-        icon()
+        Box(Modifier.onGloballyPositioned { iconBounds = it.boundsInWindow().roundToIntRect() }) { icon() }
         val style = PixelText.body
         val badge = SpanStyle(color = PixelBuddyTheme.style.accent, fontSize = PixelText.small.fontSize)
         val matched = SpanStyle(color = PixelBuddyTheme.style.accent)

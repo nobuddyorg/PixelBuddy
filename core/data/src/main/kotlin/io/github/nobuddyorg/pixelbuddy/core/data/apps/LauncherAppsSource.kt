@@ -12,6 +12,7 @@ import android.content.pm.PackageManager
 import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
@@ -30,10 +31,12 @@ interface AppSource {
     /** Emits whenever apps or profiles may have changed. */
     fun changes(): Flow<Unit>
 
+    /** [sourceBounds] are the tapped icon's on screen; [options] e.g. the opening animation from there. */
     fun start(
         component: ComponentName,
         user: UserHandle,
         sourceBounds: Rect?,
+        options: Bundle? = null,
     )
 
     /** Opens the system's app info screen. */
@@ -176,8 +179,9 @@ class LauncherAppsSource(
         component: ComponentName,
         user: UserHandle,
         sourceBounds: Rect?,
+        options: Bundle?,
     ) {
-        launcherApps.startMainActivity(component, user, sourceBounds, null)
+        launcherApps.startMainActivity(component, user, sourceBounds, options)
     }
 
     override fun showDetails(

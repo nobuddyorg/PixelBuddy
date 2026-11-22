@@ -3,6 +3,7 @@ package io.github.nobuddyorg.pixelbuddy.feature.home
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.graphics.Rect
+import android.os.Bundle
 import android.os.Process
 import android.os.UserHandle
 import androidx.compose.runtime.getValue
@@ -154,7 +155,7 @@ class HomeScreenTest {
     ) = compose.setContent {
         HomeScreen(
             home = HomeApps(favorites, apps),
-            onAppClick = onAppClick,
+            onAppClick = { app, _ -> onAppClick(app) },
             onAppAction = { actions += it },
             onOpenSettings = onOpenSettings,
             resetKey = resetKey,
@@ -333,6 +334,70 @@ class HomeScreenTest {
         compose.waitForIdle()
         compose.onNodeWithContentDescription("Cloudy, 4 °C").assertDoesNotExist()
         assertEquals(0, calls.get())
+    }
+
+    // Accessibility (#15): everything that can be used has a name for TalkBack and a 48 dp touch target.
+
+    private fun assertAccessible() = compose.assertAccessible(48 * compose.density.density)
+
+    @Test
+    fun `home is accessible in every view`() {
+        show(favorites = favorites)
+        assertAccessible()
+
+        tapRail("M")
+        assertAccessible()
+        openSearch()
+        searchField().performTextInput("ma")
+        assertAccessible()
+    }
+
+    @Test
+    fun `the app menu is accessible`() {
+        show(favorites = favorites)
+
+        openMenu("Firefox")
+
+        assertAccessible()
+    }
+
+    @Test
+    @Config(fontScale = 2f)
+    fun `home is accessible at the largest font size`() {
+        show(favorites = favorites)
+
+        assertAccessible()
+        compose.onRoot().captureRoboImage("HomeScreen_font_2x.png")
+    }
+
+    @Test
+    @Config(qualifiers = "w320dp-h693dp-560dpi")
+    fun `home fits a small screen with the largest display size`() {
+        show(favorites = favorites)
+
+        assertAccessible()
+        searchButton().assertIsDisplayed()
+        compose.onRoot().captureRoboImage("HomeScreen_display_zoom.png")
+    }
+
+    @Test
+    fun `a tapped app opens out of its icon, Enter in the search without one`() {
+        val source = RecordingSource()
+        val settings = SettingsRepository.create(File(folder.root, "settings.json"), Dispatchers.IO + storeJob)
+        compose.setContent { HomeRoute(AppRepository(source, settings), settings, icons, onOpenSettings = {}) }
+        compose.waitUntil { compose.onAllNodesWithText("▲ SEARCH").fetchSemanticsNodes().isNotEmpty() }
+        openSearch()
+
+        compose.onNodeWithContentDescription("Signal").performClick()
+        val (bounds, options) = source.starts.single()
+        // The icon: 48 dp at 420 dpi, snapped to whole pixels per icon pixel.
+        assertEquals(120 to 120, bounds!!.width() to bounds.height())
+        assertTrue(options != null && !options.isEmpty)
+
+        openSearch()
+        searchField().performTextInput("map")
+        searchField().performImeAction()
+        assertEquals(null to null, source.starts.last())
     }
 
     @Test
@@ -772,7 +837,7 @@ class HomeScreenTest {
             PixelBuddyTheme(style) {
                 HomeScreen(
                     home = HomeApps(favorites, sampleApps),
-                    onAppClick = {},
+                    onAppClick = { _, _ -> },
                     onAppAction = {},
                     onOpenSettings = {},
                     header = {
@@ -841,6 +906,7 @@ class HomeScreenTest {
             component: ComponentName,
             user: UserHandle,
             sourceBounds: Rect?,
+            options: Bundle?,
         ) = Unit
 
         override fun showDetails(
@@ -862,8 +928,23 @@ class HomeScreenTest {
             component: ComponentName,
             user: UserHandle,
             sourceBounds: Rect?,
+            options: Bundle?,
         ): Unit = throw ActivityNotFoundException("removed")
     }
 
     private object WorkingSource : FakeSource(listOf(app("Maps"), app("Signal")))
+
+    /** Records how apps were started. */
+    private class RecordingSource : FakeSource(listOf(app("Maps"), app("Signal"))) {
+        val starts = mutableListOf<Pair<Rect?, Bundle?>>()
+
+        override fun start(
+            component: ComponentName,
+            user: UserHandle,
+            sourceBounds: Rect?,
+            options: Bundle?,
+        ) {
+            starts += sourceBounds to options
+        }
+    }
 }

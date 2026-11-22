@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -207,6 +208,7 @@ internal fun <T> SwatchRow(
                 modifier =
                     Modifier
                         .heightIn(min = 48.dp)
+                        .widthIn(min = 48.dp)
                         .selectable(selected = isSelected, role = Role.RadioButton, onClick = { onSelect(option) })
                         .semantics { contentDescription = description }
                         .border(2.dp, if (isSelected) TextColor else Color.Transparent)
@@ -240,6 +242,7 @@ internal fun <T> ChoiceRow(
                     modifier =
                         Modifier
                             .heightIn(min = 48.dp)
+                            .widthIn(min = 48.dp)
                             .selectable(selected = isSelected, role = Role.RadioButton, onClick = { onSelect(option) })
                             .border(2.dp, color)
                             .padding(horizontal = 12.dp),
@@ -276,7 +279,7 @@ internal fun PixelSlider(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(40.dp)
+                    .height(48.dp)
                     .pointerInput(range) {
                         fun set(x: Float) {
                             change(range.first + (x / size.width * steps).roundToInt().coerceIn(0, steps))

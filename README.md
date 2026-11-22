@@ -7,12 +7,26 @@
 A minimalist Android launcher with a retro-game / pixel-art look: Niagara's calm layout, a pixel clock, a battery
 HP bar, a dithered navy→purple→orange sky and pixelized app icons.
 
+<p>
+  <img src="feature/home/src/test/screenshots/HomeScreen_en.png" width="200" alt="Home: pixel clock, date, battery HP bar, favorites on the dithered sky, alphabet rail">
+  <img src="feature/home/src/test/screenshots/HomeScreen_rail.png" width="200" alt="Dragging along the alphabet rail shows the apps of a letter">
+  <img src="feature/home/src/test/screenshots/HomeScreen_search.png" width="200" alt="Search with highlighted matches">
+  <img src="feature/settings/src/test/screenshots/IconEditor_neon.png" width="200" alt="Icon style editor with live preview and presets">
+</p>
+
+- **Home:** big pixel clock, date, battery as an HP bar and optional weather; your favorites; an alphabet rail with
+  haptic ticks; swipe up to search (accents, word starts and initials match).
+- **Pixel icons:** every app icon pixelated in one of five presets, or your own style made in the live editor;
+  single apps can get their own style, layer or picture.
+- **Your look:** accent colours, six sky gradients, dithering, CRT scanlines, clock and text sizes, and the sky as
+  your wallpaper (home and lock screen).
 - **Private by design:** no tracking, no ads, no accounts. The only network access is optional weather.
-- **Fast and small:** no background work, no services.
+- **Fast and small:** no background work, no services, under 3.5 MB.
+- **Accessible:** TalkBack labels, 48 dp touch targets, large fonts and display sizes are tested.
 - **English and German.**
 
-> **Status:** early development. The launcher is being built issue by issue, see the [plan](docs/PLAN.md) and the
-> [MVP tracking issue](https://github.com/nobuddyorg/PixelBuddy/issues/1).
+> **Status:** the [MVP](https://github.com/nobuddyorg/PixelBuddy/issues/1) is being finished, see the
+> [plan](docs/PLAN.md).
 
 ## Install
 
@@ -37,8 +51,26 @@ It needs Android 10 (API 29) or newer; the primary test device is a Galaxy S24 w
 Store. Turn it off for the install, or install over USB with `adb install PixelBuddy-vX.Y.Z.apk` (works with Auto
 Blocker on).
 
-After installing, press Home and choose PixelBuddy, or set it in Settings → Apps → Choose default apps → Home app.
 Updates must come from the same signing key, so always install over the previous release.
+
+## Using it
+
+The first start walks you through three steps you can skip: make PixelBuddy the home app, pick favorites, and
+choose the weather (or none). You can run it again from the settings. To set the home app yourself: Settings →
+Apps → Choose default apps → Home app.
+
+| On home | Does |
+|---|---|
+| Tap an app | Opens it, growing out of its icon |
+| Long-press an app | Favorite, move, edit icon, hide, app info, uninstall |
+| Tap or drag the alphabet rail | Shows the apps of a letter |
+| Swipe up / ▲ Search | Search; Enter opens the top match |
+| Swipe down | Notifications |
+| Long-press empty space | Settings |
+| Tap the clock / the date / the weather | Alarms / calendar / refresh (or an app you choose) |
+
+The swipes and the long press can be changed in Settings → Gestures. Settings → Back up & move exports everything
+to one file for a new phone.
 
 Maintainers: see [docs/RELEASING.md](docs/RELEASING.md).
 

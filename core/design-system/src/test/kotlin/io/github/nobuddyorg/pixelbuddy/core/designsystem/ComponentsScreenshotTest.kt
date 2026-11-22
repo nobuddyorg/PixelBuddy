@@ -81,6 +81,24 @@ class ComponentsScreenshotTest {
     }
 
     @Test
+    fun `text has a drop shadow of one whole font pixel`() {
+        var style: androidx.compose.ui.text.TextStyle? = null
+        var fontPx = 0f
+        compose.setContent {
+            style = PixelText.body
+            fontPx = with(androidx.compose.ui.platform.LocalDensity.current) { PixelText.body.fontSize.toPx() }
+        }
+        compose.waitForIdle()
+
+        val shadow = style!!.shadow!!
+        val fontPixel = fontPx / PIXEL_FONT_GRID_PX
+        kotlin.test.assertEquals(fontPixel, shadow.offset.x, absoluteTolerance = 0.01f)
+        kotlin.test.assertEquals(fontPixel, shadow.offset.y, absoluteTolerance = 0.01f)
+        kotlin.test.assertEquals(PixelBuddyColors.Shadow, shadow.color)
+        kotlin.test.assertEquals(0f, shadow.blurRadius)
+    }
+
+    @Test
     fun `hp bar states and clock`() {
         compose.setContent {
             PixelBuddyTheme {

@@ -9,6 +9,9 @@ budget="$(tr -d '[:space:]' < "$budget_file")"
 size="$(stat -c %s "$apk")"
 
 echo "APK size: $size bytes (budget $budget bytes)"
+if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+  echo "APK size: $size of $budget bytes ($((size * 100 / budget)) % of the budget)" >> "$GITHUB_STEP_SUMMARY"
+fi
 if [ "$size" -gt "$budget" ]; then
   echo "::error file=$apk::APK is $size bytes, over the budget of $budget bytes (.github/apk-size-budget)"
   exit 1

@@ -266,6 +266,16 @@ class SetupScreenTest {
     }
 
     @Test
+    fun `every setup step is accessible`() {
+        show()
+        SetupStep.entries.filter { it != SetupStep.Done }.forEach { step ->
+            settings.value = settings.value.copy(setup = step)
+            compose.waitForIdle()
+            compose.assertAccessible(48 * compose.density.density)
+        }
+    }
+
+    @Test
     fun `screenshot home app`() {
         show()
         compose.onRoot().captureRoboImage("Setup_home_app.png")

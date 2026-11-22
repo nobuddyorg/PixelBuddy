@@ -71,6 +71,6 @@ keytool -list -v -keystore pixelbuddy-release.keystore -alias pixelbuddy | grep 
 
 ## APK size budget
 
-`.github/apk-size-budget` holds the maximum release APK size in bytes; CI and the release workflow fail above it.
-After the first release, set it to the measured size plus about 20 % headroom, and raise it only on purpose
-(in its own commit with the reason).
+`.github/apk-size-budget` holds the maximum release APK size in bytes; CI and the release workflow fail above it,
+and CI shows the size in the job summary. It is the measured size plus about 20 % headroom: 3,340,000 bytes from
+2,781,900 for the complete MVP (#15). Raise it only on purpose, in its own commit with the reason.

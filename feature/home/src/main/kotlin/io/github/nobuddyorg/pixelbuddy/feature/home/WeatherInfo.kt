@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
@@ -58,6 +59,8 @@ internal fun WeatherInfo(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         modifier =
             modifier
+                // A 48 dp touch target, though the text is small.
+                .heightIn(min = 48.dp)
                 .alpha(if (freshness == Freshness.Dimmed) 0.5f else 1f)
                 .clickable(onClick = onClick)
                 .clearAndSetSemantics {

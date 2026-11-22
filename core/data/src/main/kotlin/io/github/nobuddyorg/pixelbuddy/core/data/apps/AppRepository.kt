@@ -2,6 +2,7 @@ package io.github.nobuddyorg.pixelbuddy.core.data.apps
 
 import android.content.ActivityNotFoundException
 import android.graphics.Rect
+import android.os.Bundle
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -69,7 +70,8 @@ class AppRepository(
     fun launch(
         app: LauncherApp,
         sourceBounds: Rect? = null,
-    ): LaunchResult = attempt { source.start(app.component, app.user, sourceBounds) }
+        options: Bundle? = null,
+    ): LaunchResult = attempt { source.start(app.component, app.user, sourceBounds, options) }
 
     /** Opens the system's app info screen for [app]. */
     fun openDetails(
