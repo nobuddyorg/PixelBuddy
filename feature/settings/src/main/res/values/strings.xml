@@ -187,4 +187,21 @@
     <string name="icons_single_apps_text">Give an app its own style or picture. It wins over the style of all icons.</string>
     <string name="icons_app_own">Own icon</string>
     <string name="icons_app_global">Like all icons</string>
+    <string name="backup_title">Back up &amp; move</string>
+    <string name="backup_summary">Export or import all settings</string>
+    <string name="backup_text">Saves favorites, hidden apps, look, icons (with your pictures), gestures and weather settings in one file. Import it on another phone to get the same home screen.</string>
+    <string name="backup_export">Export settings</string>
+    <string name="backup_import">Import settings</string>
+    <string name="backup_exported">Settings exported</string>
+    <string name="backup_export_failed">Couldn\'t write the file</string>
+    <string name="backup_imported">Settings imported</string>
+    <string name="backup_confirm_title">Replace your settings?</string>
+    <string name="backup_confirm_text">From the file: favorites: %1$d · hidden: %2$d · own icons: %3$d. Apps that aren\'t installed yet keep their place until you install them.</string>
+    <string name="backup_replace">Replace</string>
+    <string name="backup_cancel">Cancel</string>
+    <string name="backup_problem_not_archive">That isn\'t a PixelBuddy settings file.</string>
+    <string name="backup_problem_newer">That file is from a newer PixelBuddy. Update this one first.</string>
+    <string name="backup_problem_too_large">That file is too large to be PixelBuddy settings.</string>
+    <string name="backup_problem_unsafe">That file has suspicious contents and wasn\'t used.</string>
+    <string name="backup_problem_unreadable">The settings in that file can\'t be read.</string>
 </resources>

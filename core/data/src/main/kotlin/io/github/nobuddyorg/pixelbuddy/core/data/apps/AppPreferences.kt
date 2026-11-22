@@ -9,9 +9,12 @@ interface AppPreferences {
 
     val hidden: Flow<Set<AppKey>>
 
-    /** Every app the stored settings refer to. */
+    /** Every app the stored settings refer to, except apps still waiting to be installed. */
     suspend fun storedApps(): Set<AppKey>
 
     /** Removes all stored entries of [apps] (they were uninstalled). */
     suspend fun forget(apps: Set<AppKey>)
+
+    /** [apps] are installed now; apps waiting for their install (see [storedApps]) stop waiting. */
+    suspend fun installed(apps: Set<AppKey>) = Unit
 }

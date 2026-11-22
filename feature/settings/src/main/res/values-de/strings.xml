@@ -186,4 +186,21 @@
     <string name="icons_single_apps_text">Gib einer App einen eigenen Stil oder ein eigenes Bild. Das gilt vor dem Stil aller Symbole.</string>
     <string name="icons_app_own">Eigenes Symbol</string>
     <string name="icons_app_global">Wie alle Symbole</string>
+    <string name="backup_title">Sichern &amp; umziehen</string>
+    <string name="backup_summary">Alle Einstellungen exportieren oder importieren</string>
+    <string name="backup_text">Speichert Favoriten, ausgeblendete Apps, Aussehen, Symbole (mit deinen Bildern), Gesten und Wettereinstellungen in einer Datei. Importiere sie auf einem anderen Telefon für denselben Startbildschirm.</string>
+    <string name="backup_export">Einstellungen exportieren</string>
+    <string name="backup_import">Einstellungen importieren</string>
+    <string name="backup_exported">Einstellungen exportiert</string>
+    <string name="backup_export_failed">Die Datei konnte nicht geschrieben werden</string>
+    <string name="backup_imported">Einstellungen importiert</string>
+    <string name="backup_confirm_title">Einstellungen ersetzen?</string>
+    <string name="backup_confirm_text">Aus der Datei: Favoriten: %1$d · ausgeblendet: %2$d · eigene Symbole: %3$d. Noch nicht installierte Apps behalten ihren Platz, bis du sie installierst.</string>
+    <string name="backup_replace">Ersetzen</string>
+    <string name="backup_cancel">Abbrechen</string>
+    <string name="backup_problem_not_archive">Das ist keine PixelBuddy-Einstellungsdatei.</string>
+    <string name="backup_problem_newer">Die Datei stammt von einem neueren PixelBuddy. Aktualisiere dieses zuerst.</string>
+    <string name="backup_problem_too_large">Die Datei ist zu groß für PixelBuddy-Einstellungen.</string>
+    <string name="backup_problem_unsafe">Die Datei hat verdächtige Inhalte und wurde nicht verwendet.</string>
+    <string name="backup_problem_unreadable">Die Einstellungen in der Datei können nicht gelesen werden.</string>
 </resources>

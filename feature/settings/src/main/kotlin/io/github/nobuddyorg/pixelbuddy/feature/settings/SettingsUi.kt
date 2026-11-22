@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -34,6 +36,7 @@ import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
@@ -307,5 +310,45 @@ internal fun PixelSlider(
                         drawRect(TextColor, Offset(thumb, top - block), Size(block * 3, block * 4))
                     },
         )
+    }
+}
+
+/** A question over the screen: [onConfirm] or [onCancel]; a tap outside cancels. */
+@Composable
+internal fun ConfirmDialog(
+    title: String,
+    confirm: String,
+    cancel: String,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier,
+    text: String? = null,
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(PixelBuddyColors.Shadow.copy(alpha = 0.8f))
+                .pointerInput(Unit) { detectTapGestures { onCancel() } },
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .padding(32.dp)
+                    .background(PixelBuddyColors.Navy)
+                    .border(3.dp, TextColor)
+                    .padding(24.dp)
+                    .semantics { paneTitle = title },
+        ) {
+            BasicText(title, style = TitleStyle)
+            if (text != null) {
+                Spacer(Modifier.height(12.dp))
+                BasicText(text, style = BodyStyle)
+            }
+            Spacer(Modifier.height(16.dp))
+            TextButton(confirm, onConfirm)
+            TextButton(cancel, onCancel, color = TextColor)
+        }
     }
 }

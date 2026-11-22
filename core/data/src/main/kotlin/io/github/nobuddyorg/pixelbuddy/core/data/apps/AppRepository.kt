@@ -58,9 +58,10 @@ class AppRepository(
      * gone count: not ones on a paused work profile, still being restored, or on unmounted storage.
      */
     private suspend fun forgetRemoved(apps: List<AppListEntry>) {
+        val present = apps.mapTo(HashSet()) { it.app.key }
+        preferences.installed(present)
         val stored = preferences.storedApps()
         if (stored.isEmpty()) return
-        val present = apps.mapTo(HashSet()) { it.app.key }
         preferences.forget(stored.filterTo(HashSet()) { it !in present && source.isRemoved(it) })
     }
 

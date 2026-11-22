@@ -90,6 +90,9 @@ class CustomIconStore(
         return PixelImage(size, size, pixels)
     }
 
+    /** The stored PNG of [name], e.g. for an export, or null if it is gone or [name] isn't one of ours. */
+    fun bytes(name: String): ByteArray? = if (isValidName(name)) file(name).takeIf { it.isFile }?.readBytes() else null
+
     /** Deletes every stored picture except [names], e.g. after an override was reset or its app uninstalled. */
     fun retain(names: Set<String>) {
         directory
