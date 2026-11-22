@@ -40,4 +40,5 @@ include(
     ":core:design-system",
     ":core:pixel-engine",
     ":core:search",
+    ":baseline-profile",
 )

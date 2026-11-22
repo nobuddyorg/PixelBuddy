@@ -28,6 +28,9 @@ The plan and the order of work are in [docs/PLAN.md](docs/PLAN.md) and the
 | Screenshot tests | `./gradlew verifyRoborazziDebug`; after an intended UI change `./gradlew recordRoborazziDebug` |
 | Pixel engine golden images | `./gradlew :core:pixel-engine:test`; after an intended change add `-Dpixelengine.record=true` and review `core/pixel-engine/src/test/resources/golden` |
 | Outline icon prototype (#29) | `cd tools/icon-outline && python3 -m unittest -v`, see its README |
+| Emulator smoke tests (CI: API 29, 33, 37) | `./gradlew :app:connectedDebugAndroidTest` with an emulator or phone connected |
+| Baseline profile | `./gradlew :app:generateBaselineProfile` (API 33+ emulator or phone; add `-Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.suppressErrors=EMULATOR` on an emulator) |
+| Startup benchmark (CI budget: `.github/startup-budget-ms`, the first measured median on the CI emulator plus 25 %) | `./gradlew :baseline-profile:connectedBenchmarkReleaseAndroidTest`, then `scripts/check-startup.py baseline-profile/build/outputs/connected_android_test_additional_output` |
 | Mutation tests (nightly in CI) | `./gradlew :core:pixel-engine:pitest :core:search:pitest` → `core/<module>/build/reports/pitest/index.html` |
 
 Reference screenshots are recorded on Linux, like CI. Rendering on macOS or Windows can differ slightly; if

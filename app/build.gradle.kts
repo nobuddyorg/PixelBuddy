@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.pixelbuddy.android.application)
     alias(libs.plugins.pixelbuddy.android.compose)
+    // Ships the baseline profile from :baseline-profile in release APKs (#15).
+    alias(libs.plugins.androidx.baselineprofile)
 }
 
 /**
@@ -57,6 +59,18 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.coroutines.android)
+    // Installs the baseline profile on phones without the Play Store doing it.
+    implementation(libs.androidx.profileinstaller)
+    baselineProfile(projects.baselineProfile)
 
     testImplementation(libs.androidx.test.core)
+
+    // Emulator smoke tests (#15): ./gradlew :app:connectedDebugAndroidTest
+    androidTestImplementation(libs.kotlin.test)
+    androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.uiautomator)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.compose.ui.test.junit4.accessibility)
 }
