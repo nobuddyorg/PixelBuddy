@@ -34,7 +34,7 @@ jobs:
       # One invocation, so unit tests run once for tests, screenshots and coverage.
       - name: Build, lint, tests, screenshots and coverage
         run: >-
-          ./gradlew build :koverXmlReportUnit :koverHtmlReportUnit :koverVerifyUnit :core:pixel-engine:koverVerify
+          ./gradlew build :koverXmlReportUnit :koverHtmlReportUnit :koverVerifyUnit :core:pixel-engine:koverVerify :core:search:koverVerify
           -Proborazzi.test.verify=true
 
       - name: APK size budget

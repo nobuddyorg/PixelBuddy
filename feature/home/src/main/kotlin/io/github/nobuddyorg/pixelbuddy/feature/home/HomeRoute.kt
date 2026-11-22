@@ -85,6 +85,7 @@ fun HomeRoute(
         onOpenSettings = onOpenSettings,
         modifier = modifier,
         resetKey = resetKey,
+        onSwipeDown = context::expandNotificationShade,
         header = { LiveHomeHeader(onClockClick = context::openAlarms, onDateClick = context::openCalendar) },
         icon = { app -> AppIcon(app, icons, iconStyles.styleFor(app.key)) },
     )

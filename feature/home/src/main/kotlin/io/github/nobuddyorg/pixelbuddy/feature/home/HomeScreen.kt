@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,15 +54,16 @@ import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyColors
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyTheme
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelText
 
-/** The list view next to the rail's ★ and letters: every app, sorted with section headers. */
-internal const val ALL_APPS = "all"
+/** The view with the search field; without a query it lists every app. */
+internal const val SEARCH = "search"
 
 /**
  * Home screen: the dithered sky, the [header] (clock and info line), the app list and the [AlphabetRail].
  *
  * The list shows the favorites; a rail letter swaps in that letter's apps until a tap on empty space, Back or
- * Home ([resetKey] changes); swiping up (or "All apps") shows every app. Tapping an app starts it, a long press
- * opens its menu ([AppMenu]); a long press on empty space opens the settings.
+ * Home ([resetKey] changes). Swiping up (or "Search") opens the search with the keyboard; swiping down calls
+ * [onSwipeDown] (the notification shade) and opens the search if that returns false. Tapping an app starts it, a
+ * long press opens its menu ([AppMenu]); a long press on empty space opens the settings.
  */
 @Composable
 fun HomeScreen(
@@ -71,23 +73,48 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     resetKey: Int = 0,
+    onSwipeDown: () -> Boolean = { false },
     header: @Composable () -> Unit = {},
     icon: @Composable (LauncherApp) -> Unit = {},
 ) {
     val title = stringResource(R.string.home_screen_title)
     val openSettingsLabel = stringResource(R.string.home_open_settings)
     val openSettings by rememberUpdatedState(onOpenSettings)
-    // Rail.FAVORITES, a section letter or ALL_APPS; Home (a new resetKey) goes back to the favorites.
+    // Rail.FAVORITES, a section letter or SEARCH; Home (a new resetKey) goes back to the favorites.
     var view by rememberSaveable(resetKey) { mutableStateOf(Rail.FAVORITES) }
     // The row whose menu is open; an app can have two rows (favorite and in the list).
     var menuRow by rememberSaveable(resetKey) { mutableStateOf<String?>(null) }
     val sections = remember(home.apps) { home.apps.mapTo(LinkedHashSet()) { it.section } }
     val railEntries = remember(sections) { Rail.entries(sections) }
     // A letter whose last app was removed or hidden has nothing to show.
-    if (view != Rail.FAVORITES && view != ALL_APPS && home.apps.isNotEmpty() && view !in sections) {
+    if (view != Rail.FAVORITES && view != SEARCH && home.apps.isNotEmpty() && view !in sections) {
         view = Rail.FAVORITES
     }
     BackHandler(enabled = view != Rail.FAVORITES) { view = Rail.FAVORITES }
+    val gestures by rememberUpdatedState(
+        VerticalSwipes(
+            onUp = { if (view != SEARCH) view = SEARCH },
+            onDown = { if (view != SEARCH && !onSwipeDown()) view = SEARCH },
+        ),
+    )
+
+    val entry: SearchEntry = { rowId, app, highlight, top ->
+        AppEntry(
+            app = app,
+            home = home,
+            menuOpen = rowId == menuRow,
+            icon = icon,
+            onAppClick = {
+                onAppClick(it)
+                // A search is done once an app starts.
+                if (view == SEARCH) view = Rail.FAVORITES
+            },
+            onAppAction = onAppAction,
+            onMenu = { menuRow = it?.let { rowId } },
+            highlight = highlight,
+            top = top,
+        )
+    }
 
     Box(
         modifier =
@@ -96,7 +123,8 @@ fun HomeScreen(
                 .background(PixelBuddyColors.Navy)
                 .pointerInput(Unit) {
                     detectTapGestures(onTap = { view = Rail.FAVORITES }, onLongPress = { openSettings() })
-                }.semantics {
+                }.verticalSwipes { gestures }
+                .semantics {
                     paneTitle = title
                     onLongClick(label = openSettingsLabel) {
                         openSettings()
@@ -105,33 +133,35 @@ fun HomeScreen(
                 },
     ) {
         DitheredSky(Modifier.fillMaxSize())
+        if (view == SEARCH) {
+            Box(Modifier.fillMaxSize().background(SearchScrim))
+            SearchPanel(
+                apps = home.apps,
+                onLaunch = { app ->
+                    onAppClick(app)
+                    view = Rail.FAVORITES
+                },
+                entry = entry,
+                modifier = Modifier.safeDrawingPadding(),
+            )
+            return@Box
+        }
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
             Box(Modifier.padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 16.dp)) { header() }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 Column(Modifier.fillMaxSize().padding(end = 40.dp)) {
-                    val entry: @Composable (String, LauncherApp) -> Unit = { rowId, app ->
-                        AppEntry(
-                            app = app,
-                            home = home,
-                            menuOpen = rowId == menuRow,
-                            icon = icon,
-                            onAppClick = onAppClick,
-                            onAppAction = onAppAction,
-                            onMenu = { menuRow = it?.let { rowId } },
-                        )
-                    }
                     // Each view starts at its top.
                     key(view) {
                         AppList(
                             view = view,
                             home = home,
-                            onSwipeUp = { if (view == Rail.FAVORITES) view = ALL_APPS },
-                            entry = entry,
+                            swipes = { gestures },
+                            entry = { rowId, app -> entry(rowId, app, emptyList(), false) },
                             modifier = Modifier.weight(1f),
                         )
                     }
-                    if (view != ALL_APPS && home.apps.isNotEmpty()) {
-                        AllAppsButton(onClick = { view = ALL_APPS })
+                    if (home.apps.isNotEmpty()) {
+                        SearchButton(onClick = { view = SEARCH })
                     }
                 }
                 AlphabetRail(
@@ -149,14 +179,14 @@ fun HomeScreen(
 private fun AppList(
     view: String,
     home: HomeApps,
-    onSwipeUp: () -> Unit,
+    swipes: () -> VerticalSwipes,
     entry: @Composable (rowId: String, app: LauncherApp) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val swipeUp = rememberSwipeUpConnection(onSwipeUp)
+    val overscroll = rememberOverscrollSwipes(swipes)
     LazyColumn(
         contentPadding = PaddingValues(start = 32.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
-        modifier = modifier.fillMaxWidth().nestedScroll(swipeUp),
+        modifier = modifier.fillMaxWidth().nestedScroll(overscroll),
     ) {
         when (view) {
             Rail.FAVORITES -> {
@@ -173,13 +203,6 @@ private fun AppList(
                 }
             }
 
-            ALL_APPS -> {
-                home.apps.groupBy { it.section }.forEach { (section, apps) ->
-                    item(key = "section/$section") { SectionLabel(section) }
-                    items(apps, key = { "app/" + it.app.key.id }) { entry("app/" + it.app.key.id, it.app) }
-                }
-            }
-
             else -> {
                 item(key = "section/$view") { SectionLabel(view) }
                 val apps = home.apps.filter { it.section == view }
@@ -189,27 +212,62 @@ private fun AppList(
     }
 }
 
-/** Dragging up past the end of the list (or flinging up) calls [onSwipeUp]. */
+/** What vertical swipes on home do. */
+internal class VerticalSwipes(
+    val onUp: () -> Unit,
+    val onDown: () -> Unit,
+)
+
+/**
+ * Swipes on parts of home that don't scroll (header, empty space). Only drags that start away from the screen
+ * edges reach an app, so system gesture navigation keeps working.
+ */
+private fun Modifier.verticalSwipes(swipes: () -> VerticalSwipes): Modifier =
+    pointerInput(Unit) {
+        var total = 0f
+        val threshold = SwipeDistance.toPx()
+        detectVerticalDragGestures(
+            onDragStart = { total = 0f },
+            onDragEnd = {
+                when {
+                    total < -threshold -> swipes().onUp()
+                    total > threshold -> swipes().onDown()
+                }
+            },
+            onVerticalDrag = { change, dragAmount ->
+                change.consume()
+                total += dragAmount
+            },
+        )
+    }
+
+/** Dragging past the end of the list (up) or its top (down), or flinging there, counts as a swipe. */
 @Composable
-private fun rememberSwipeUpConnection(onSwipeUp: () -> Unit): NestedScrollConnection {
-    val current by rememberUpdatedState(onSwipeUp)
-    val threshold = with(LocalDensity.current) { SwipeUpDistance.toPx() }
+private fun rememberOverscrollSwipes(swipes: () -> VerticalSwipes): NestedScrollConnection {
+    val current by rememberUpdatedState(swipes)
+    val threshold = with(LocalDensity.current) { SwipeDistance.toPx() }
     return remember(threshold) {
         object : NestedScrollConnection {
             private var pulled = 0f
+
+            // One swipe per gesture, however far the finger goes.
+            private var fired = false
 
             override fun onPostScroll(
                 consumed: Offset,
                 available: Offset,
                 source: NestedScrollSource,
             ): Offset {
-                if (source != NestedScrollSource.UserInput) return Offset.Zero
-                // Finger up = negative y: content would move up, but the list is already at its end.
-                pulled = if (available.y < 0f) pulled - available.y else 0f
-                if (pulled > threshold) {
-                    pulled = 0f
-                    current()
+                if (source != NestedScrollSource.UserInput || fired) return Offset.Zero
+                // Finger up = negative y. Keep summing in one direction; a change of direction starts over.
+                pulled =
+                    if (available.y == 0f || (available.y < 0f) != (pulled < 0f)) available.y else pulled + available.y
+                when {
+                    pulled < -threshold -> current().onUp()
+                    pulled > threshold -> current().onDown()
+                    else -> return Offset.Zero
                 }
+                fired = true
                 return Offset.Zero
             }
 
@@ -217,8 +275,14 @@ private fun rememberSwipeUpConnection(onSwipeUp: () -> Unit): NestedScrollConnec
                 consumed: Velocity,
                 available: Velocity,
             ): Velocity {
+                if (!fired) {
+                    when {
+                        available.y < -SWIPE_VELOCITY -> current().onUp()
+                        available.y > SWIPE_VELOCITY -> current().onDown()
+                    }
+                }
+                fired = false
                 pulled = 0f
-                if (available.y < -SWIPE_UP_VELOCITY) current()
                 return Velocity.Zero
             }
         }
@@ -226,7 +290,7 @@ private fun rememberSwipeUpConnection(onSwipeUp: () -> Unit): NestedScrollConnec
 }
 
 @Composable
-private fun SectionLabel(section: String) {
+internal fun SectionLabel(section: String) {
     BasicText(
         section,
         style = PixelText.small.copy(color = PixelBuddyTheme.style.accent),
@@ -235,7 +299,7 @@ private fun SectionLabel(section: String) {
 }
 
 @Composable
-private fun AllAppsButton(onClick: () -> Unit) {
+private fun SearchButton(onClick: () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
         modifier =
@@ -245,14 +309,15 @@ private fun AllAppsButton(onClick: () -> Unit) {
                 .clickable(role = Role.Button, onClick = onClick),
     ) {
         BasicText(
-            "▲ " + stringResource(R.string.home_all_apps).uppercase(),
+            "▲ " + stringResource(R.string.home_search).uppercase(),
             style = PixelText.small.copy(color = PixelBuddyColors.Text),
         )
     }
 }
 
-private val SwipeUpDistance = 48.dp
-private const val SWIPE_UP_VELOCITY = 1500f
+private val SwipeDistance = 48.dp
+private const val SWIPE_VELOCITY = 1500f
+private val SearchScrim = PixelBuddyColors.Navy.copy(alpha = 0.82f)
 
 /** An app row with its menu while [menuOpen]; [onMenu] gets the app to open the menu, null to close it. */
 @Composable
@@ -264,8 +329,17 @@ private fun AppEntry(
     onAppClick: (LauncherApp) -> Unit,
     onAppAction: (AppAction) -> Unit,
     onMenu: (LauncherApp?) -> Unit,
+    highlight: List<IntRange> = emptyList(),
+    top: Boolean = false,
 ) {
-    AppRow(app = app, icon = { icon(app) }, onClick = { onAppClick(app) }, onLongClick = { onMenu(app) })
+    AppRow(
+        app = app,
+        icon = { icon(app) },
+        onClick = { onAppClick(app) },
+        onLongClick = { onMenu(app) },
+        highlight = highlight,
+        top = top,
+    )
     if (menuOpen) {
         AppMenu(
             app = app,
@@ -287,6 +361,8 @@ private fun AppRow(
     icon: @Composable () -> Unit,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    highlight: List<IntRange> = emptyList(),
+    top: Boolean = false,
 ) {
     val workLabel = stringResource(R.string.home_work_app)
     val optionsLabel = stringResource(R.string.home_app_options)
@@ -312,15 +388,19 @@ private fun AppRow(
                     onLongClick = onLongClick,
                     onClick = onClick,
                 ).semantics(mergeDescendants = true) { contentDescription = description }
+                // The top search result is what Enter opens.
+                .then(if (top) Modifier.background(PixelBuddyTheme.style.accent.copy(alpha = 0.16f)) else Modifier)
                 .padding(vertical = 4.dp),
     ) {
         icon()
         val style = PixelText.body
         val badge = SpanStyle(color = PixelBuddyTheme.style.accent, fontSize = PixelText.small.fontSize)
+        val matched = SpanStyle(color = PixelBuddyTheme.style.accent)
         BasicText(
             text =
                 buildAnnotatedString {
                     append(app.label)
+                    highlight.forEach { addStyle(matched, it.first, it.last + 1) }
                     if (!app.isMainProfile) {
                         withStyle(badge) { append("  $workLabel") }
                     }

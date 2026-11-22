@@ -10,7 +10,9 @@
     <string name="home_battery">Akku %1$s</string>
     <string name="home_battery_charging">Akku %1$s, wird geladen</string>
     <string name="home_battery_full">Akku voll</string>
-    <string name="home_all_apps">Alle Apps</string>
+    <string name="home_search">Suchen</string>
+    <string name="home_search_hint">Apps suchen</string>
+    <string name="home_search_empty">Keine Apps gefunden</string>
     <string name="home_favorites_hint">Halte eine App gedrückt, um sie zu den Favoriten hinzuzufügen.</string>
     <string name="home_app_options">App-Optionen</string>
     <string name="home_menu_add_favorite">Zu Favoriten hinzufügen</string>
