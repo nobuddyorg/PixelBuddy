@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Android 11 and older. Crash reports stay on the device (#22). -->
+<!--
+    Android 11 and older. Only the settings are backed up (#8): with an include rule everything else is left out,
+    e.g. crash reports (#22) and first-start state. Caches are never backed up.
+-->
 <full-backup-content>
-    <exclude domain="file" path="crash-reports/" />
+    <include domain="file" path="datastore/settings.json" />
 </full-backup-content>

@@ -12,4 +12,17 @@
     <string name="home_battery">Battery %1$s</string>
     <string name="home_battery_charging">Battery %1$s, charging</string>
     <string name="home_battery_full">Battery full</string>
+    <string name="home_all_apps">All apps</string>
+    <string name="home_favorites_hint">Long-press an app to add it to your favorites.</string>
+    <!-- Label of the long-press action on an app, announced by TalkBack. -->
+    <string name="home_app_options">App options</string>
+    <string name="home_menu_add_favorite">Add to favorites</string>
+    <string name="home_menu_remove_favorite">Remove from favorites</string>
+    <string name="home_menu_move_up">Move up</string>
+    <string name="home_menu_move_down">Move down</string>
+    <string name="home_menu_hide">Hide</string>
+    <string name="home_menu_app_info">App info</string>
+    <string name="home_menu_uninstall">Uninstall</string>
+    <string name="home_app_hidden">%1$s hidden. Show it again in the settings.</string>
+    <string name="home_action_failed">Not possible for %1$s</string>
 </resources>

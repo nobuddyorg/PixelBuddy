@@ -20,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyColors
 import java.time.ZoneId
@@ -33,12 +34,14 @@ data class OpenCrashReport(
 )
 
 /**
- * Settings. For now only "About" with the app version and the local crash reports (#22); the full settings follow
- * in #12. Stateless: [SettingsRoute] holds the state.
+ * Settings. For now the hidden apps (#8), "About" with the app version and the local crash reports (#22); the
+ * full settings follow in #12. Stateless: [SettingsRoute] holds the state.
  */
 @Composable
 fun SettingsScreen(
     appVersion: String,
+    hiddenApps: List<LauncherApp>,
+    onShowApp: (LauncherApp) -> Unit,
     reports: List<CrashReport>,
     openReport: OpenCrashReport?,
     onOpenReport: (String) -> Unit,
@@ -58,7 +61,7 @@ fun SettingsScreen(
                 .padding(horizontal = 24.dp, vertical = 16.dp),
     ) {
         if (openReport == null) {
-            AboutContent(appVersion, reports, zone, onOpenReport, onDeleteAllReports)
+            MainContent(appVersion, hiddenApps, onShowApp, reports, zone, onOpenReport, onDeleteAllReports)
         } else {
             BackHandler(onBack = onCloseReport)
             CrashReportContent(openReport, onCloseReport, onShareReport, onDeleteReport)
@@ -67,8 +70,10 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun AboutContent(
+private fun MainContent(
     appVersion: String,
+    hiddenApps: List<LauncherApp>,
+    onShowApp: (LauncherApp) -> Unit,
     reports: List<CrashReport>,
     zone: ZoneId,
     onOpenReport: (String) -> Unit,
@@ -79,6 +84,18 @@ private fun AboutContent(
 
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
         Title(stringResource(R.string.settings_title))
+
+        SectionHeader(stringResource(R.string.settings_hidden_apps))
+        if (hiddenApps.isEmpty()) {
+            BasicText(stringResource(R.string.settings_hidden_apps_empty), style = BodyStyle)
+        } else {
+            val showAgain = stringResource(R.string.settings_hidden_app_show)
+            hiddenApps.forEach { app ->
+                val label =
+                    if (app.isMainProfile) app.label else stringResource(R.string.settings_work_app, app.label)
+                ListRow(title = label, subtitle = showAgain, onClick = { onShowApp(app) })
+            }
+        }
 
         SectionHeader(stringResource(R.string.settings_about))
         BasicText(stringResource(R.string.settings_version, appVersion), style = BodyStyle)

@@ -5,9 +5,12 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
+import android.content.pm.PackageManager
 import android.graphics.Rect
+import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -32,10 +35,31 @@ interface AppSource {
         user: UserHandle,
         sourceBounds: Rect?,
     )
+
+    /** Opens the system's app info screen. */
+    fun showDetails(
+        component: ComponentName,
+        user: UserHandle,
+        sourceBounds: Rect?,
+    )
+
+    /** Starts the system's uninstall confirmation. */
+    fun uninstall(
+        packageName: String,
+        user: UserHandle,
+    )
+
+    /**
+     * True only if [key]'s app is certainly gone: its profile was removed, or its package is uninstalled and not
+     * waiting to be (re)installed. Unknown states (locked or paused profile) give false.
+     */
+    fun isRemoved(key: AppKey): Boolean
 }
 
 class LauncherAppsSource(
     private val context: Context,
+    /** Packages with a pending install in a profile; by default from all install sessions the launcher sees. */
+    private val pendingInstalls: ((UserHandle) -> Set<String>)? = null,
 ) : AppSource {
     private val launcherApps = context.getSystemService(LauncherApps::class.java)
     private val userManager = context.getSystemService(UserManager::class.java)
@@ -61,6 +85,7 @@ class LauncherAppsSource(
             component = componentName,
             user = user,
             isMainProfile = user == Process.myUserHandle(),
+            canUninstall = applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM == 0,
         )
 
     override fun changes(): Flow<Unit> =
@@ -154,4 +179,61 @@ class LauncherAppsSource(
     ) {
         launcherApps.startMainActivity(component, user, sourceBounds, null)
     }
+
+    override fun showDetails(
+        component: ComponentName,
+        user: UserHandle,
+        sourceBounds: Rect?,
+    ) {
+        launcherApps.startAppDetailsActivity(component, user, sourceBounds, null)
+    }
+
+    override fun uninstall(
+        packageName: String,
+        user: UserHandle,
+    ) {
+        val intent =
+            Intent(Intent.ACTION_DELETE, Uri.fromParts("package", packageName, null))
+                .putExtra(Intent.EXTRA_USER, user)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+        context.startActivity(intent)
+    }
+
+    override fun isRemoved(key: AppKey): Boolean {
+        val user = userManager.getUserForSerialNumber(key.userSerial) ?: return true
+        if (!userManager.isUserUnlocked(user) || userManager.isQuietModeEnabled(user)) return false
+        val installed =
+            try {
+                val info =
+                    launcherApps.getApplicationInfo(
+                        key.packageName,
+                        PackageManager.MATCH_UNINSTALLED_PACKAGES,
+                        user,
+                    )
+                info != null && info.flags and ApplicationInfo.FLAG_INSTALLED != 0
+            } catch (_: PackageManager.NameNotFoundException) {
+                false
+            } catch (_: SecurityException) {
+                return false
+            }
+        return !installed && !isBeingInstalled(key.packageName, user)
+    }
+
+    /** Pending installs, e.g. apps restored from a backup that are still downloading. */
+    private fun isBeingInstalled(
+        packageName: String,
+        user: UserHandle,
+    ): Boolean =
+        try {
+            val pending =
+                pendingInstalls?.invoke(user)
+                    ?: launcherApps.allPackageInstallerSessions
+                        .filter {
+                            it.user == user
+                        }.mapNotNull { it.appPackageName }
+            packageName in pending
+        } catch (_: SecurityException) {
+            // Only the default home app may list sessions; without them, keep the entry.
+            true
+        }
 }

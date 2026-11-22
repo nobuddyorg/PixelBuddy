@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.pixelbuddy.android.library)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -10,6 +11,8 @@ dependencies {
     api(projects.core.pixelEngine)
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.datastore.core)
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)

@@ -13,4 +13,8 @@
     <string name="crash_report_share">Share</string>
     <string name="crash_report_share_title">Share crash report</string>
     <string name="crash_report_delete">Delete</string>
+    <string name="settings_hidden_apps">Hidden apps</string>
+    <string name="settings_hidden_apps_empty">No hidden apps. Long-press an app on home to hide it.</string>
+    <string name="settings_hidden_app_show">Tap to show it on home again</string>
+    <string name="settings_work_app">%1$s (work)</string>
 </resources>

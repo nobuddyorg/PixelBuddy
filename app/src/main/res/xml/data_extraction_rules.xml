@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Android 12 and newer. Crash reports stay on the device (#22). -->
+<!--
+    Android 12 and newer. Only the settings are backed up and transferred (#8): with an include rule everything
+    else is left out, e.g. crash reports (#22) and first-start state. Caches are never backed up.
+-->
 <data-extraction-rules>
     <cloud-backup>
-        <exclude domain="file" path="crash-reports/" />
+        <include domain="file" path="datastore/settings.json" />
     </cloud-backup>
     <device-transfer>
-        <exclude domain="file" path="crash-reports/" />
+        <include domain="file" path="datastore/settings.json" />
     </device-transfer>
 </data-extraction-rules>

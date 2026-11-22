@@ -34,6 +34,7 @@ class MainActivity : ComponentActivity() {
             PixelBuddyTheme {
                 HomeRoute(
                     repository = appContainer.appRepository,
+                    settings = appContainer.settings,
                     icons = appContainer.iconRepository,
                     onOpenSettings = ::openSettings,
                 )

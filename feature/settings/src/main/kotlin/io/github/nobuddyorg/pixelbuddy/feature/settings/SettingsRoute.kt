@@ -13,18 +13,26 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReportStore
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** Settings with state: loads crash reports from [store] off the main thread. */
+/**
+ * Settings with state: loads crash reports from [store] off the main thread and lists [hiddenApps];
+ * [onShowApp] shows a hidden app on home again.
+ */
 @Composable
 fun SettingsRoute(
     store: CrashReportStore,
     appVersion: String,
+    hiddenApps: Flow<List<LauncherApp>>,
+    onShowApp: (LauncherApp) -> Unit,
     modifier: Modifier = Modifier,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
@@ -34,6 +42,7 @@ fun SettingsRoute(
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
     var openReport by remember { mutableStateOf<OpenCrashReport?>(null) }
     var reload by remember { mutableIntStateOf(0) }
+    val hidden by hiddenApps.collectAsStateWithLifecycle(initialValue = emptyList())
 
     LaunchedEffect(reload) {
         reports = withContext(ioDispatcher) { store.list() }
@@ -46,6 +55,8 @@ fun SettingsRoute(
 
     SettingsScreen(
         appVersion = appVersion,
+        hiddenApps = hidden,
+        onShowApp = onShowApp,
         reports = reports,
         openReport = openReport,
         onOpenReport = { openId = it },
