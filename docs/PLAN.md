@@ -41,6 +41,7 @@ accent colour (orange default). Icons: pixel presets (#6) and automatic neon out
 :core:design-system   colors, font, pixel clock glyphs, dithered gradient, components
 :core:pixel-engine    pure Kotlin/JVM: downscale, alpha threshold, outline, palettes, quantization, dithering, outline-icon geometry
 :core:search          pure Kotlin/JVM: app search matching and ranking (accents, prefix, word starts, initials)
+:baseline-profile     startup macrobenchmark and baseline profile generator for :app (runs on a device or emulator)
 ```
 
 No DI framework, no navigation library, no Room. One typed DataStore with versioned JSON (kotlinx.serialization).
