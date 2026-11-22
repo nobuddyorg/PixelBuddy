@@ -27,10 +27,12 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppSorter
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppSource
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.BatteryState
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
@@ -78,14 +80,31 @@ class HomeScreenTest {
     @get:Rule
     val compose = createComposeRule()
 
+    @get:Rule
+    val folder = TemporaryFolder()
+
+    private val icons by lazy { FakeIcons.repository(folder.root) }
+
     private fun show(
         apps: List<AppListEntry> = sampleApps,
         onAppClick: (LauncherApp) -> Unit = {},
         onOpenSettings: () -> Unit = {},
     ) = compose.setContent {
-        HomeScreen(apps, onAppClick, onOpenSettings) {
-            HomeHeader(LocalDateTime.of(2026, 11, 6, 21, 45), true, BatteryState(58, charging = false), {}, {})
-        }
+        HomeScreen(
+            apps = apps,
+            onAppClick = onAppClick,
+            onOpenSettings = onOpenSettings,
+            header = {
+                HomeHeader(
+                    LocalDateTime.of(2026, 11, 6, 21, 45),
+                    true,
+                    BatteryState(58, charging = false),
+                    {},
+                    {},
+                )
+            },
+            icon = { app -> AppIcon(app, icons, IconPreset.Default.style) },
+        )
     }
 
     @Test
@@ -142,7 +161,7 @@ class HomeScreenTest {
     @Test
     fun `failed launch shows a message`() {
         val repository = AppRepository(FailingSource, MutableStateFlow(emptySet()))
-        compose.setContent { HomeRoute(repository, onOpenSettings = {}) }
+        compose.setContent { HomeRoute(repository, icons, onOpenSettings = {}) }
         compose.waitUntil { ShadowToast.shownToastCount() > 0 || hasApp("Maps") }
 
         compose.onNodeWithContentDescription("Maps").performClick()
@@ -152,6 +171,14 @@ class HomeScreenTest {
 
     private fun hasApp(label: String) =
         compose.onAllNodesWithContentDescription(label).fetchSemanticsNodes().isNotEmpty()
+
+    @Test
+    fun `icon size snaps to whole pixels per icon pixel`() {
+        // S24: 48 dp = 126 px; 24 grid -> 5 px per icon pixel = 120 px.
+        assertEquals(120, snappedIconPx(126f, 24))
+        assertEquals(112, snappedIconPx(126f, 16))
+        assertEquals(12, snappedIconPx(5f, 12))
+    }
 
     @Test
     fun `screenshot English`() {

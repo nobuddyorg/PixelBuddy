@@ -13,7 +13,15 @@ public object PixelEngine {
         style: IconStyle,
     ): PixelImage {
         val small = downscale(source, style.grid)
-        val solid = applyAlphaThreshold(small, style.alphaThreshold)
+        val crisp = applyAlphaThreshold(small, style.alphaThreshold)
+        val solid =
+            if (style.shape ==
+                IconShape.Masked
+            ) {
+                applyMask(crisp, inset = if (style.outline) 1 else 0)
+            } else {
+                crisp
+            }
         val colored = applyPalette(solid, style)
         return if (style.outline) addOutline(colored, style.outlineColor) else colored
     }
@@ -67,6 +75,19 @@ public object PixelEngine {
         image: PixelImage,
         threshold: Int,
     ): PixelImage = image.map { c -> if (Argb.alpha(c) >= threshold) Argb.opaque(c) else 0 }
+
+    /** Clips to a pixel-rounded square [inset] pixels inside the image edge. */
+    internal fun applyMask(
+        image: PixelImage,
+        inset: Int,
+    ): PixelImage {
+        val mask = RoundedMask.of(image.width, inset)
+        return PixelImage(
+            image.width,
+            image.height,
+            IntArray(image.pixels.size) { if (mask[it]) image.pixels[it] else 0 },
+        )
+    }
 
     internal fun applyPalette(
         image: PixelImage,
@@ -182,6 +203,28 @@ public object PixelEngine {
 
     private inline fun PixelImage.map(transform: (Int) -> Int): PixelImage =
         PixelImage(width, height, IntArray(pixels.size) { transform(pixels[it]) })
+}
+
+/** A square with pixel-rounded corners, radius a quarter of the side. */
+internal object RoundedMask {
+    fun of(
+        size: Int,
+        inset: Int,
+    ): BooleanArray {
+        val side = size - 2 * inset
+        val radius = side / 4f
+        return BooleanArray(size * size) { i ->
+            val x = i % size - inset
+            val y = i / size - inset
+            if (x !in 0 until side || y !in 0 until side) return@BooleanArray false
+            // Distance from the pixel centre to the nearest corner circle centre.
+            val cx = (x + 0.5f).coerceIn(radius, side - radius)
+            val cy = (y + 0.5f).coerceIn(radius, side - radius)
+            val dx = x + 0.5f - cx
+            val dy = y + 0.5f - cy
+            dx * dx + dy * dy <= radius * radius
+        }
+    }
 }
 
 /** Deterministic median-cut colour quantization on primitive arrays. */

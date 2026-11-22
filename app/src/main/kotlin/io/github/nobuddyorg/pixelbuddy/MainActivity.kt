@@ -32,7 +32,11 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             PixelBuddyTheme {
-                HomeRoute(repository = appContainer.appRepository, onOpenSettings = ::openSettings)
+                HomeRoute(
+                    repository = appContainer.appRepository,
+                    icons = appContainer.iconRepository,
+                    onOpenSettings = ::openSettings,
+                )
             }
         }
 

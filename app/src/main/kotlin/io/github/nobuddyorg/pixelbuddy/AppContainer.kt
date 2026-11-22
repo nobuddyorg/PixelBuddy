@@ -6,6 +6,9 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherAppsSource
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReportStore
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.DeviceInfo
+import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconCache
+import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
+import io.github.nobuddyorg.pixelbuddy.core.data.icons.LauncherIconLoader
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.io.File
 
@@ -21,7 +24,13 @@ class AppContainer(
     /** Hidden apps; kept in memory until settings storage arrives (#8). */
     val hiddenApps: MutableStateFlow<Set<AppKey>> = MutableStateFlow(emptySet())
 
-    val appRepository: AppRepository = AppRepository(LauncherAppsSource(context), hiddenApps)
+    /** Pixelated icons, cached in memory and in the cache directory (#7). */
+    val iconRepository: IconRepository =
+        IconRepository(LauncherIconLoader(context), IconCache(File(context.cacheDir, "icons")))
+
+    /** Every app list reload also re-checks icons, so updates and icon themes show up. */
+    val appRepository: AppRepository =
+        AppRepository(LauncherAppsSource(context), hiddenApps, onReload = iconRepository::recheck)
 
     companion object {
         const val CRASH_REPORTS_DIR = "crash-reports"
