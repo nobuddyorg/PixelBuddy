@@ -6,7 +6,10 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -51,8 +54,19 @@ class CrashReportingTest {
     }
 
     @Test
+    fun `a new install shows the setup and skipping it shows home`() {
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("▶ Skip setup").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("▶ Skip setup").performClick()
+
+        val home = SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Home screen")
+        compose.waitUntil(5_000) { compose.onAllNodes(home).fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    @Test
     fun `long press on home opens the settings`() {
-        // Home shows once the stored appearance is read.
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("▶ Skip setup").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("▶ Skip setup").performClick()
+        // Home shows once the setup is stored as done.
         val home = SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Home screen")
         compose.waitUntil(5_000) { compose.onAllNodes(home).fetchSemanticsNodes().isNotEmpty() }
         compose.onRoot().performTouchInput { longClick() }

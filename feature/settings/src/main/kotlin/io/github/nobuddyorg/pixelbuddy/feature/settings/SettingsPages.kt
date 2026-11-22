@@ -102,6 +102,13 @@ internal fun MainPage(
         R.string.settings_about,
         stringResource(R.string.settings_about_summary, state.appVersion),
     )
+    if (state.canRunSetup) {
+        ListRow(
+            title = stringResource(R.string.settings_run_setup),
+            subtitle = stringResource(R.string.settings_run_setup_summary),
+            onClick = { onAction(SettingsAction.RunSetup) },
+        )
+    }
 }
 
 @Composable

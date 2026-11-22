@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -70,6 +71,8 @@ data class SettingsState(
     val systemIs24Hour: Boolean = true,
     /** The font licence, read from the app's assets. */
     val fontLicense: String? = null,
+    /** Whether "Run setup again" is offered. */
+    val canRunSetup: Boolean = true,
 )
 
 /** Something the user did in the settings. */
@@ -92,6 +95,9 @@ sealed interface SettingsAction {
     ) : SettingsAction
 
     data object OpenSource : SettingsAction
+
+    /** Starts the first-start setup again, on home. */
+    data object RunSetup : SettingsAction
 
     data class OpenReport(
         val id: String,
@@ -153,7 +159,7 @@ fun SettingsScreen(
 @Composable
 internal fun SettingsFrame(
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
         modifier =

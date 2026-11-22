@@ -33,6 +33,8 @@ class SettingsRepository(
 
     val gestures: Flow<Gestures> = settings.map { it.gestures }.distinctUntilChanged()
 
+    val setupStep: Flow<SetupStep> = settings.map { it.setup }.distinctUntilChanged()
+
     suspend fun update(transform: (Settings) -> Settings): Settings = store.updateData { transform(it) }
 
     suspend fun updateWeather(transform: (WeatherSettings) -> WeatherSettings) {

@@ -144,6 +144,23 @@ class SettingsRepositoryTest {
         }
 
     @Test
+    fun `the setup starts at the home app and its steps go both ways`() =
+        runTest {
+            val job = Job()
+            val settings = open(job)
+
+            settings.setupStep.test {
+                assertEquals(SetupStep.HomeApp, awaitItem())
+                settings.update { it.copy(setup = it.setup.next) }
+                assertEquals(SetupStep.Favorites, awaitItem())
+            }
+            job.cancel()
+            assertEquals(SetupStep.Done, SetupStep.Done.next)
+            assertEquals(SetupStep.HomeApp, SetupStep.HomeApp.previous)
+            assertEquals(SetupStep.Favorites, SetupStep.Weather.previous)
+        }
+
+    @Test
     fun `the long press opens the settings while no swipe does`() {
         assertEquals(GestureAction.Settings, Gestures(longPress = GestureAction.Search).effectiveLongPress)
         assertEquals(

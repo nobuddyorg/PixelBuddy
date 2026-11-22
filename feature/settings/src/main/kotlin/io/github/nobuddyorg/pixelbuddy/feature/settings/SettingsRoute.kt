@@ -1,13 +1,9 @@
 package io.github.nobuddyorg.pixelbuddy.feature.settings
 
-import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.text.format.DateFormat
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
@@ -58,6 +53,8 @@ fun SettingsRoute(
     hiddenApps: Flow<List<LauncherApp>> = flowOf(emptyList()),
     apps: Flow<List<LauncherApp>> = flowOf(emptyList()),
     searchPlaces: suspend (String) -> List<WeatherPlace> = { emptyList() },
+    /** Runs the setup again (it shows on home); null leaves the entry out. */
+    onRunSetup: (() -> Unit)? = null,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
@@ -77,14 +74,14 @@ fun SettingsRoute(
     val updateWeather: ((WeatherSettings) -> WeatherSettings) -> Unit = { change ->
         onUpdate { it.copy(weather = change(it.weather)) }
     }
-    val useApproximate = {
-        updateWeather { it.copy(enabled = true, approximateLocation = true) }
-        page = SettingsPage.Weather
-    }
-    val locationPermission =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) useApproximate() else locationDenied = true
-        }
+    val useApproximate =
+        rememberApproximateLocation(
+            onGranted = {
+                updateWeather { it.copy(enabled = true, approximateLocation = true) }
+                page = SettingsPage.Weather
+            },
+            onDenied = { locationDenied = true },
+        )
 
     var reports by remember { mutableStateOf(emptyList<CrashReport>()) }
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -120,13 +117,7 @@ fun SettingsRoute(
                         updateWeather { it.copy(enabled = true, place = place, approximateLocation = false) }
                         page = SettingsPage.Weather
                     },
-                    onApproximate = {
-                        if (context.hasCoarseLocation()) {
-                            useApproximate()
-                        } else {
-                            locationPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-                        }
-                    },
+                    onApproximate = useApproximate,
                     onBack = { page = SettingsPage.Weather },
                     message = if (locationDenied) stringResource(R.string.weather_location_denied) else null,
                 )
@@ -198,6 +189,7 @@ fun SettingsRoute(
             wallpaper = wallpaper,
             systemIs24Hour = systemIs24Hour,
             fontLicense = fontLicense,
+            canRunSetup = onRunSetup != null,
         )
 
     SettingsScreen(
@@ -229,6 +221,10 @@ fun SettingsRoute(
 
                 SettingsAction.OpenSource -> {
                     context.openWebPage(SOURCE_URL)
+                }
+
+                SettingsAction.RunSetup -> {
+                    onRunSetup?.invoke()
                 }
 
                 is SettingsAction.OpenReport -> {
@@ -275,10 +271,6 @@ private fun Context.readAsset(path: String): String? =
     } catch (_: IOException) {
         null
     }
-
-private fun Context.hasCoarseLocation() =
-    ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) ==
-        PackageManager.PERMISSION_GRANTED
 
 private fun Context.openWebPage(url: String) {
     try {
