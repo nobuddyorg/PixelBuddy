@@ -2,6 +2,8 @@ package io.github.nobuddyorg.pixelbuddy
 
 import android.content.ComponentName
 import android.content.Intent
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onRoot
@@ -50,6 +52,9 @@ class CrashReportingTest {
 
     @Test
     fun `long press on home opens the settings`() {
+        // Home shows once the stored appearance is read.
+        val home = SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Home screen")
+        compose.waitUntil(5_000) { compose.onAllNodes(home).fetchSemanticsNodes().isNotEmpty() }
         compose.onRoot().performTouchInput { longClick() }
 
         val started = generateSequence { shadowOf(app).nextStartedActivity }.toList()

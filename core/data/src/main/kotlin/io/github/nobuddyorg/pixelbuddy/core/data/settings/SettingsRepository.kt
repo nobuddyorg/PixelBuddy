@@ -29,41 +29,37 @@ class SettingsRepository(
 
     val weather: Flow<WeatherSettings> = settings.map { it.weather }.distinctUntilChanged()
 
+    val appearance: Flow<Appearance> = settings.map { it.appearance }.distinctUntilChanged()
+
+    val gestures: Flow<Gestures> = settings.map { it.gestures }.distinctUntilChanged()
+
     suspend fun update(transform: (Settings) -> Settings): Settings = store.updateData { transform(it) }
 
     suspend fun updateWeather(transform: (WeatherSettings) -> WeatherSettings) {
         update { it.copy(weather = transform(it.weather)) }
     }
 
-    /** Adds [app] at the end of the favorites; does nothing if it is one already. */
     suspend fun addFavorite(app: AppKey) {
-        update { s -> if (app in s.favorites) s else s.copy(favorites = s.favorites + app) }
+        update { it.withFavorite(app) }
     }
 
     suspend fun removeFavorite(app: AppKey) {
-        update { s -> s.copy(favorites = s.favorites - app) }
+        update { it.withoutFavorite(app) }
     }
 
-    /** Moves favorite [app] by [offset] places (negative: up), clamped to the list. */
     suspend fun moveFavorite(
         app: AppKey,
         offset: Int,
     ) {
-        update { s ->
-            val from = s.favorites.indexOf(app)
-            if (from < 0) return@update s
-            val to = (from + offset).coerceIn(0, s.favorites.lastIndex)
-            s.copy(favorites = s.favorites.toMutableList().apply { add(to, removeAt(from)) })
-        }
+        update { it.withFavoriteMoved(app, offset) }
     }
 
-    /** Hides [app] from home; a hidden app is no favorite. */
     suspend fun hide(app: AppKey) {
-        update { s -> s.copy(hidden = s.hidden + app, favorites = s.favorites - app) }
+        update { it.withHidden(app) }
     }
 
     suspend fun unhide(app: AppKey) {
-        update { s -> s.copy(hidden = s.hidden - app) }
+        update { it.withShown(app) }
     }
 
     override suspend fun storedApps(): Set<AppKey> = settings.first().appKeys

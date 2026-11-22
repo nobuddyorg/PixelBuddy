@@ -5,13 +5,9 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.text.format.DateFormat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,17 +21,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReportStore
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.TemperatureUnit
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherPlace
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherSettings
-import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyColors
+import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyTheme
 import io.github.nobuddyorg.pixelbuddy.core.weather.isFahrenheit
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -43,124 +39,57 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.IOException
 
 /**
- * Settings with state: loads crash reports from [store] off the main thread and lists [hiddenApps];
- * [onShowApp] shows a hidden app on home again. Weather: [weatherSettings] changed through [onUpdateWeather],
- * places found with [searchPlaces] (network, only while the user searches), [apps] to open with a tap on it.
+ * Settings with state. [settings] are changed through [onUpdate] and apply on home at once. [favoriteApps] and
+ * [hiddenApps] are the apps behind those settings, [apps] every app (to open with a tap on the weather). Crash
+ * reports are loaded from [store] off the main thread; places are found with [searchPlaces] (network, only while
+ * the user searches). "Set as wallpaper" renders the sky of the current [PixelBuddyTheme].
  */
 @Composable
 fun SettingsRoute(
     store: CrashReportStore,
     appVersion: String,
-    hiddenApps: Flow<List<LauncherApp>>,
-    onShowApp: (LauncherApp) -> Unit,
+    settings: Flow<Settings>,
+    onUpdate: ((Settings) -> Settings) -> Unit,
     modifier: Modifier = Modifier,
-    weatherSettings: Flow<WeatherSettings> = flowOf(WeatherSettings()),
-    onUpdateWeather: ((WeatherSettings) -> WeatherSettings) -> Unit = {},
-    searchPlaces: suspend (String) -> List<WeatherPlace> = { emptyList() },
+    favoriteApps: Flow<List<LauncherApp>> = flowOf(emptyList()),
+    hiddenApps: Flow<List<LauncherApp>> = flowOf(emptyList()),
     apps: Flow<List<LauncherApp>> = flowOf(emptyList()),
+    searchPlaces: suspend (String) -> List<WeatherPlace> = { emptyList() },
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
-    val weather by weatherSettings.collectAsStateWithLifecycle(initialValue = WeatherSettings())
+    val scope = rememberCoroutineScope()
+    val style = PixelBuddyTheme.style
+    // Null until read, so the stored values never flash up as defaults first.
+    val stored by settings.collectAsStateWithLifecycle(initialValue = null)
+    val favorites by favoriteApps.collectAsStateWithLifecycle(initialValue = emptyList())
+    val hidden by hiddenApps.collectAsStateWithLifecycle(initialValue = emptyList())
     val allApps by apps.collectAsStateWithLifecycle(initialValue = emptyList())
-    var page by rememberSaveable { mutableStateOf(PAGE_MAIN) }
+    var page by rememberSaveable { mutableStateOf(SettingsPage.Main) }
     var locationDenied by remember { mutableStateOf(false) }
+    var wallpaper by remember { mutableStateOf(WallpaperStatus.Idle) }
+    var fontLicense by remember { mutableStateOf<String?>(null) }
+    val systemIs24Hour = remember(context) { DateFormat.is24HourFormat(context) }
+
+    val updateWeather: ((WeatherSettings) -> WeatherSettings) -> Unit = { change ->
+        onUpdate { it.copy(weather = change(it.weather)) }
+    }
     val useApproximate = {
-        onUpdateWeather { it.copy(enabled = true, approximateLocation = true) }
-        page = PAGE_MAIN
+        updateWeather { it.copy(enabled = true, approximateLocation = true) }
+        page = SettingsPage.Weather
     }
     val locationPermission =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) useApproximate() else locationDenied = true
         }
 
-    when (page) {
-        PAGE_PLACE -> {
-            Page(modifier) {
-                WeatherPlaceContent(
-                    search = searchPlaces,
-                    onPick = { place ->
-                        onUpdateWeather { it.copy(enabled = true, place = place, approximateLocation = false) }
-                        page = PAGE_MAIN
-                    },
-                    onApproximate = {
-                        if (context.hasCoarseLocation()) {
-                            useApproximate()
-                        } else {
-                            locationPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-                        }
-                    },
-                    onBack = { page = PAGE_MAIN },
-                    message = if (locationDenied) stringResource(R.string.weather_location_denied) else null,
-                )
-            }
-            return
-        }
-
-        PAGE_TAP -> {
-            Page(modifier) {
-                WeatherTapAppContent(
-                    apps = allApps,
-                    onPick = { app ->
-                        onUpdateWeather { it.copy(tapApp = app?.key) }
-                        page = PAGE_MAIN
-                    },
-                    onBack = { page = PAGE_MAIN },
-                )
-            }
-            return
-        }
-    }
-    val weatherOptions =
-        WeatherOptions(
-            settings = weather,
-            tapAppLabel = weather.tapApp?.let { key -> allApps.firstOrNull { it.key == key }?.label },
-            systemFahrenheit = TemperatureUnit.System.isFahrenheit(LocalConfiguration.current.locales[0]),
-        )
-    val onWeather: (WeatherAction) -> Unit = { action ->
-        when (action) {
-            WeatherAction.Toggle -> {
-                val enable = !weather.enabled
-                onUpdateWeather { it.copy(enabled = enable) }
-                // Weather needs a place first.
-                if (enable && !weather.hasLocation) page = PAGE_PLACE
-            }
-
-            WeatherAction.ChoosePlace -> {
-                locationDenied = false
-                page = PAGE_PLACE
-            }
-
-            WeatherAction.CycleUnit -> {
-                onUpdateWeather {
-                    it.copy(
-                        unit =
-                            TemperatureUnit.entries[
-                                (it.unit.ordinal + 1) %
-                                    TemperatureUnit.entries.size,
-                            ],
-                    )
-                }
-            }
-
-            WeatherAction.ChooseTapApp -> {
-                page = PAGE_TAP
-            }
-
-            WeatherAction.OpenAttribution -> {
-                context.openWebPage(OPEN_METEO_URL)
-            }
-        }
-    }
-    val scope = rememberCoroutineScope()
     var reports by remember { mutableStateOf(emptyList<CrashReport>()) }
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
     var openReport by remember { mutableStateOf<OpenCrashReport?>(null) }
     var reload by remember { mutableIntStateOf(0) }
-    val hidden by hiddenApps.collectAsStateWithLifecycle(initialValue = emptyList())
-
     LaunchedEffect(reload) {
         reports = withContext(ioDispatcher) { store.list() }
     }
@@ -169,55 +98,183 @@ fun SettingsRoute(
         openReport = id?.let { withContext(ioDispatcher) { store.read(it) } }?.let { OpenCrashReport(id, it) }
         if (openReport == null) openId = null
     }
+    if (page == SettingsPage.Licenses) {
+        LaunchedEffect(Unit) {
+            fontLicense = withContext(ioDispatcher) { context.readAsset(FONT_LICENSE_ASSET) }
+        }
+    }
+
+    val current = stored
+    if (current == null) {
+        SettingsFrame(modifier) {}
+        return
+    }
+    val weather = current.weather
+
+    when (page) {
+        SettingsPage.WeatherPlace -> {
+            SettingsFrame(modifier) {
+                WeatherPlaceContent(
+                    search = searchPlaces,
+                    onPick = { place ->
+                        updateWeather { it.copy(enabled = true, place = place, approximateLocation = false) }
+                        page = SettingsPage.Weather
+                    },
+                    onApproximate = {
+                        if (context.hasCoarseLocation()) {
+                            useApproximate()
+                        } else {
+                            locationPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                        }
+                    },
+                    onBack = { page = SettingsPage.Weather },
+                    message = if (locationDenied) stringResource(R.string.weather_location_denied) else null,
+                )
+            }
+            return
+        }
+
+        SettingsPage.WeatherTap -> {
+            SettingsFrame(modifier) {
+                WeatherTapAppContent(
+                    apps = allApps,
+                    onPick = { app ->
+                        updateWeather { it.copy(tapApp = app?.key) }
+                        page = SettingsPage.Weather
+                    },
+                    onBack = { page = SettingsPage.Weather },
+                )
+            }
+            return
+        }
+
+        else -> {}
+    }
+
+    val onWeather: (WeatherAction) -> Unit = { action ->
+        when (action) {
+            WeatherAction.Toggle -> {
+                val enable = !weather.enabled
+                updateWeather { it.copy(enabled = enable) }
+                // Weather needs a place first.
+                if (enable && !weather.hasLocation) page = SettingsPage.WeatherPlace
+            }
+
+            WeatherAction.ChoosePlace -> {
+                locationDenied = false
+                page = SettingsPage.WeatherPlace
+            }
+
+            WeatherAction.CycleUnit -> {
+                updateWeather {
+                    it.copy(unit = TemperatureUnit.entries[(it.unit.ordinal + 1) % TemperatureUnit.entries.size])
+                }
+            }
+
+            WeatherAction.ChooseTapApp -> {
+                page = SettingsPage.WeatherTap
+            }
+
+            WeatherAction.OpenAttribution -> {
+                context.openWebPage(OPEN_METEO_URL)
+            }
+        }
+    }
+
+    val state =
+        SettingsState(
+            appVersion = appVersion,
+            settings = current,
+            favorites = favorites,
+            hiddenApps = hidden,
+            weather =
+                WeatherOptions(
+                    settings = weather,
+                    tapAppLabel = weather.tapApp?.let { key -> allApps.firstOrNull { it.key == key }?.label },
+                    systemFahrenheit = TemperatureUnit.System.isFahrenheit(LocalConfiguration.current.locales[0]),
+                ),
+            reports = reports,
+            openReport = openReport,
+            wallpaper = wallpaper,
+            systemIs24Hour = systemIs24Hour,
+            fontLicense = fontLicense,
+        )
 
     SettingsScreen(
-        appVersion = appVersion,
-        hiddenApps = hidden,
-        onShowApp = onShowApp,
-        weather = weatherOptions,
-        onWeather = onWeather,
-        reports = reports,
-        openReport = openReport,
-        onOpenReport = { openId = it },
-        onCloseReport = { openId = null },
-        onShareReport = { context.shareCrashReport(it.text) },
-        onDeleteReport = { id ->
-            scope.launch {
-                withContext(ioDispatcher) { store.delete(id) }
-                openId = null
-                reload++
-            }
-        },
-        onDeleteAllReports = {
-            scope.launch {
-                withContext(ioDispatcher) { store.deleteAll() }
-                reload++
+        page = page,
+        state = state,
+        onAction = { action ->
+            when (action) {
+                is SettingsAction.Navigate -> {
+                    page = action.page
+                    wallpaper = WallpaperStatus.Idle
+                }
+
+                is SettingsAction.Update -> {
+                    onUpdate(action.change)
+                }
+
+                is SettingsAction.SetWallpaper -> {
+                    if (wallpaper != WallpaperStatus.Working) {
+                        wallpaper = WallpaperStatus.Working
+                        scope.launch {
+                            wallpaper = withContext(ioDispatcher) { SkyWallpaper.set(context, style, action.target) }
+                        }
+                    }
+                }
+
+                is SettingsAction.Weather -> {
+                    onWeather(action.action)
+                }
+
+                SettingsAction.OpenSource -> {
+                    context.openWebPage(SOURCE_URL)
+                }
+
+                is SettingsAction.OpenReport -> {
+                    openId = action.id
+                }
+
+                SettingsAction.CloseReport -> {
+                    openId = null
+                }
+
+                is SettingsAction.ShareReport -> {
+                    context.shareCrashReport(action.report.text)
+                }
+
+                is SettingsAction.DeleteReport -> {
+                    scope.launch {
+                        withContext(ioDispatcher) { store.delete(action.id) }
+                        openId = null
+                        reload++
+                    }
+                }
+
+                SettingsAction.DeleteAllReports -> {
+                    scope.launch {
+                        withContext(ioDispatcher) { store.deleteAll() }
+                        reload++
+                    }
+                }
             }
         },
         modifier = modifier,
     )
 }
 
-/** A plain settings page with the same frame as [SettingsScreen]. */
-@Composable
-private fun Page(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .background(PixelBuddyColors.Navy)
-                .safeDrawingPadding()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-    ) { content() }
-}
-
-private const val PAGE_MAIN = "main"
-private const val PAGE_PLACE = "place"
-private const val PAGE_TAP = "tap"
 private const val OPEN_METEO_URL = "https://open-meteo.com/"
+private const val SOURCE_URL = "https://github.com/nobuddyorg/PixelBuddy"
+
+/** Bundled by the design system together with the font. */
+private const val FONT_LICENSE_ASSET = "licenses/departure_mono_OFL.txt"
+
+private fun Context.readAsset(path: String): String? =
+    try {
+        assets.open(path).bufferedReader().use { it.readText() }
+    } catch (_: IOException) {
+        null
+    }
 
 private fun Context.hasCoarseLocation() =
     ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) ==

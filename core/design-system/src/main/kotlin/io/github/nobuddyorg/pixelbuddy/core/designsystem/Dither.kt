@@ -28,7 +28,8 @@ object Dither {
     /**
      * Renders a vertical gradient through [stops] (ARGB, top to bottom) into a [width] × [height] image.
      * The gradient is reduced to [bands] colours sampled along it; between two bands, pixels are dithered with a
-     * [matrixSize] Bayer matrix. Scaled up without filtering, this gives the banded pixel-art sky.
+     * [matrixSize] Bayer matrix. Scaled up without filtering, this gives the banded pixel-art sky. Not [dithered],
+     * every row gets its own colour: a smooth gradient.
      */
     fun verticalGradient(
         width: Int,
@@ -36,10 +37,19 @@ object Dither {
         stops: IntArray,
         bands: Int = 12,
         matrixSize: Int = 4,
+        dithered: Boolean = true,
     ): IntArray {
         require(width > 0 && height > 0) { "size must be positive" }
         require(stops.size >= 2) { "need at least two colours" }
         require(bands >= 2) { "need at least two bands" }
+        if (!dithered) {
+            val out = IntArray(width * height)
+            for (y in 0 until height) {
+                val color = interpolate(stops, if (height == 1) 0f else y.toFloat() / (height - 1))
+                out.fill(color, y * width, (y + 1) * width)
+            }
+            return out
+        }
         val palette = IntArray(bands) { interpolate(stops, it.toFloat() / (bands - 1)) }
         val matrix = bayerMatrix(matrixSize)
         val cells = (matrixSize * matrixSize).toFloat()
@@ -52,6 +62,47 @@ object Dither {
             }
         }
         return out
+    }
+
+    /**
+     * The full-size sky: [verticalGradient] at one pixel per [block] × [block] screen pixels, scaled up to
+     * [width] × [height] without filtering, with [scanline] (ARGB, translucent) blended over every other row of
+     * blocks if given. Matches what the home screen draws, so it can be the wallpaper.
+     */
+    fun skyPixels(
+        width: Int,
+        height: Int,
+        block: Int,
+        stops: IntArray,
+        dithered: Boolean = true,
+        scanline: Int? = null,
+    ): IntArray {
+        require(block >= 1) { "block must be at least 1" }
+        val smallWidth = (width + block - 1) / block
+        val smallHeight = (height + block - 1) / block
+        val small = verticalGradient(smallWidth, smallHeight, stops, dithered = dithered)
+        val out = IntArray(width * height)
+        for (y in 0 until height) {
+            val row = y / block
+            val darken = scanline != null && row % 2 == 0
+            for (x in 0 until width) {
+                val color = small[row * smallWidth + x / block]
+                out[y * width + x] = if (darken) blend(color, scanline) else color
+            }
+        }
+        return out
+    }
+
+    /** [over] (ARGB with alpha) drawn over the opaque colour [base]. */
+    internal fun blend(
+        base: Int,
+        over: Int,
+    ): Int {
+        val alpha = (over ushr 24) / 255f
+
+        fun channel(shift: Int) =
+            kotlin.math.round((base shr shift and 0xFF) * (1 - alpha) + (over shr shift and 0xFF) * alpha).toInt()
+        return (0xFF shl 24) or (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
     }
 
     /** The band for a fractional [position], pushed up or down by the dither [threshold] (-0.5..0.5). */

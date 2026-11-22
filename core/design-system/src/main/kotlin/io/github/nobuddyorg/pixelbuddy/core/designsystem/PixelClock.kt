@@ -17,7 +17,8 @@ import kotlin.math.max
 
 /**
  * Big clock drawn from [PixelGlyphs] as whole physical pixels, with a 1-glyph-pixel drop shadow.
- * [height] is a maximum: the glyph pixel size is rounded down so every pixel has the same size.
+ * [height] is a maximum: the glyph pixel size is rounded down so every pixel has the same size. A null [shadow]
+ * leaves the shadow out (its space stays, so the clock doesn't move).
  */
 @Composable
 fun PixelClock(
@@ -25,7 +26,7 @@ fun PixelClock(
     modifier: Modifier = Modifier,
     height: Dp = 72.dp,
     color: Color = PixelBuddyColors.Text,
-    shadow: Color = PixelBuddyColors.Shadow,
+    shadow: Color? = PixelBuddyColors.Shadow,
     contentDescription: String = text,
 ) {
     val layout = remember(text) { PixelGlyphs.layout(text) }
@@ -42,7 +43,9 @@ fun PixelClock(
     ) {
         val cell = cellPx.toFloat()
         val pixel = Size(cell, cell)
-        layout.pixels.forEach { (x, y) -> drawRect(shadow, Offset((x + 1) * cell, (y + 1) * cell), pixel) }
+        if (shadow != null) {
+            layout.pixels.forEach { (x, y) -> drawRect(shadow, Offset((x + 1) * cell, (y + 1) * cell), pixel) }
+        }
         layout.pixels.forEach { (x, y) -> drawRect(color, Offset(x * cell, y * cell), pixel) }
     }
 }

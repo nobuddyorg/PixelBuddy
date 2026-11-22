@@ -86,6 +86,19 @@ class SettingsSerializerTest {
         }
 
     @Test
+    fun `unknown appearance and gesture values fall back to the defaults`() =
+        runTest {
+            val settings =
+                SettingsSerializer().read(
+                    """{"version":1,"appearance":{"accent":"Ultraviolet","sky":"Mars","clockSize":"Huge",""" +
+                        """"scanlines":true},"gestures":{"swipeUp":"Teleport","longPress":"Search"}}""",
+                )
+
+            assertEquals(Appearance(scanlines = true), settings.appearance)
+            assertEquals(Gestures(longPress = GestureAction.Search), settings.gestures)
+        }
+
+    @Test
     fun `older files are upgraded step by step`() =
         runTest {
             // A made-up history: v1 called the favorites "pinned", v2 added a flag that v3 dropped again.

@@ -76,7 +76,43 @@ class DitherTest {
     }
 
     @Test
+    fun `without dithering every row has its own colour`() {
+        val stops = intArrayOf(0xFF000000.toInt(), 0xFF0000FF.toInt())
+        val pixels = Dither.verticalGradient(3, 256, stops, dithered = false)
+
+        val rows = (0 until 256).map { y -> pixels.sliceArray(y * 3 until y * 3 + 3).distinct().single() }
+        assertEquals(0xFF000000.toInt(), rows.first())
+        assertEquals(0xFF0000FF.toInt(), rows.last())
+        assertEquals(256, rows.distinct().size)
+    }
+
+    @Test
+    fun `the full-size sky repeats each sky pixel block by block`() {
+        val stops = intArrayOf(0xFF000000.toInt(), 0xFFFFFFFF.toInt())
+        val small = Dither.verticalGradient(4, 5, stops)
+        // 10 × 13 screen pixels in blocks of 3: the last column and row of blocks are cut off.
+        val full = Dither.skyPixels(10, 13, block = 3, stops = stops)
+
+        for (y in 0 until 13) {
+            for (x in 0 until 10) assertEquals(small[(y / 3) * 4 + x / 3], full[y * 10 + x], "at $x,$y")
+        }
+    }
+
+    @Test
+    fun `scanlines darken every other row of blocks`() {
+        val white = 0xFFFFFFFF.toInt()
+        val stops = intArrayOf(white, white)
+        val halfBlack = 0x80000000.toInt()
+        val full = Dither.skyPixels(2, 8, block = 2, stops = stops, scanline = halfBlack)
+
+        val rows = (0 until 8).map { full[it * 2] }
+        val dark = 0xFF7F7F7F.toInt()
+        assertEquals(listOf(dark, dark, white, white, dark, dark, white, white), rows)
+    }
+
+    @Test
     fun `invalid input is rejected`() {
+        assertFailsWith<IllegalArgumentException> { Dither.skyPixels(1, 1, block = 0, stops = intArrayOf(0, 0)) }
         assertFailsWith<IllegalArgumentException> { Dither.verticalGradient(0, 1, intArrayOf(0, 0)) }
         assertFailsWith<IllegalArgumentException> { Dither.verticalGradient(1, 1, intArrayOf(0)) }
     }

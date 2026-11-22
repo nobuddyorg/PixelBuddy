@@ -5,27 +5,24 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyColors
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 
 /** A crash report opened for reading. */
 data class OpenCrashReport(
@@ -33,26 +30,130 @@ data class OpenCrashReport(
     val text: String,
 )
 
+/** The pages of the settings; [parent] is where Back goes. */
+enum class SettingsPage {
+    Main,
+    Appearance,
+    Clock,
+    Icons,
+    Apps,
+    Gestures,
+    Wallpaper,
+    Weather,
+    WeatherPlace,
+    WeatherTap,
+    About,
+    Licenses,
+    CrashReports,
+    ;
+
+    val parent: SettingsPage
+        get() =
+            when (this) {
+                Main -> Main
+                WeatherPlace, WeatherTap -> Weather
+                Licenses, CrashReports -> About
+                else -> Main
+            }
+}
+
+/** Everything the settings show. [systemIs24Hour] is the phone's clock format, for "Like the phone". */
+data class SettingsState(
+    val appVersion: String,
+    val settings: Settings = Settings(),
+    val favorites: List<LauncherApp> = emptyList(),
+    val hiddenApps: List<LauncherApp> = emptyList(),
+    val weather: WeatherOptions = WeatherOptions(settings.weather),
+    val reports: List<CrashReport> = emptyList(),
+    val openReport: OpenCrashReport? = null,
+    val wallpaper: WallpaperStatus = WallpaperStatus.Idle,
+    val systemIs24Hour: Boolean = true,
+    /** The font licence, read from the app's assets. */
+    val fontLicense: String? = null,
+)
+
+/** Something the user did in the settings. */
+sealed interface SettingsAction {
+    data class Navigate(
+        val page: SettingsPage,
+    ) : SettingsAction
+
+    /** Changes the stored settings; applies on home at once. */
+    class Update(
+        val change: (Settings) -> Settings,
+    ) : SettingsAction
+
+    data class SetWallpaper(
+        val target: WallpaperTarget,
+    ) : SettingsAction
+
+    data class Weather(
+        val action: WeatherAction,
+    ) : SettingsAction
+
+    data object OpenSource : SettingsAction
+
+    data class OpenReport(
+        val id: String,
+    ) : SettingsAction
+
+    data object CloseReport : SettingsAction
+
+    data class ShareReport(
+        val report: OpenCrashReport,
+    ) : SettingsAction
+
+    data class DeleteReport(
+        val id: String,
+    ) : SettingsAction
+
+    data object DeleteAllReports : SettingsAction
+}
+
 /**
- * Settings. For now the hidden apps (#8), weather (#11), "About" with the app version and the local crash reports
- * (#22); the full settings follow in #12. Stateless: [SettingsRoute] holds the state.
+ * Settings (#12): a main page with one row per category, each opening its page. Stateless: [SettingsRoute] holds
+ * the state and carries out the [SettingsAction]s.
  */
 @Composable
 fun SettingsScreen(
-    appVersion: String,
-    hiddenApps: List<LauncherApp>,
-    onShowApp: (LauncherApp) -> Unit,
-    weather: WeatherOptions,
-    onWeather: (WeatherAction) -> Unit,
-    reports: List<CrashReport>,
-    openReport: OpenCrashReport?,
-    onOpenReport: (String) -> Unit,
-    onCloseReport: () -> Unit,
-    onShareReport: (OpenCrashReport) -> Unit,
-    onDeleteReport: (String) -> Unit,
-    onDeleteAllReports: () -> Unit,
+    page: SettingsPage,
+    state: SettingsState,
+    onAction: (SettingsAction) -> Unit,
     modifier: Modifier = Modifier,
     zone: ZoneId = ZoneId.systemDefault(),
+) {
+    val report = state.openReport
+    // One handler for every page, so Back always goes to the page around this one.
+    BackHandler(enabled = report != null || page != SettingsPage.Main) {
+        onAction(if (report != null) SettingsAction.CloseReport else SettingsAction.Navigate(page.parent))
+    }
+    SettingsFrame(modifier) {
+        if (report != null) {
+            CrashReportContent(report, onAction)
+            return@SettingsFrame
+        }
+        // Every page starts at its top.
+        key(page) {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                if (page != SettingsPage.Main) {
+                    TextButton(
+                        stringResource(R.string.action_back),
+                        { onAction(SettingsAction.Navigate(page.parent)) },
+                        color = TextColor,
+                    )
+                }
+                Title(stringResource(page.title))
+                PageContent(page, state, onAction, zone)
+            }
+        }
+    }
+}
+
+/** The frame of every settings page: background and system bar insets. */
+@Composable
+internal fun SettingsFrame(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
 ) {
     Column(
         modifier =
@@ -61,93 +162,79 @@ fun SettingsScreen(
                 .background(PixelBuddyColors.Navy)
                 .safeDrawingPadding()
                 .padding(horizontal = 24.dp, vertical = 16.dp),
-    ) {
-        if (openReport == null) {
-            MainContent(
-                appVersion,
-                hiddenApps,
-                onShowApp,
-                weather,
-                onWeather,
-                reports,
-                zone,
-                onOpenReport,
-                onDeleteAllReports,
-            )
-        } else {
-            BackHandler(onBack = onCloseReport)
-            CrashReportContent(openReport, onCloseReport, onShareReport, onDeleteReport)
-        }
-    }
+    ) { content() }
 }
 
 @Composable
-private fun MainContent(
-    appVersion: String,
-    hiddenApps: List<LauncherApp>,
-    onShowApp: (LauncherApp) -> Unit,
-    weather: WeatherOptions,
-    onWeather: (WeatherAction) -> Unit,
-    reports: List<CrashReport>,
+private fun PageContent(
+    page: SettingsPage,
+    state: SettingsState,
+    onAction: (SettingsAction) -> Unit,
     zone: ZoneId,
-    onOpenReport: (String) -> Unit,
-    onDeleteAllReports: () -> Unit,
 ) {
-    val locale = LocalConfiguration.current.locales[0]
-    val timeFormat = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(locale).withZone(zone)
+    val update: ((Settings) -> Settings) -> Unit = { onAction(SettingsAction.Update(it)) }
+    when (page) {
+        SettingsPage.Main -> MainPage(state, onAction)
 
-    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-        Title(stringResource(R.string.settings_title))
+        SettingsPage.Appearance -> AppearancePage(state.settings.appearance, update)
 
-        SectionHeader(stringResource(R.string.settings_hidden_apps))
-        if (hiddenApps.isEmpty()) {
-            BasicText(stringResource(R.string.settings_hidden_apps_empty), style = BodyStyle)
-        } else {
-            val showAgain = stringResource(R.string.settings_hidden_app_show)
-            hiddenApps.forEach { app ->
-                val label =
-                    if (app.isMainProfile) app.label else stringResource(R.string.settings_work_app, app.label)
-                ListRow(title = label, subtitle = showAgain, onClick = { onShowApp(app) })
-            }
-        }
+        SettingsPage.Clock -> ClockPage(state.settings.appearance, state.systemIs24Hour, update)
 
-        WeatherSection(weather, onWeather)
+        SettingsPage.Icons -> IconsPage(state.settings.iconStyle, update)
 
-        SectionHeader(stringResource(R.string.settings_about))
-        BasicText(stringResource(R.string.settings_version, appVersion), style = BodyStyle)
-        WeatherAttribution(onClick = { onWeather(WeatherAction.OpenAttribution) })
+        SettingsPage.Apps -> AppsPage(state.favorites, state.hiddenApps, update)
 
-        SectionHeader(stringResource(R.string.crash_reports_title))
-        BasicText(stringResource(R.string.crash_reports_privacy), style = MutedStyle)
-        Spacer(Modifier.height(8.dp))
-        if (reports.isEmpty()) {
-            BasicText(stringResource(R.string.crash_reports_empty), style = BodyStyle)
-        } else {
-            reports.forEach { report ->
-                ListRow(
-                    title = timeFormat.format(report.time),
-                    subtitle = report.summary,
-                    onClick = { onOpenReport(report.id) },
-                )
-            }
-            TextButton(stringResource(R.string.crash_reports_delete_all), onDeleteAllReports)
-        }
+        SettingsPage.Gestures -> GesturesPage(state.settings.gestures, update)
+
+        SettingsPage.Wallpaper -> WallpaperPage(state.settings.appearance, state.wallpaper, update, onAction)
+
+        SettingsPage.Weather -> WeatherSection(state.weather) { onAction(SettingsAction.Weather(it)) }
+
+        SettingsPage.About -> AboutPage(state, onAction)
+
+        SettingsPage.Licenses -> LicensesPage(state.fontLicense)
+
+        SettingsPage.CrashReports -> CrashReportsPage(state.reports, zone, onAction)
+
+        // Shown by SettingsRoute, which holds their state.
+        SettingsPage.WeatherPlace, SettingsPage.WeatherTap -> Unit
     }
 }
+
+private val SettingsPage.title: Int
+    get() =
+        when (this) {
+            SettingsPage.Main -> R.string.settings_title
+            SettingsPage.Appearance -> R.string.settings_appearance
+            SettingsPage.Clock -> R.string.settings_clock
+            SettingsPage.Icons -> R.string.settings_icons
+            SettingsPage.Apps -> R.string.settings_apps
+            SettingsPage.Gestures -> R.string.settings_gestures
+            SettingsPage.Wallpaper -> R.string.settings_wallpaper
+            SettingsPage.Weather, SettingsPage.WeatherPlace, SettingsPage.WeatherTap -> R.string.weather_title
+            SettingsPage.About -> R.string.settings_about
+            SettingsPage.Licenses -> R.string.licenses
+            SettingsPage.CrashReports -> R.string.crash_reports_title
+        }
 
 @Composable
 private fun CrashReportContent(
     report: OpenCrashReport,
-    onClose: () -> Unit,
-    onShare: (OpenCrashReport) -> Unit,
-    onDelete: (String) -> Unit,
+    onAction: (SettingsAction) -> Unit,
 ) {
     Column {
         Title(stringResource(R.string.crash_report_title))
         Row {
-            TextButton(stringResource(R.string.action_back), onClose, color = TextColor)
-            TextButton(stringResource(R.string.crash_report_share), { onShare(report) })
-            TextButton(stringResource(R.string.crash_report_delete), { onDelete(report.id) })
+            TextButton(
+                stringResource(R.string.action_back),
+                { onAction(SettingsAction.CloseReport) },
+                color = TextColor,
+            )
+            TextButton(stringResource(R.string.crash_report_share), { onAction(SettingsAction.ShareReport(report)) })
+            TextButton(
+                stringResource(R.string.crash_report_delete),
+                { onAction(SettingsAction.DeleteReport(report.id)) },
+            )
         }
         BasicText(
             text = report.text,
