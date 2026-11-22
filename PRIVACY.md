@@ -11,6 +11,9 @@ PixelBuddy is a launcher. It shows your apps and starts them; it does not collec
 - **Pictures you choose as app icons** come from the system photo picker, which needs no permission and shows
   PixelBuddy only the picture you pick. A small copy (256 × 256) is kept in the app's private storage and
   deleted when you reset that icon or remove the app.
+- **Exported settings** (Settings → Back up & move) go only where you save them with the system file picker. The
+  file holds all settings, including your weather place, and the pictures you chose as app icons. Importing a
+  file replaces your settings only after you confirm.
 
 ## Network access
 

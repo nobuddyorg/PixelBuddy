@@ -43,6 +43,7 @@ enum class SettingsPage {
     Gestures,
     Wallpaper,
     Weather,
+    Backup,
     WeatherPlace,
     WeatherTap,
     About,
@@ -78,6 +79,8 @@ data class SettingsState(
     val canRunSetup: Boolean = true,
     /** Every app, for choosing one to give its own icon. */
     val apps: List<LauncherApp> = emptyList(),
+    /** The outcome of the last export or import, as a message. */
+    val backupMessage: Int? = null,
 )
 
 /** Something the user did in the settings. */
@@ -103,6 +106,10 @@ sealed interface SettingsAction {
 
     /** Starts the first-start setup again, on home. */
     data object RunSetup : SettingsAction
+
+    data object ExportSettings : SettingsAction
+
+    data object ImportSettings : SettingsAction
 
     /** Opens the editor for one app's own icon. */
     data class EditAppIcon(
@@ -206,6 +213,8 @@ private fun PageContent(
 
         SettingsPage.Weather -> WeatherSection(state.weather) { onAction(SettingsAction.Weather(it)) }
 
+        SettingsPage.Backup -> BackupPage(state.backupMessage, onAction)
+
         SettingsPage.About -> AboutPage(state, onAction)
 
         SettingsPage.Licenses -> LicensesPage(state.fontLicense)
@@ -229,6 +238,7 @@ private val SettingsPage.title: Int
             SettingsPage.Gestures -> R.string.settings_gestures
             SettingsPage.Wallpaper -> R.string.settings_wallpaper
             SettingsPage.Weather, SettingsPage.WeatherPlace, SettingsPage.WeatherTap -> R.string.weather_title
+            SettingsPage.Backup -> R.string.backup_title
             SettingsPage.About -> R.string.settings_about
             SettingsPage.Licenses -> R.string.licenses
             SettingsPage.CrashReports -> R.string.crash_reports_title

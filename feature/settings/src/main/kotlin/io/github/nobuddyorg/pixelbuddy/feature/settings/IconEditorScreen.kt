@@ -535,32 +535,13 @@ private fun PreviewIcon(
 private fun DiscardDialog(
     onDiscard: () -> Unit,
     onKeep: () -> Unit,
-) {
-    val title = stringResource(R.string.icons_discard_title)
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(PixelBuddyColors.Shadow.copy(alpha = 0.8f))
-                .pointerInput(Unit) { detectTapGestures { onKeep() } },
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .padding(32.dp)
-                    .background(PixelBuddyColors.Navy)
-                    .border(3.dp, TextColor)
-                    .padding(24.dp)
-                    .semantics { paneTitle = title },
-        ) {
-            BasicText(title, style = TitleStyle)
-            Spacer(Modifier.height(16.dp))
-            TextButton(stringResource(R.string.icons_discard), onDiscard)
-            TextButton(stringResource(R.string.icons_keep), onKeep, color = TextColor)
-        }
-    }
-}
+) = ConfirmDialog(
+    title = stringResource(R.string.icons_discard_title),
+    confirm = stringResource(R.string.icons_discard),
+    cancel = stringResource(R.string.icons_keep),
+    onConfirm = onDiscard,
+    onCancel = onKeep,
+)
 
 private val PaletteChoice.label: Int
     get() =

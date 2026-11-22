@@ -5,6 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.text.format.DateFormat
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,6 +32,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.icons.CustomIconStore
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconChoice
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsArchive
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.TemperatureUnit
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherPlace
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherSettings
@@ -40,6 +45,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.IOException
+import java.time.LocalDate
 
 /**
  * Settings with state. [settings] are changed through [onUpdate] and apply on home at once. [favoriteApps] and
@@ -95,6 +101,36 @@ fun SettingsRoute(
     var locationDenied by remember { mutableStateOf(false) }
     var wallpaper by remember { mutableStateOf(WallpaperStatus.Idle) }
     var fontLicense by remember { mutableStateOf<String?>(null) }
+    var backupMessage by remember { mutableStateOf<Int?>(null) }
+    // A read archive waiting for "Replace"; a configuration change forgets it, so it is picked again.
+    var pendingImport by remember { mutableStateOf<SettingsArchive.Archive?>(null) }
+    val exporter =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(ZIP_TYPE)) { uri ->
+            val settingsNow = stored
+            if (uri != null && settingsNow != null && customIcons != null) {
+                scope.launch {
+                    val written = withContext(ioDispatcher) { context.exportTo(uri, settingsNow, customIcons) }
+                    backupMessage = if (written) R.string.backup_exported else R.string.backup_export_failed
+                }
+            }
+        }
+    val importer =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) {
+                scope.launch {
+                    when (val result = withContext(ioDispatcher) { context.readArchive(uri) }) {
+                        is SettingsArchive.ReadResult.Read -> {
+                            backupMessage = null
+                            pendingImport = result.archive
+                        }
+
+                        is SettingsArchive.ReadResult.Refused -> {
+                            backupMessage = result.problem.message
+                        }
+                    }
+                }
+            }
+        }
     val systemIs24Hour = remember(context) { DateFormat.is24HourFormat(context) }
 
     val updateWeather: ((WeatherSettings) -> WeatherSettings) -> Unit = { change ->
@@ -275,78 +311,124 @@ fun SettingsRoute(
             fontLicense = fontLicense,
             canRunSetup = onRunSetup != null,
             apps = allApps,
+            backupMessage = backupMessage,
         )
 
-    SettingsScreen(
-        page = page,
-        state = state,
-        onAction = { action ->
-            when (action) {
-                is SettingsAction.Navigate -> {
-                    page = action.page
-                    wallpaper = WallpaperStatus.Idle
-                }
+    Box(modifier) {
+        SettingsScreen(
+            page = page,
+            state = state,
+            onAction = { action ->
+                when (action) {
+                    is SettingsAction.Navigate -> {
+                        page = action.page
+                        wallpaper = WallpaperStatus.Idle
+                    }
 
-                is SettingsAction.EditAppIcon -> {
-                    iconApp = action.app.key.id
-                    page = SettingsPage.AppIconEditor
-                }
+                    is SettingsAction.EditAppIcon -> {
+                        iconApp = action.app.key.id
+                        page = SettingsPage.AppIconEditor
+                    }
 
-                is SettingsAction.Update -> {
-                    onUpdate(action.change)
-                }
+                    is SettingsAction.Update -> {
+                        onUpdate(action.change)
+                    }
 
-                is SettingsAction.SetWallpaper -> {
-                    if (wallpaper != WallpaperStatus.Working) {
-                        wallpaper = WallpaperStatus.Working
+                    is SettingsAction.SetWallpaper -> {
+                        if (wallpaper != WallpaperStatus.Working) {
+                            wallpaper = WallpaperStatus.Working
+                            scope.launch {
+                                wallpaper =
+                                    withContext(ioDispatcher) { SkyWallpaper.set(context, style, action.target) }
+                            }
+                        }
+                    }
+
+                    is SettingsAction.Weather -> {
+                        onWeather(action.action)
+                    }
+
+                    SettingsAction.OpenSource -> {
+                        context.openWebPage(SOURCE_URL)
+                    }
+
+                    SettingsAction.ExportSettings -> {
+                        backupMessage = null
+                        exporter.launchSafely("pixelbuddy-settings-${LocalDate.now()}.zip")
+                    }
+
+                    SettingsAction.ImportSettings -> {
+                        backupMessage = null
+                        importer.launchSafely(arrayOf(ZIP_TYPE, "application/octet-stream"))
+                    }
+
+                    SettingsAction.RunSetup -> {
+                        onRunSetup?.invoke()
+                    }
+
+                    is SettingsAction.OpenReport -> {
+                        openId = action.id
+                    }
+
+                    SettingsAction.CloseReport -> {
+                        openId = null
+                    }
+
+                    is SettingsAction.ShareReport -> {
+                        context.shareCrashReport(action.report.text)
+                    }
+
+                    is SettingsAction.DeleteReport -> {
                         scope.launch {
-                            wallpaper = withContext(ioDispatcher) { SkyWallpaper.set(context, style, action.target) }
+                            withContext(ioDispatcher) { store.delete(action.id) }
+                            openId = null
+                            reload++
+                        }
+                    }
+
+                    SettingsAction.DeleteAllReports -> {
+                        scope.launch {
+                            withContext(ioDispatcher) { store.deleteAll() }
+                            reload++
                         }
                     }
                 }
-
-                is SettingsAction.Weather -> {
-                    onWeather(action.action)
-                }
-
-                SettingsAction.OpenSource -> {
-                    context.openWebPage(SOURCE_URL)
-                }
-
-                SettingsAction.RunSetup -> {
-                    onRunSetup?.invoke()
-                }
-
-                is SettingsAction.OpenReport -> {
-                    openId = action.id
-                }
-
-                SettingsAction.CloseReport -> {
-                    openId = null
-                }
-
-                is SettingsAction.ShareReport -> {
-                    context.shareCrashReport(action.report.text)
-                }
-
-                is SettingsAction.DeleteReport -> {
+            },
+        )
+        pendingImport?.let { archive ->
+            val imported = archive.settings
+            ConfirmDialog(
+                title = stringResource(R.string.backup_confirm_title),
+                text =
+                    stringResource(
+                        R.string.backup_confirm_text,
+                        imported.favorites.size,
+                        imported.hidden.size,
+                        imported.iconOverrides.size,
+                    ),
+                confirm = stringResource(R.string.backup_replace),
+                cancel = stringResource(R.string.backup_cancel),
+                onConfirm = {
+                    pendingImport = null
                     scope.launch {
-                        withContext(ioDispatcher) { store.delete(action.id) }
-                        openId = null
-                        reload++
+                        val restored =
+                            withContext(ioDispatcher) {
+                                customIcons?.let { SettingsArchive.restore(archive, current, it) }
+                                    ?: archive.settings.copy(
+                                        iconOverrides = archive.settings.iconOverrides.map { it.copy(image = null) },
+                                        setup = current.setup,
+                                        waitingApps = archive.settings.appKeys,
+                                    )
+                            }
+                        onUpdate { now -> restored.copy(setup = now.setup) }
+                        onIconsChanged()
+                        backupMessage = R.string.backup_imported
                     }
-                }
-
-                SettingsAction.DeleteAllReports -> {
-                    scope.launch {
-                        withContext(ioDispatcher) { store.deleteAll() }
-                        reload++
-                    }
-                }
-            }
-        },
-        modifier = modifier,
-    )
+                },
+                onCancel = { pendingImport = null },
+            )
+        }
+    }
 }
 
 private const val OPEN_METEO_URL = "https://open-meteo.com/"
@@ -354,6 +436,58 @@ private const val SOURCE_URL = "https://github.com/nobuddyorg/PixelBuddy"
 
 /** Bundled by the design system together with the font. */
 private const val FONT_LICENSE_ASSET = "licenses/departure_mono_OFL.txt"
+
+private const val ZIP_TYPE = "application/zip"
+
+private val SettingsArchive.Problem.message: Int
+    get() =
+        when (this) {
+            SettingsArchive.Problem.NotAnArchive,
+            SettingsArchive.Problem.NoSettings,
+            -> R.string.backup_problem_not_archive
+
+            SettingsArchive.Problem.NewerVersion -> R.string.backup_problem_newer
+
+            SettingsArchive.Problem.TooLarge -> R.string.backup_problem_too_large
+
+            SettingsArchive.Problem.UnsafeEntry -> R.string.backup_problem_unsafe
+
+            SettingsArchive.Problem.Unreadable -> R.string.backup_problem_unreadable
+        }
+
+/** Starts a document picker; phones without one get nothing instead of a crash. */
+private fun <I> ActivityResultLauncher<I>.launchSafely(input: I) {
+    try {
+        launch(input)
+    } catch (_: ActivityNotFoundException) {
+        // No document picker on this phone.
+    }
+}
+
+/** Writes the archive to [uri]; false if that failed. */
+private fun Context.exportTo(
+    uri: Uri,
+    settings: Settings,
+    images: CustomIconStore,
+): Boolean =
+    try {
+        contentResolver.openOutputStream(uri, "wt")?.use { SettingsArchive.write(settings, images, it) } != null
+    } catch (_: IOException) {
+        false
+    } catch (_: SecurityException) {
+        false
+    }
+
+/** Reads the archive at [uri]; a file that can't be opened counts as no archive. */
+private suspend fun Context.readArchive(uri: Uri): SettingsArchive.ReadResult =
+    try {
+        contentResolver.openInputStream(uri)?.use { SettingsArchive.read(it) }
+            ?: SettingsArchive.ReadResult.Refused(SettingsArchive.Problem.NotAnArchive)
+    } catch (_: IOException) {
+        SettingsArchive.ReadResult.Refused(SettingsArchive.Problem.NotAnArchive)
+    } catch (_: SecurityException) {
+        SettingsArchive.ReadResult.Refused(SettingsArchive.Problem.NotAnArchive)
+    }
 
 /** Imports the picture at [uri] into [store], reading it once; anything that goes wrong means unreadable. */
 private fun Context.importIcon(

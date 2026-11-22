@@ -193,6 +193,25 @@ class SettingsRepositoryTest {
     }
 
     @Test
+    fun `imported apps wait for their install instead of being forgotten`() =
+        runTest {
+            val job = Job()
+            val settings = open(job)
+            settings.update { it.copy(favorites = listOf(maps, bahn), waitingApps = setOf(maps, bahn)) }
+
+            assertEquals(emptySet(), settings.storedApps())
+            settings.installed(setOf(maps))
+            assertEquals(setOf(maps), settings.storedApps())
+            assertEquals(setOf(bahn), settings.settings.first().waitingApps)
+            // Nothing waiting: no write needed.
+            settings.installed(setOf(zug))
+
+            settings.forget(setOf(maps))
+            assertEquals(listOf(bahn), settings.favorites.first())
+            job.cancel()
+        }
+
+    @Test
     fun `weather settings are updated on their own`() =
         runTest {
             val job = Job()

@@ -64,7 +64,12 @@ class SettingsRepository(
         update { it.withShown(app) }
     }
 
-    override suspend fun storedApps(): Set<AppKey> = settings.first().appKeys
+    override suspend fun storedApps(): Set<AppKey> = settings.first().let { it.appKeys - it.waitingApps }
+
+    override suspend fun installed(apps: Set<AppKey>) {
+        if (settings.first().waitingApps.none { it in apps }) return
+        update { s -> s.copy(waitingApps = s.waitingApps - apps) }
+    }
 
     override suspend fun forget(apps: Set<AppKey>) {
         if (apps.isEmpty()) return
@@ -74,6 +79,7 @@ class SettingsRepository(
                 hidden = s.hidden - apps,
                 iconOverrides = s.iconOverrides.filterNot { it.app in apps },
                 weather = if (s.weather.tapApp in apps) s.weather.copy(tapApp = null) else s.weather,
+                waitingApps = s.waitingApps - apps,
             )
         }
     }

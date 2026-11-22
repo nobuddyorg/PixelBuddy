@@ -32,6 +32,11 @@ data class Settings(
     val gestures: Gestures = Gestures(),
     /** Where the first-start setup is (#20); [SetupStep.Done] once it was finished or skipped. */
     val setup: SetupStep = SetupStep.HomeApp,
+    /**
+     * Apps an import (#21) refers to that weren't installed yet: their entries are kept until they are, instead of
+     * being cleaned up like uninstalled apps.
+     */
+    val waitingApps: Set<AppKey> = emptySet(),
 ) {
     /** Every app this file refers to, e.g. to clean up after uninstalls. */
     val appKeys: Set<AppKey>

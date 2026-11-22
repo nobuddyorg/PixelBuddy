@@ -102,6 +102,7 @@ internal fun MainPage(
         R.string.weather_title,
         stringResource(if (settings.weather.enabled) R.string.weather_on else R.string.weather_off),
     )
+    Category(SettingsPage.Backup, R.string.backup_title, stringResource(R.string.backup_summary))
     Category(
         SettingsPage.About,
         R.string.settings_about,
@@ -380,6 +381,27 @@ internal fun WallpaperPage(
             style = BodyStyle,
             modifier = Modifier.padding(top = 8.dp).semantics { liveRegion = LiveRegionMode.Polite },
         )
+    }
+}
+
+@Composable
+internal fun BackupPage(
+    message: Int?,
+    onAction: (SettingsAction) -> Unit,
+) {
+    Column {
+        Spacer(Modifier.height(16.dp))
+        BasicText(stringResource(R.string.backup_text), style = BodyStyle)
+        Spacer(Modifier.height(8.dp))
+        TextButton(stringResource(R.string.backup_export), { onAction(SettingsAction.ExportSettings) })
+        TextButton(stringResource(R.string.backup_import), { onAction(SettingsAction.ImportSettings) })
+        if (message != null) {
+            BasicText(
+                stringResource(message),
+                style = BodyStyle,
+                modifier = Modifier.padding(top = 8.dp).semantics { liveRegion = LiveRegionMode.Polite },
+            )
+        }
     }
 }
 
