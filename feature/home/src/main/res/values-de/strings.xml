@@ -19,6 +19,7 @@
     <string name="home_menu_remove_favorite">Aus Favoriten entfernen</string>
     <string name="home_menu_move_up">Nach oben</string>
     <string name="home_menu_move_down">Nach unten</string>
+    <string name="home_menu_edit_icon">Symbol bearbeiten</string>
     <string name="home_menu_hide">Ausblenden</string>
     <string name="home_menu_app_info">App-Info</string>
     <string name="home_menu_uninstall">Deinstallieren</string>

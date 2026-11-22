@@ -1,6 +1,8 @@
 package io.github.nobuddyorg.pixelbuddy.core.data.settings
 
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppKey
+import io.github.nobuddyorg.pixelbuddy.core.data.icons.CustomIconStore
+import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconLayer
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconShape
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconStyle
@@ -55,6 +57,20 @@ data class Settings(
     fun withHidden(app: AppKey): Settings = copy(hidden = hidden + app, favorites = favorites - app)
 
     fun withShown(app: AppKey): Settings = copy(hidden = hidden - app)
+
+    fun iconOverrideFor(app: AppKey): IconOverride? = iconOverrides.firstOrNull { it.app == app }
+
+    /** Gives [app] its own icon, replacing an earlier one. */
+    fun withIconOverride(
+        app: AppKey,
+        choice: IconChoice,
+    ): Settings = copy(iconOverrides = iconOverrides.filterNot { it.app == app } + IconOverride.of(app, choice))
+
+    /** [app] goes back to the style of all icons. */
+    fun withoutIconOverride(app: AppKey): Settings = copy(iconOverrides = iconOverrides.filterNot { it.app == app })
+
+    /** Imported images the overrides use, so others can be deleted. */
+    val iconImages: Set<String> get() = iconOverrides.mapNotNullTo(HashSet()) { it.image }
 }
 
 /** Home look (#12). Colours are ARGB values, so this module needs no UI library. */
@@ -285,10 +301,45 @@ enum class PaletteChoice(
     }
 }
 
+/**
+ * What an icon looks like, apart from the app: a style and where the picture comes from. For all icons (#13) only
+ * the [style] counts; an app's own icon (#14) can also use another [layer] or an imported [image].
+ */
+@Serializable
+data class IconChoice(
+    val style: IconStyleSetting = IconStyleSetting(),
+    /** Part of the app's icon to draw; not used with an [image]. */
+    val layer: IconLayer = IconLayer.Full,
+    /** An imported picture drawn instead of the app's icon, by its SHA-256 (see [CustomIconStore]). */
+    val image: String? = null,
+)
+
+/** One app's own icon (#14); everything else uses [Settings.iconStyle]. */
 @Serializable
 data class IconOverride(
     val app: AppKey,
-    val style: IconStyleSetting,
+    val style: IconStyleSetting = IconStyleSetting(),
+    val layer: IconLayer = IconLayer.Full,
+    val image: String? = null,
+) {
+    val choice: IconChoice get() = IconChoice(style, layer, image)
+
+    /** How the icon is drawn; an image that isn't a valid file name is ignored. */
+    val look: IconLook get() = IconLook(style.style, layer, image?.takeIf(CustomIconStore::isValidName))
+
+    companion object {
+        fun of(
+            app: AppKey,
+            choice: IconChoice,
+        ): IconOverride = IconOverride(app, choice.style, choice.layer, choice.image)
+    }
+}
+
+/** How one icon is drawn: the pixel [style], from the app icon's [layer] or an imported [image]. */
+data class IconLook(
+    val style: IconStyle,
+    val layer: IconLayer = IconLayer.Full,
+    val image: String? = null,
 )
 
 /** Weather on home (#11). Off until the user turns it on: no network requests before that (PRIVACY.md). */
@@ -320,10 +371,12 @@ data class WeatherPlace(
 @Serializable
 enum class TemperatureUnit { System, Celsius, Fahrenheit }
 
-/** Icon styles to draw: the global one and per-app overrides. */
+/** Icons to draw: the global style and per-app overrides, which win. */
 data class IconStyles(
     val default: IconStyle = IconPreset.Default.style,
-    val overrides: Map<AppKey, IconStyle> = emptyMap(),
+    val overrides: Map<AppKey, IconLook> = emptyMap(),
 ) {
-    fun styleFor(app: AppKey): IconStyle = overrides[app] ?: default
+    fun lookFor(app: AppKey): IconLook = overrides[app] ?: IconLook(default)
+
+    fun styleFor(app: AppKey): IconStyle = lookFor(app).style
 }

@@ -10,8 +10,10 @@ import android.os.Build
 import androidx.core.graphics.createBitmap
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconShape
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.PixelImage
+import kotlinx.serialization.Serializable
 
-/** Which part of an adaptive icon is the source. */
+/** Which part of an adaptive icon is the source. Stored in the settings (#14): don't rename. */
+@Serializable
 enum class IconLayer {
     /** Background and foreground. */
     Full,

@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Android 11 and older. Only the settings are backed up (#8): with an include rule everything else is left out,
-    e.g. crash reports (#22) and first-start state. Caches are never backed up.
+    Android 11 and older. Only the settings (#8) and the pictures imported as app icons (#14) are backed up: with
+    include rules everything else is left out, e.g. crash reports (#22). Caches are never backed up.
 -->
 <full-backup-content>
     <include domain="file" path="datastore/settings.json" />
+    <include domain="file" path="icon-images/" />
 </full-backup-content>

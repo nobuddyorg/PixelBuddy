@@ -5,6 +5,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherAppsSource
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReportStore
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.DeviceInfo
+import io.github.nobuddyorg.pixelbuddy.core.data.icons.CustomIconStore
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconCache
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.LauncherIconLoader
@@ -39,9 +40,16 @@ class AppContainer(
             Dispatchers.IO + SupervisorJob(),
         )
 
+    /** Pictures imported as app icons (#14); included in backups with the settings that use them. */
+    val customIcons: CustomIconStore = CustomIconStore(File(context.filesDir, CUSTOM_ICONS_DIR))
+
     /** Pixelated icons, cached in memory and in the cache directory (#7). */
     val iconRepository: IconRepository =
-        IconRepository(LauncherIconLoader(context), IconCache(File(context.cacheDir, "icons")))
+        IconRepository(
+            loader = LauncherIconLoader(context),
+            cache = IconCache(File(context.cacheDir, "icons")),
+            images = customIcons,
+        )
 
     /** Every app list reload also re-checks icons, so updates and icon themes show up. */
     val appRepository: AppRepository =
@@ -65,17 +73,19 @@ class AppContainer(
      */
     fun refreshIcons(densityDpi: Int) {
         appScope.launch {
-            val current = settings.settings.first()
-            val styles = setOf(current.iconStyle.style) + current.iconOverrides.map { it.style.style }
-            iconRepository.prewarm(
+            customIcons.retain(settings.settings.first().iconImages)
+            val apps =
                 appRepository.home
                     .first()
                     .apps
-                    .map { it.app },
-                styles,
-                densityDpi,
-            )
+                    .map { it.app }
+            iconRepository.prewarm(apps, settings.iconStyles.first(), densityDpi)
         }
+    }
+
+    init {
+        // Pictures of overrides that are gone (reset, app uninstalled, older import) are deleted on start.
+        appScope.launch { customIcons.retain(settings.settings.first().iconImages) }
     }
 
     /** Places by name, for the weather (network: only while the user searches). */
@@ -86,5 +96,6 @@ class AppContainer(
 
     companion object {
         const val CRASH_REPORTS_DIR = "crash-reports"
+        const val CUSTOM_ICONS_DIR = "icon-images"
     }
 }

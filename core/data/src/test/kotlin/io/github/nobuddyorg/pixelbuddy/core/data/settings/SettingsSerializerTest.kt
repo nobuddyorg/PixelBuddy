@@ -2,6 +2,7 @@ package io.github.nobuddyorg.pixelbuddy.core.data.settings
 
 import androidx.datastore.core.CorruptionException
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppKey
+import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconLayer
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconShape
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.Palette
@@ -136,11 +137,16 @@ class SettingsSerializerTest {
         }
 
     @Test
-    fun `icon styles survive a JSON round trip, other text gives null`() {
-        val setting = IconStyleSetting.of(IconPreset.Mono).edited { it.copy(colors = 6) }
+    fun `icon choices survive a JSON round trip, other text gives null`() {
+        val choice =
+            IconChoice(
+                IconStyleSetting.of(IconPreset.Mono).edited { it.copy(colors = 6) },
+                IconLayer.Foreground,
+                "f".repeat(64),
+            )
 
-        assertEquals(setting, SettingsSerializer.decodeIconStyle(SettingsSerializer.encode(setting)))
-        assertEquals(null, SettingsSerializer.decodeIconStyle("not json"))
+        assertEquals(choice, SettingsSerializer.decodeIconChoice(SettingsSerializer.encode(choice)))
+        assertEquals(null, SettingsSerializer.decodeIconChoice("not json"))
     }
 
     @Test

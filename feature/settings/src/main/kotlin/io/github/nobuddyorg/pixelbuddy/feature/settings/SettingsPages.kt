@@ -86,6 +86,11 @@ internal fun MainPage(
     )
     Category(SettingsPage.Icons, R.string.settings_icons, iconStyleName(settings.iconStyle))
     Category(
+        SettingsPage.AppIcons,
+        R.string.icons_single_apps,
+        stringResource(R.string.icons_single_apps_summary, settings.iconOverrides.size),
+    )
+    Category(
         SettingsPage.Apps,
         R.string.settings_apps,
         stringResource(R.string.settings_apps_summary, state.favorites.size, state.hiddenApps.size),
@@ -176,6 +181,34 @@ internal fun ClockPage(
         subtitle = stringResource(appearance.textSize.label) + " · " + stringResource(R.string.text_size_summary),
         onClick = { update.appearance { it.copy(textSize = it.textSize.next()) } },
     )
+}
+
+/** Every app, those with their own icon first; a tap opens the editor for that app. */
+@Composable
+internal fun AppIconsPage(
+    apps: List<LauncherApp>,
+    settings: Settings,
+    onAction: (SettingsAction) -> Unit,
+) {
+    Column {
+        Spacer(Modifier.height(8.dp))
+        BasicText(stringResource(R.string.icons_single_apps_text), style = MutedStyle)
+        Spacer(Modifier.height(8.dp))
+        val (own, others) = apps.partition { settings.iconOverrideFor(it.key) != null }
+        (own + others).forEach { app ->
+            val override = settings.iconOverrideFor(app.key)
+            ListRow(
+                title = app.displayLabel(),
+                subtitle =
+                    if (override == null) {
+                        stringResource(R.string.icons_app_global)
+                    } else {
+                        stringResource(R.string.icons_app_own) + " · " + iconStyleName(override.style)
+                    },
+                onClick = { onAction(SettingsAction.EditAppIcon(app)) },
+            )
+        }
+    }
 }
 
 @Composable

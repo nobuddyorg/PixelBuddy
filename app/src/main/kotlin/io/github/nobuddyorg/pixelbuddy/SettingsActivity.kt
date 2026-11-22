@@ -7,10 +7,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SetupStep
 import io.github.nobuddyorg.pixelbuddy.feature.settings.SettingsRoute
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class SettingsActivity : ComponentActivity() {
+    /** The last settings change, so work that reads the settings can wait for it. */
+    private var lastUpdate: Job? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -25,19 +29,30 @@ class SettingsActivity : ComponentActivity() {
                     store = container.crashReports,
                     appVersion = container.deviceInfo.appVersionName,
                     settings = container.settings.settings,
-                    onUpdate = { change -> lifecycleScope.launch { container.settings.update(change) } },
+                    onUpdate = { change ->
+                        val previous = lastUpdate
+                        lastUpdate =
+                            lifecycleScope.launch {
+                                previous?.join()
+                                container.settings.update(change)
+                            }
+                    },
                     favoriteApps = favoriteApps,
                     hiddenApps = container.appRepository.hiddenApps,
                     apps = launchableApps,
                     searchPlaces = container::searchPlaces,
                     icons = container.iconRepository,
-                    onIconStyleApplied = { setting ->
+                    customIcons = container.customIcons,
+                    onIconsChanged = {
+                        val stored = lastUpdate
                         lifecycleScope.launch {
-                            // Once stored, so the background renders use the new style.
-                            container.settings.update { it.copy(iconStyle = setting) }
+                            // Once stored, so the background renders use the new icons.
+                            stored?.join()
                             container.refreshIcons(resources.configuration.densityDpi)
                         }
                     },
+                    editIconOf = intent.getStringExtra(EXTRA_EDIT_ICON),
+                    onDone = ::finish,
                     onRunSetup = {
                         lifecycleScope.launch {
                             // Stored first, then home shows the setup.
@@ -48,5 +63,10 @@ class SettingsActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    companion object {
+        /** Key id of an app whose icon editor opens right away (from home's long-press menu). */
+        const val EXTRA_EDIT_ICON = "io.github.nobuddyorg.pixelbuddy.EDIT_ICON"
     }
 }

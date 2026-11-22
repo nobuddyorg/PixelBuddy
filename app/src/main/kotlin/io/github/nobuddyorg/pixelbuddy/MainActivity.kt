@@ -52,6 +52,7 @@ class MainActivity : ComponentActivity() {
                             resetKey = homePresses,
                             weather = container.weatherRepository,
                             appearance = appearance,
+                            onEditIcon = { app -> openSettings(editIconOf = app.key.id) },
                         )
                     }
 
@@ -77,8 +78,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun openSettings() {
-        startActivity(Intent(this, SettingsActivity::class.java))
+    private fun openSettings() = openSettings(editIconOf = null)
+
+    private fun openSettings(editIconOf: String?) {
+        startActivity(
+            Intent(this, SettingsActivity::class.java).apply {
+                if (editIconOf != null) putExtra(SettingsActivity.EXTRA_EDIT_ICON, editIconOf)
+            },
+        )
     }
 
     /** Home pressed (also when coming back from an app): show the favorites again. */

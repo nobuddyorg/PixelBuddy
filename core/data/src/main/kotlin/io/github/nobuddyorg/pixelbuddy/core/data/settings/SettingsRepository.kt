@@ -24,7 +24,7 @@ class SettingsRepository(
 
     val iconStyles: Flow<IconStyles> =
         settings
-            .map { s -> IconStyles(s.iconStyle.style, s.iconOverrides.associate { it.app to it.style.style }) }
+            .map { s -> IconStyles(s.iconStyle.style, s.iconOverrides.associate { it.app to it.look }) }
             .distinctUntilChanged()
 
     val weather: Flow<WeatherSettings> = settings.map { it.weather }.distinctUntilChanged()

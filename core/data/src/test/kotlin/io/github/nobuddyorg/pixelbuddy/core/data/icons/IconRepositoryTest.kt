@@ -1,15 +1,19 @@
 package io.github.nobuddyorg.pixelbuddy.core.data.icons
 
 import android.content.ComponentName
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.InsetDrawable
 import android.os.Process
+import androidx.core.graphics.createBitmap
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppKey
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconLook
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyles
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.Palette
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +23,8 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
@@ -196,7 +202,7 @@ class IconRepositoryTest {
             repository.icon(app, old, 420)
             val other = app.copy(key = AppKey("org.other", "org.other.Main", 0), label = "Other")
 
-            repository.prewarm(listOf(app, other), setOf(style), 420)
+            repository.prewarm(listOf(app, other), IconStyles(style), 420)
 
             assertEquals(3, repository.renderCount)
             val files =
@@ -208,6 +214,48 @@ class IconRepositoryTest {
             // The kept style is served without rendering again.
             repository.icon(other, style, 420)
             assertEquals(3, repository.renderCount)
+        }
+
+    @Test
+    fun `an app's own picture is drawn instead of its icon, and the icon comes back without it`() =
+        runTest {
+            val images = CustomIconStore(folder.newFolder("images"))
+            val png =
+                ByteArrayOutputStream().also {
+                    createBitmap(64, 64).apply { eraseColor(Color.BLUE) }.compress(Bitmap.CompressFormat.PNG, 100, it)
+                }
+            val name =
+                (
+                    images.import(
+                        ByteArrayInputStream(png.toByteArray()),
+                    ) as CustomIconStore.ImportResult.Imported
+                ).name
+            val repository =
+                IconRepository(loader, IconCache(folder.newFolder("cache")), Dispatchers.Unconfined, images = images)
+            val look = IconLook(IconPreset.EightBit.style.copy(palette = Palette.Original), image = name)
+
+            val picture = repository.icon(app, look, 420)!!
+            assertEquals(Color.BLUE, picture.getPixel(6, 6))
+            assertEquals(0, loader.loads)
+            assertEquals(Color.BLUE, repository.preview(app, look, 420)!!.getPixel(6, 6))
+
+            images.retain(emptySet())
+            val fallback = repository.icon(app, look.copy(image = "e".repeat(64)), 420)!!
+            assertEquals(Color.RED, fallback.getPixel(2, 6))
+        }
+
+    @Test
+    fun `another layer of the icon is another icon`() =
+        runTest {
+            val repository = repository()
+
+            val full = repository.icon(app, IconLook(style), 420)!!
+            val foreground = repository.icon(app, IconLook(style, IconLayer.Foreground), 420)!!
+
+            assertEquals(2, repository.renderCount)
+            // Without the red plate, only the white glyph is left.
+            assertEquals(0, foreground.getPixel(4, 12))
+            assertEquals(true, full.getPixel(4, 12) != 0)
         }
 
     @Test

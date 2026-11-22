@@ -6,7 +6,11 @@ PixelBuddy is a launcher. It shows your apps and starts them; it does not collec
 - **No telemetry.** Nothing is sent automatically, including crash reports. Crash reports stay on the phone
   until you choose to share them yourself from the settings.
 - **Data stays on the device.** Settings, favorites, hidden apps and icon styles are stored in the app's private
-  storage. Android's backup may include the settings (not caches) if you have device backup turned on.
+  storage. Android's backup may include the settings and the pictures you chose as app icons (not caches) if you
+  have device backup turned on.
+- **Pictures you choose as app icons** come from the system photo picker, which needs no permission and shows
+  PixelBuddy only the picture you pick. A small copy (256 × 256) is kept in the app's private storage and
+  deleted when you reset that icon or remove the app.
 
 ## Network access
 
