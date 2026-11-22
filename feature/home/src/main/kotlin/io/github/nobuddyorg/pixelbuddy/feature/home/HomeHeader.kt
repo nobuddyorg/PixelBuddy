@@ -2,9 +2,11 @@ package io.github.nobuddyorg.pixelbuddy.feature.home
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicText
@@ -67,21 +69,27 @@ fun HomeHeader(
                 BasicText(HeaderFormat.amPm(now.toLocalTime(), locale), style = small)
             }
         }
+        // The date and the weather are small text with 48 dp touch targets, centred in this row.
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.padding(top = 12.dp),
         ) {
-            BasicText(
-                text = HeaderFormat.date(now.toLocalDate(), locale),
-                style = small.copy(color = PixelBuddyColors.Text),
+            Box(
+                contentAlignment = Alignment.CenterStart,
                 modifier =
-                    Modifier.clickable(
-                        role = Role.Button,
-                        onClickLabel = stringResource(R.string.home_open_calendar),
-                        onClick = onDateClick,
-                    ),
-            )
+                    Modifier
+                        .heightIn(min = 48.dp)
+                        .clickable(
+                            role = Role.Button,
+                            onClickLabel = stringResource(R.string.home_open_calendar),
+                            onClick = onDateClick,
+                        ),
+            ) {
+                BasicText(
+                    text = HeaderFormat.date(now.toLocalDate(), locale),
+                    style = small.copy(color = PixelBuddyColors.Text),
+                )
+            }
             if (battery != null) BatteryIndicator(battery, small)
             weather?.invoke()
         }

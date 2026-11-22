@@ -6,6 +6,9 @@ import android.app.WallpaperManager
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Process
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasSetTextAction
@@ -577,6 +580,40 @@ class SettingsScreenTest {
         page: SettingsPage,
         state: SettingsState = sampleState,
     ) = compose.setContent { SettingsScreen(page, state, onAction = {}, zone = ZoneOffset.UTC) }
+
+    // Accessibility (#15): every page's controls have a name for TalkBack and a 48 dp touch target.
+
+    @Test
+    fun `every settings page is accessible`() {
+        val pages =
+            SettingsPage.entries - listOf(SettingsPage.Icons, SettingsPage.AppIconEditor) -
+                listOf(SettingsPage.WeatherPlace, SettingsPage.WeatherTap)
+        var page by mutableStateOf(SettingsPage.Main)
+        compose.setContent { SettingsScreen(page, sampleState.copy(apps = sampleState.favorites), onAction = {}) }
+        pages.forEach {
+            page = it
+            compose.waitForIdle()
+            compose.assertAccessible(48 * compose.density.density)
+        }
+    }
+
+    @Test
+    fun `the weather place search is accessible`() {
+        weather { WeatherSettings(enabled = true) }
+        showRoute()
+        open("Weather")
+        compose.onNodeWithText("Weather location").performClick()
+
+        compose.assertAccessible(48 * compose.density.density)
+    }
+
+    @Test
+    @Config(fontScale = 2f)
+    fun `the settings are accessible at the largest font size`() {
+        showPage(SettingsPage.Main)
+        compose.assertAccessible(48 * compose.density.density)
+        compose.onRoot().captureRoboImage("SettingsScreen_font_2x.png")
+    }
 
     @Test
     fun `screenshot English`() {

@@ -285,6 +285,18 @@ class IconEditorTest {
         compose.onNodeWithText("Custom (based on Neon)").assertIsDisplayed()
     }
 
+    @Test
+    fun `the icon editors are accessible`() {
+        showEditor()
+        compose.assertAccessible(48 * compose.density.density)
+
+        compose.onNodeWithText("▶ Back").performScrollTo().performClick()
+        compose.onNodeWithText("Icons for single apps").performScrollTo().performClick()
+        compose.assertAccessible(48 * compose.density.density)
+        compose.onNodeWithText("Maps").performScrollTo().performClick()
+        compose.assertAccessible(48 * compose.density.density)
+    }
+
     // One app's own icon (#14)
 
     @Test

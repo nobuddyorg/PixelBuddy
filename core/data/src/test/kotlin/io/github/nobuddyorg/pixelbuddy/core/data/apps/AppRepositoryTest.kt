@@ -3,6 +3,7 @@ package io.github.nobuddyorg.pixelbuddy.core.data.apps
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.graphics.Rect
+import android.os.Bundle
 import android.os.UserHandle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
@@ -34,6 +35,7 @@ class AppRepositoryTest {
             component: ComponentName,
             user: UserHandle,
             sourceBounds: Rect?,
+            options: Bundle?,
         ) = record("start ${component.packageName}")
 
         override fun showDetails(
@@ -202,8 +204,11 @@ class AppRepositoryTest {
         ).forEach { error ->
             source.failure = error
 
-            listOf(repository::launch, repository::openDetails).forEach { action ->
-                val result = action(app("Maps"), null)
+            listOf<(LauncherApp) -> LaunchResult>(
+                { repository.launch(it) },
+                { repository.openDetails(it) },
+            ).forEach { action ->
+                val result = action(app("Maps"))
                 assertIs<LaunchResult.Failed>(result)
                 assertEquals(error, result.reason)
             }

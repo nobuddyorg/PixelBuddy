@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -61,6 +62,7 @@ fun HomeRoute(
     onEditIcon: (LauncherApp) -> Unit = {},
 ) {
     val context = LocalContext.current
+    val view = LocalView.current
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val home by repository.home.collectAsStateWithLifecycle(initialValue = HomeApps())
@@ -94,8 +96,12 @@ fun HomeRoute(
 
     HomeScreen(
         home = home,
-        onAppClick = { app ->
-            if (repository.launch(app) is LaunchResult.Failed) toast(R.string.home_launch_failed, app)
+        onAppClick = { app, from ->
+            // The app opens out of the tapped icon.
+            val animation = from?.let { launchAnimation(view, it) }
+            if (repository.launch(app, animation?.sourceBounds, animation?.options) is LaunchResult.Failed) {
+                toast(R.string.home_launch_failed, app)
+            }
         },
         onAppAction = { action ->
             val app = action.app

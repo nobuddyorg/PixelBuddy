@@ -2,7 +2,9 @@ package io.github.nobuddyorg.pixelbuddy.core.designsystem
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -40,19 +42,26 @@ fun pixelTextSize(sp: Float): TextUnit {
     return snapToPixelGrid(sp, density.density, density.fontScale).sp
 }
 
-/** Text styles in the pixel font, scaled by [PixelBuddyStyle.textScale]. */
+/** Text styles in the pixel font, scaled by [PixelBuddyStyle.textScale], with a one-font-pixel drop shadow. */
 object PixelText {
     @Composable
     @ReadOnlyComposable
     fun style(
         sp: Float,
         color: Color = PixelBuddyColors.Text,
-    ): TextStyle =
-        TextStyle(
+    ): TextStyle {
+        val size = pixelTextSize(sp * PixelBuddyTheme.style.textScale)
+        val density = LocalDensity.current
+        // One font pixel: the snapped size is a whole number of them, PIXEL_FONT_GRID_PX each.
+        val fontPixel = size.value * density.density * density.fontScale / PIXEL_FONT_GRID_PX
+        return TextStyle(
             fontFamily = PixelFont,
-            fontSize = pixelTextSize(sp * PixelBuddyTheme.style.textScale),
+            fontSize = size,
             color = color,
+            // A dark drop shadow keeps light text readable on the bright end of the sky (#15).
+            shadow = Shadow(PixelBuddyColors.Shadow, Offset(fontPixel, fontPixel), blurRadius = 0f),
         )
+    }
 
     /** App names in lists. */
     val body: TextStyle
