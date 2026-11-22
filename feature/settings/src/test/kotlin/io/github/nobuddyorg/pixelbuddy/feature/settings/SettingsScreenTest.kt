@@ -1,5 +1,7 @@
 package io.github.nobuddyorg.pixelbuddy.feature.settings
 
+import android.content.ComponentName
+import android.os.Process
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -7,9 +9,12 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppKey
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReportStore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -21,6 +26,20 @@ import java.time.ZoneOffset
 import kotlin.test.assertEquals
 
 private const val S24 = "w411dp-h891dp-420dpi"
+
+private fun launcherApp(
+    label: String,
+    work: Boolean = false,
+): LauncherApp {
+    val pkg = "pkg." + label.lowercase()
+    return LauncherApp(
+        key = AppKey(pkg, "$pkg.Main", if (work) 10 else 0),
+        label = label,
+        component = ComponentName(pkg, "$pkg.Main"),
+        user = Process.myUserHandle(),
+        isMainProfile = !work,
+    )
+}
 
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -37,10 +56,37 @@ class SettingsScreenTest {
     private fun reportText(message: String) =
         "PixelBuddy crash report\nTime: x\n\njava.lang.IllegalStateException: $message\n\tat a.b.C.d(C.kt:1)\n"
 
+    private val hidden = MutableStateFlow(emptyList<LauncherApp>())
+    private val shown = mutableListOf<String>()
+
     private fun showRoute() =
         compose.setContent {
-            SettingsRoute(store = store, appVersion = "1.2.3", ioDispatcher = Dispatchers.Unconfined)
+            SettingsRoute(
+                store = store,
+                appVersion = "1.2.3",
+                hiddenApps = hidden,
+                onShowApp = { shown += it.label },
+                ioDispatcher = Dispatchers.Unconfined,
+            )
         }
+
+    @Test
+    fun `hidden apps are listed and can be shown again`() {
+        hidden.value = listOf(launcherApp("Bloat"), launcherApp("Teams", work = true))
+        showRoute()
+
+        compose.onNodeWithText("Teams (work)").assertIsDisplayed()
+        compose.onNodeWithText("Bloat").performClick()
+
+        assertEquals(listOf("Bloat"), shown)
+    }
+
+    @Test
+    fun `no hidden apps explains how to hide one`() {
+        showRoute()
+
+        compose.onNodeWithText("No hidden apps. Long-press an app on home to hide it.").assertIsDisplayed()
+    }
 
     @Test
     fun `empty state explains that nothing crashed`() {
@@ -98,6 +144,8 @@ class SettingsScreenTest {
         compose.setContent {
             SettingsScreen(
                 appVersion = "1.2.3",
+                hiddenApps = listOf(launcherApp("Bloat")),
+                onShowApp = {},
                 reports = sampleReports,
                 openReport = null,
                 onOpenReport = {},

@@ -9,44 +9,81 @@ import android.provider.CalendarContract
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppRepository
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.HomeApps
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LaunchResult
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
-import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
-import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconStyle
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyles
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsRepository
+import kotlinx.coroutines.launch
 
-/** Home with state. Apps, time and battery are only observed while home is visible (no background work). */
+/**
+ * Home with state. Apps, settings, time and battery are only observed while home is visible (no background
+ * work). Menu actions change the [settings] or open system screens.
+ */
 @Composable
 fun HomeRoute(
     repository: AppRepository,
+    settings: SettingsRepository,
     icons: IconRepository,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
-    iconStyle: IconStyle = IconPreset.Default.style,
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
-    val apps by repository.apps.collectAsStateWithLifecycle(initialValue = emptyList())
+    val scope = rememberCoroutineScope()
+    val home by repository.home.collectAsStateWithLifecycle(initialValue = HomeApps())
+    val iconStyles by settings.iconStyles.collectAsStateWithLifecycle(initialValue = IconStyles())
+
+    fun toast(
+        message: Int,
+        app: LauncherApp,
+    ) = Toast.makeText(context, resources.getString(message, app.label), Toast.LENGTH_SHORT).show()
+
     HomeScreen(
-        apps = apps,
+        home = home,
         onAppClick = { app ->
-            if (repository.launch(app) is LaunchResult.Failed) {
-                Toast
-                    .makeText(
-                        context,
-                        resources.getString(R.string.home_launch_failed, app.label),
-                        Toast.LENGTH_SHORT,
-                    ).show()
+            if (repository.launch(app) is LaunchResult.Failed) toast(R.string.home_launch_failed, app)
+        },
+        onAppAction = { action ->
+            val app = action.app
+            when (action) {
+                is AppAction.AddFavorite -> {
+                    scope.launch { settings.addFavorite(app.key) }
+                }
+
+                is AppAction.RemoveFavorite -> {
+                    scope.launch { settings.removeFavorite(app.key) }
+                }
+
+                is AppAction.MoveFavorite -> {
+                    scope.launch { settings.moveFavorite(app.key, action.offset) }
+                }
+
+                is AppAction.Hide -> {
+                    scope.launch { settings.hide(app.key) }
+                    toast(R.string.home_app_hidden, app)
+                }
+
+                is AppAction.AppInfo -> {
+                    if (repository.openDetails(app) is LaunchResult.Failed) toast(R.string.home_action_failed, app)
+                }
+
+                is AppAction.Uninstall -> {
+                    if (repository.uninstall(app) is LaunchResult.Failed) toast(R.string.home_action_failed, app)
+                }
             }
         },
         onOpenSettings = onOpenSettings,
         modifier = modifier,
         header = { LiveHomeHeader(onClockClick = context::openAlarms, onDateClick = context::openCalendar) },
-        icon = { app -> AppIcon(app, icons, iconStyle) },
+        icon = { app -> AppIcon(app, icons, iconStyles.styleFor(app.key)) },
     )
 }
 

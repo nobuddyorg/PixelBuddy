@@ -2,11 +2,14 @@ package io.github.nobuddyorg.pixelbuddy.core.data.apps
 
 import android.content.ComponentName
 import android.os.UserHandle
+import kotlinx.serialization.Serializable
 
 /**
  * Stable identity of a launchable activity. [userSerial] is the user's serial number, which, unlike the user id,
- * survives reboots, so keys can be stored (favorites, hidden apps, overrides).
+ * survives reboots, so keys can be stored (favorites, hidden apps, overrides). The property names are part of the
+ * settings file format: don't rename them.
  */
+@Serializable
 data class AppKey(
     val packageName: String,
     val activityName: String,
@@ -24,6 +27,8 @@ data class LauncherApp(
     val user: UserHandle,
     /** False for apps in a work profile. */
     val isMainProfile: Boolean,
+    /** False for system apps, which can only be disabled. */
+    val canUninstall: Boolean = true,
 )
 
 /** A [LauncherApp] with its alphabet-rail section: `A`–`Z` or [AppSorter.OTHER_SECTION]. */

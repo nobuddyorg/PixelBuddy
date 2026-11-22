@@ -7,7 +7,6 @@ import android.os.UserHandle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -16,6 +15,7 @@ import org.junit.runner.RunWith
 import java.util.Locale
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 class AppRepositoryTest {
@@ -23,7 +23,8 @@ class AppRepositoryTest {
         var apps = listOf<LauncherApp>()
         val changes = MutableSharedFlow<Unit>(extraBufferCapacity = 8)
         var failure: RuntimeException? = null
-        val started = mutableListOf<ComponentName>()
+        val removed = mutableSetOf<AppKey>()
+        val calls = mutableListOf<String>()
 
         override fun loadApps() = apps
 
@@ -33,25 +34,40 @@ class AppRepositoryTest {
             component: ComponentName,
             user: UserHandle,
             sourceBounds: Rect?,
-        ) {
+        ) = record("start ${component.packageName}")
+
+        override fun showDetails(
+            component: ComponentName,
+            user: UserHandle,
+            sourceBounds: Rect?,
+        ) = record("details ${component.packageName}")
+
+        override fun uninstall(
+            packageName: String,
+            user: UserHandle,
+        ) = record("uninstall $packageName")
+
+        override fun isRemoved(key: AppKey) = key in removed
+
+        private fun record(call: String) {
             failure?.let { throw it }
-            started += component
+            calls += call
         }
     }
 
     private val source = FakeSource()
-    private val hidden = MutableStateFlow(emptySet<AppKey>())
+    private val preferences = FakeAppPreferences()
 
     private fun repository(dispatcher: TestDispatcher) =
-        AppRepository(source, hidden, locale = { Locale.GERMANY }, dispatcher = dispatcher)
+        AppRepository(source, preferences, locale = { Locale.GERMANY }, dispatcher = dispatcher)
 
     @Test
     fun `apps are emitted sorted`() =
         runTest {
             source.apps = listOf(app("Zug"), app("Ärzte"), app("Bahn"))
 
-            repository(StandardTestDispatcher(testScheduler)).apps.test {
-                assertEquals(listOf("Ärzte", "Bahn", "Zug"), awaitItem().map { it.app.label })
+            repository(StandardTestDispatcher(testScheduler)).home.test {
+                assertEquals(listOf("Ärzte", "Bahn", "Zug"), awaitItem().apps.map { it.app.label })
             }
         }
 
@@ -60,30 +76,94 @@ class AppRepositoryTest {
         runTest {
             source.apps = listOf(app("Bahn"))
 
-            repository(StandardTestDispatcher(testScheduler)).apps.test {
-                assertEquals(listOf("Bahn"), awaitItem().map { it.app.label })
+            repository(StandardTestDispatcher(testScheduler)).home.test {
+                assertEquals(listOf("Bahn"), awaitItem().apps.map { it.app.label })
 
                 source.apps = listOf(app("Bahn"), app("Maps"))
                 source.changes.emit(Unit)
-                assertEquals(listOf("Bahn", "Maps"), awaitItem().map { it.app.label })
+                assertEquals(listOf("Bahn", "Maps"), awaitItem().apps.map { it.app.label })
 
                 source.apps = listOf(app("Maps"))
                 source.changes.emit(Unit)
-                assertEquals(listOf("Maps"), awaitItem().map { it.app.label })
+                assertEquals(listOf("Maps"), awaitItem().apps.map { it.app.label })
             }
         }
 
     @Test
-    fun `hidden apps are filtered out`() =
+    fun `hidden apps are filtered out of the list and the favorites`() =
         runTest {
             val maps = app("Maps")
             source.apps = listOf(app("Bahn"), maps)
+            preferences.favorites.value = listOf(maps.key)
 
-            repository(StandardTestDispatcher(testScheduler)).apps.test {
-                assertEquals(2, awaitItem().size)
+            repository(StandardTestDispatcher(testScheduler)).home.test {
+                assertEquals(2, awaitItem().apps.size)
 
-                hidden.value = setOf(maps.key)
-                assertEquals(listOf("Bahn"), awaitItem().map { it.app.label })
+                preferences.hidden.value = setOf(maps.key)
+                val home = awaitItem()
+                assertEquals(listOf("Bahn"), home.apps.map { it.app.label })
+                assertEquals(emptyList(), home.favorites)
+            }
+        }
+
+    @Test
+    fun `favorites keep the user's order`() =
+        runTest {
+            val (bahn, maps, zug) = listOf(app("Bahn"), app("Maps"), app("Zug"))
+            source.apps = listOf(bahn, maps, zug)
+            preferences.favorites.value = listOf(zug.key, bahn.key)
+
+            repository(StandardTestDispatcher(testScheduler)).home.test {
+                assertEquals(listOf("Zug", "Bahn"), awaitItem().favorites.map { it.label })
+
+                preferences.favorites.value = listOf(bahn.key, maps.key, zug.key)
+                assertEquals(listOf("Bahn", "Maps", "Zug"), awaitItem().favorites.map { it.label })
+            }
+        }
+
+    @Test
+    fun `favorites that aren't launchable right now are skipped but kept`() =
+        runTest {
+            val maps = app("Maps")
+            source.apps = listOf(app("Bahn"))
+            preferences.favorites.value = listOf(maps.key)
+
+            repository(StandardTestDispatcher(testScheduler)).home.test {
+                assertEquals(emptyList(), awaitItem().favorites)
+            }
+            assertEquals(listOf(maps.key), preferences.favorites.value)
+        }
+
+    @Test
+    fun `entries of uninstalled apps are forgotten`() =
+        runTest {
+            val (maps, gone) = listOf(app("Maps"), app("Gone"))
+            source.apps = listOf(maps)
+            source.removed += gone.key
+            preferences.favorites.value = listOf(gone.key, maps.key)
+            preferences.hidden.value = setOf(gone.key)
+
+            repository(StandardTestDispatcher(testScheduler)).home.test {
+                assertEquals(listOf("Maps"), awaitItem().favorites.map { it.label })
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertEquals(listOf(setOf(gone.key)), preferences.forgotten)
+            assertEquals(listOf(maps.key), preferences.favorites.value)
+            assertEquals(emptySet(), preferences.hidden.value)
+        }
+
+    @Test
+    fun `hidden apps are listed for the settings`() =
+        runTest {
+            val (bahn, maps) = listOf(app("Bahn"), app("Maps"))
+            source.apps = listOf(maps, bahn)
+            preferences.hidden.value = setOf(maps.key)
+
+            repository(StandardTestDispatcher(testScheduler)).hiddenApps.test {
+                assertEquals(listOf("Maps"), awaitItem().map { it.label })
+
+                preferences.hidden.value = setOf(maps.key, bahn.key)
+                assertEquals(listOf("Bahn", "Maps"), awaitItem().map { it.label })
             }
         }
 
@@ -92,7 +172,7 @@ class AppRepositoryTest {
         runTest {
             source.apps = listOf(app("Bahn"))
 
-            repository(StandardTestDispatcher(testScheduler)).apps.test {
+            repository(StandardTestDispatcher(testScheduler)).home.test {
                 awaitItem()
                 source.changes.emit(Unit)
                 expectNoEvents()
@@ -100,17 +180,20 @@ class AppRepositoryTest {
         }
 
     @Test
-    fun `launch starts the app's activity`() {
+    fun `launch, app info and uninstall reach the system`() {
         val maps = app("Maps")
+        val repository = AppRepository(source, preferences)
 
-        val result = AppRepository(source, hidden).launch(maps)
+        assertEquals(LaunchResult.Launched, repository.launch(maps))
+        assertEquals(LaunchResult.Launched, repository.openDetails(maps))
+        assertEquals(LaunchResult.Launched, repository.uninstall(maps))
 
-        assertEquals(LaunchResult.Launched, result)
-        assertEquals(listOf(maps.component), source.started)
+        assertEquals(listOf("start pkg.maps", "details pkg.maps", "uninstall pkg.maps"), source.calls)
     }
 
     @Test
-    fun `launch of a removed or disabled app fails without crashing`() {
+    fun `system actions on a removed or disabled app fail without crashing`() {
+        val repository = AppRepository(source, preferences)
         listOf(
             ActivityNotFoundException("gone"),
             SecurityException("profile locked"),
@@ -119,10 +202,13 @@ class AppRepositoryTest {
         ).forEach { error ->
             source.failure = error
 
-            val result = AppRepository(source, hidden).launch(app("Maps"))
-
-            assertIs<LaunchResult.Failed>(result)
-            assertEquals(error, result.reason)
+            listOf(repository::launch, repository::openDetails).forEach { action ->
+                val result = action(app("Maps"), null)
+                assertIs<LaunchResult.Failed>(result)
+                assertEquals(error, result.reason)
+            }
+            assertIs<LaunchResult.Failed>(repository.uninstall(app("Maps")))
         }
+        assertTrue(source.calls.isEmpty())
     }
 }

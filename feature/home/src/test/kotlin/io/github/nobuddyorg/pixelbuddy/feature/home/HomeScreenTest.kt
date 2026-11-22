@@ -14,10 +14,15 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppKey
@@ -25,11 +30,17 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppListEntry
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppSorter
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppSource
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.HomeApps
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsRepository
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.BatteryState
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -37,6 +48,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowToast
+import java.io.File
 import java.time.LocalDateTime
 import java.util.Locale
 import kotlin.test.assertEquals
@@ -58,7 +70,7 @@ private fun app(
     )
 }
 
-private val sampleApps =
+private val sampleApps: List<AppListEntry> =
     AppSorter(Locale.GERMANY).sort(
         listOf(
             app("Firefox"),
@@ -85,14 +97,26 @@ class HomeScreenTest {
 
     private val icons by lazy { FakeIcons.repository(folder.root) }
 
+    private val favorites =
+        listOf("Signal", "Firefox", "Maps").map { label ->
+            sampleApps
+                .first {
+                    it.app.label == label
+                }.app
+        }
+
+    private val actions = mutableListOf<AppAction>()
+
     private fun show(
         apps: List<AppListEntry> = sampleApps,
+        favorites: List<LauncherApp> = emptyList(),
         onAppClick: (LauncherApp) -> Unit = {},
         onOpenSettings: () -> Unit = {},
     ) = compose.setContent {
         HomeScreen(
-            apps = apps,
+            home = HomeApps(favorites, apps),
             onAppClick = onAppClick,
+            onAppAction = { actions += it },
             onOpenSettings = onOpenSettings,
             header = {
                 HomeHeader(
@@ -158,15 +182,161 @@ class HomeScreenTest {
         assertEquals(1, opened)
     }
 
+    private val storeJob = Job()
+
+    @After
+    fun closeSettings() = storeJob.cancel()
+
+    private fun showRoute(source: AppSource = FailingSource): SettingsRepository {
+        val settings = SettingsRepository.create(File(folder.root, "settings.json"), Dispatchers.IO + storeJob)
+        val repository = AppRepository(source, settings)
+        compose.setContent { HomeRoute(repository, settings, icons, onOpenSettings = {}) }
+        compose.waitUntil { hasApp("Maps") }
+        return settings
+    }
+
     @Test
     fun `failed launch shows a message`() {
-        val repository = AppRepository(FailingSource, MutableStateFlow(emptySet()))
-        compose.setContent { HomeRoute(repository, icons, onOpenSettings = {}) }
-        compose.waitUntil { ShadowToast.shownToastCount() > 0 || hasApp("Maps") }
+        showRoute()
 
         compose.onNodeWithContentDescription("Maps").performClick()
 
         assertEquals("Couldn't open Maps", ShadowToast.getTextOfLatestToast())
+    }
+
+    @Test
+    fun `favorites are listed above all apps`() {
+        show(favorites = favorites)
+
+        val rows = appRowLabels()
+        assertEquals(favorites.map { it.label }, rows.take(3))
+        assertEquals(sampleApps.first().app.label, rows[3])
+        compose.onNodeWithText("ALL APPS").assertIsDisplayed()
+    }
+
+    @Test
+    fun `without favorites a hint explains how to add one`() {
+        show()
+
+        compose.onNodeWithText("Long-press an app to add it to your favorites.").assertIsDisplayed()
+    }
+
+    @Test
+    fun `no hint while the apps are loading`() {
+        show(apps = emptyList())
+
+        compose.onNodeWithText("Long-press an app to add it to your favorites.").assertDoesNotExist()
+    }
+
+    @Test
+    fun `long press opens the app menu and picking an entry closes it`() {
+        show()
+
+        compose.onNodeWithContentDescription("Signal").performTouchInput { longClick() }
+        compose.onNodeWithText("Uninstall", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Add to favorites", substring = true).performClick()
+
+        assertEquals(listOf<AppAction>(AppAction.AddFavorite(app("Signal"))), actions)
+        compose.onNodeWithText("Add to favorites", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the menu is reachable with accessibility services`() {
+        show()
+
+        compose.onNodeWithContentDescription("Maps").performSemanticsAction(SemanticsActions.OnLongClick)
+        compose.onNodeWithText("App info", substring = true).performClick()
+        compose.onNodeWithContentDescription("Maps").performSemanticsAction(SemanticsActions.OnLongClick)
+        compose.onNodeWithText("Hide", substring = true).performClick()
+
+        assertEquals(listOf(AppAction.AppInfo(app("Maps")), AppAction.Hide(app("Maps"))), actions)
+    }
+
+    @Test
+    fun `favorites can be moved and removed from their menu`() {
+        show(favorites = favorites)
+
+        openMenu("Signal")
+        compose.onNodeWithText("Move up", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Move down", substring = true).performClick()
+        openMenu("Maps")
+        compose.onNodeWithText("Move down", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Move up", substring = true).performClick()
+        openMenu("Firefox", row = 1)
+        compose.onNodeWithText("Remove from favorites", substring = true).performClick()
+
+        assertEquals(
+            listOf(
+                AppAction.MoveFavorite(app("Signal"), 1),
+                AppAction.MoveFavorite(app("Maps"), -1),
+                AppAction.RemoveFavorite(app("Firefox")),
+            ),
+            actions,
+        )
+    }
+
+    @Test
+    fun `system apps have no uninstall entry`() {
+        val system = app("Telefon").copy(canUninstall = false)
+        show(apps = listOf(AppListEntry(system, "T")))
+
+        openMenu("Telefon")
+
+        compose.onNodeWithText("App info", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Uninstall", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `menu actions change the stored favorites and hidden apps`() {
+        val settings = showRoute(source = WorkingSource)
+
+        openMenu("Maps")
+        compose.onNodeWithText("Add to favorites", substring = true).performClick()
+        compose.waitUntil { appRowLabels().count { it == "Maps" } == 2 }
+        openMenu("Signal")
+        compose.onNodeWithText("Hide", substring = true).performClick()
+        compose.waitUntil { !hasApp("Signal") }
+
+        assertEquals("Signal hidden. Show it again in the settings.", ShadowToast.getTextOfLatestToast())
+        val stored = runBlocking { settings.settings.first() }
+        assertEquals(listOf(app("Maps").key), stored.favorites)
+        assertEquals(setOf(app("Signal").key), stored.hidden)
+    }
+
+    @Test
+    fun `menu opens below its row or above it near the bottom`() {
+        val window = IntSize(1000, 2000)
+        val menu = IntSize(400, 600)
+
+        val below = BelowOrAboveAnchor.calculatePosition(IntRect(100, 200, 900, 300), window, LayoutDirection.Ltr, menu)
+        val above =
+            BelowOrAboveAnchor.calculatePosition(
+                IntRect(100, 1800, 900, 1900),
+                window,
+                LayoutDirection.Ltr,
+                menu,
+            )
+        val rtl = BelowOrAboveAnchor.calculatePosition(IntRect(100, 200, 900, 300), window, LayoutDirection.Rtl, menu)
+
+        assertEquals(IntOffset(100, 300), below)
+        assertEquals(IntOffset(100, 1200), above)
+        assertEquals(IntOffset(500, 300), rtl)
+    }
+
+    private fun openMenu(
+        label: String,
+        row: Int = 0,
+    ) {
+        compose.onAllNodesWithContentDescription(label)[row].performTouchInput { longClick() }
+    }
+
+    private fun appRowLabels(): List<String> {
+        val apps = sampleApps.map { it.app.label }.toSet()
+        return compose
+            .onAllNodesWithContentDescription("", substring = true)
+            .fetchSemanticsNodes()
+            .mapNotNull { it.config.getOrNull(SemanticsProperties.ContentDescription)?.single() }
+            .filter { it in apps }
     }
 
     private fun hasApp(label: String) =
@@ -182,7 +352,7 @@ class HomeScreenTest {
 
     @Test
     fun `screenshot English`() {
-        show()
+        show(favorites = favorites)
 
         compose.onNode(hasPaneTitle("Home screen")).assertIsDisplayed()
         compose.onRoot().captureRoboImage("HomeScreen_en.png")
@@ -195,13 +365,26 @@ class HomeScreenTest {
 
         compose.onNode(hasPaneTitle("Startbildschirm")).assertIsDisplayed()
         compose.onNodeWithContentDescription("Teams, Arbeitsprofil").assertIsDisplayed()
+        compose.onNodeWithText("Halte eine App gedrückt, um sie zu den Favoriten hinzuzufügen.").assertIsDisplayed()
         compose.onRoot().captureRoboImage("HomeScreen_de.png")
+    }
+
+    // Robolectric draws popup windows at the screen's corner, so only the menu itself is captured.
+    @Test
+    fun `screenshot app menu`() {
+        show(favorites = favorites)
+
+        openMenu("Firefox")
+        compose.onNodeWithText("Move up", substring = true).assertIsDisplayed()
+        compose.onNode(hasPaneTitle("Firefox")).captureRoboImage("AppMenu.png")
     }
 
     private fun hasPaneTitle(title: String) = SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, title)
 
-    private object FailingSource : AppSource {
-        override fun loadApps() = listOf(app("Maps"))
+    private open class FakeSource(
+        private val apps: List<LauncherApp>,
+    ) : AppSource {
+        override fun loadApps() = apps
 
         override fun changes() = emptyFlow<Unit>()
 
@@ -209,6 +392,29 @@ class HomeScreenTest {
             component: ComponentName,
             user: UserHandle,
             sourceBounds: Rect?,
+        ) = Unit
+
+        override fun showDetails(
+            component: ComponentName,
+            user: UserHandle,
+            sourceBounds: Rect?,
+        ) = Unit
+
+        override fun uninstall(
+            packageName: String,
+            user: UserHandle,
+        ) = Unit
+
+        override fun isRemoved(key: AppKey) = false
+    }
+
+    private object FailingSource : FakeSource(listOf(app("Maps"))) {
+        override fun start(
+            component: ComponentName,
+            user: UserHandle,
+            sourceBounds: Rect?,
         ): Unit = throw ActivityNotFoundException("removed")
     }
+
+    private object WorkingSource : FakeSource(listOf(app("Maps"), app("Signal")))
 }
