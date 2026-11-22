@@ -2,14 +2,12 @@ package io.github.nobuddyorg.pixelbuddy
 
 import android.app.Application
 import android.app.role.RoleManager
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Process
 import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
@@ -28,15 +26,6 @@ class MainActivityTest {
     /** Makes the home role available; an empty holder name means nobody holds it. */
     private fun homeRoleHeldBy(packageName: String) =
         ShadowRoleManager.addRoleHolder(RoleManager.ROLE_HOME, packageName, Process.myUserHandle())
-
-    @Before
-    fun resetFirstStart() {
-        app
-            .getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .clear()
-            .commit()
-    }
 
     @Test
     fun `manifest exposes MainActivity as home screen`() {
@@ -74,23 +63,42 @@ class MainActivityTest {
     }
 
     @Test
-    fun `first start opens default apps settings when role is unavailable`() {
-        val activity = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+    fun `the setup sees whether PixelBuddy is the home app`() {
+        homeRoleHeldBy(app.packageName)
 
-        val started = shadowOf(activity).nextStartedActivity
-        assertEquals(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS, started.action)
+        val access = RoleHomeAppAccess(app)
+
+        assertTrue(access.isDefault())
+        assertEquals(emptyList(), access.requestIntents())
     }
 
     @Test
-    fun `role is only requested on the first start`() {
-        val first = Robolectric.buildActivity(MainActivity::class.java).setup()
-        // Started activities are recorded app-wide: consume the first start's settings intent.
-        assertEquals(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS, shadowOf(first.get()).nextStartedActivity.action)
-        first.destroy()
+    fun `the setup asks with the role dialog, then the default apps screen`() {
+        homeRoleHeldBy("")
 
-        val second = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        val intents = RoleHomeAppAccess(app).requestIntents()
 
-        assertNull(shadowOf(second).nextStartedActivity)
+        assertFalse(RoleHomeAppAccess(app).isDefault())
+        assertEquals(2, intents.size)
+        assertEquals(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS, intents[1].action)
+    }
+
+    // Robolectric starts every test with no roles available.
+    @Test
+    fun `without the role the setup opens the home settings`() {
+        val intents = RoleHomeAppAccess(app).requestIntents()
+
+        assertEquals(
+            listOf(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS, Settings.ACTION_HOME_SETTINGS),
+            intents.map { it.action },
+        )
+    }
+
+    @Test
+    fun `nothing is started on its own at the first start`() {
+        val activity = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+
+        assertNull(shadowOf(activity).nextStartedActivity)
     }
 
     @Test

@@ -128,4 +128,22 @@
     <string name="license_apache">Apache License 2.0</string>
     <string name="license_font_text">Schriftlizenz, vollständiger Text</string>
     <string name="crash_reports_count">Gespeichert: %1$d</string>
+    <string name="setup_progress">Einrichtung · %1$d von %2$d</string>
+    <string name="setup_skip">Überspringen</string>
+    <string name="setup_next">Weiter</string>
+    <string name="setup_home_title">Startbildschirm-App</string>
+    <string name="setup_home_text">Mach PixelBuddy zu deiner Startbildschirm-App, damit die Home-Taste dich hierher bringt.</string>
+    <string name="setup_home_button">PixelBuddy als Startbildschirm festlegen</string>
+    <string name="setup_home_later">Jetzt nicht</string>
+    <string name="setup_home_done">PixelBuddy ist deine Startbildschirm-App.</string>
+    <string name="setup_home_not_yet">PixelBuddy ist noch nicht die Startbildschirm-App. Du kannst das später in den Einstellungen des Telefons ändern.</string>
+    <string name="setup_favorites_title">Favoriten</string>
+    <string name="setup_favorites_text">Tippe die Apps an, die du am meisten nutzt. Sie stehen in dieser Reihenfolge oben auf dem Startbildschirm. Ändern kannst du sie jederzeit durch langes Drücken.</string>
+    <string name="setup_favorites_count">Ausgewählt: %1$d</string>
+    <string name="setup_favorite_position">Favorit %1$d</string>
+    <string name="setup_weather_text">Das Wetter neben der Uhr anzeigen? Nur dafür nutzt PixelBuddy das Internet.</string>
+    <string name="setup_weather_off">Kein Wetter</string>
+    <string name="setup_weather_place">Ort auswählen</string>
+    <string name="settings_run_setup">Einrichtung wiederholen</string>
+    <string name="settings_run_setup_summary">Startbildschirm-App, Favoriten, Wetter</string>
 </resources>

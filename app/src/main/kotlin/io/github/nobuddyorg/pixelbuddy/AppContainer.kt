@@ -9,6 +9,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconCache
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.LauncherIconLoader
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsRepository
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherPlace
 import io.github.nobuddyorg.pixelbuddy.core.weather.OpenMeteoClient
 import io.github.nobuddyorg.pixelbuddy.core.weather.PlatformLocationSource
 import io.github.nobuddyorg.pixelbuddy.core.weather.UrlConnectionHttpGet
@@ -17,6 +18,7 @@ import io.github.nobuddyorg.pixelbuddy.core.weather.WeatherRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import java.io.File
+import java.util.Locale
 
 /** Manual dependency wiring (no DI framework, see docs/PLAN.md). One instance per process. */
 class AppContainer(
@@ -50,6 +52,12 @@ class AppContainer(
             cache = WeatherCache(File(context.noBackupFilesDir, "weather.json")),
             location = PlatformLocationSource(context),
         )
+
+    /** Places by name, for the weather (network: only while the user searches). */
+    suspend fun searchPlaces(name: String): List<WeatherPlace> =
+        weatherRepository.searchPlaces(name, Locale.getDefault().language).map {
+            WeatherPlace(it.name, it.region, it.country, it.coordinates.latitude, it.coordinates.longitude)
+        }
 
     companion object {
         const val CRASH_REPORTS_DIR = "crash-reports"

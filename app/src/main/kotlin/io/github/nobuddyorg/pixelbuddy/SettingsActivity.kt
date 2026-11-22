@@ -5,11 +5,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
-import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherPlace
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.SetupStep
 import io.github.nobuddyorg.pixelbuddy.feature.settings.SettingsRoute
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,15 +29,12 @@ class SettingsActivity : ComponentActivity() {
                     favoriteApps = favoriteApps,
                     hiddenApps = container.appRepository.hiddenApps,
                     apps = launchableApps,
-                    searchPlaces = { name ->
-                        container.weatherRepository.searchPlaces(name, Locale.getDefault().language).map {
-                            WeatherPlace(
-                                it.name,
-                                it.region,
-                                it.country,
-                                it.coordinates.latitude,
-                                it.coordinates.longitude,
-                            )
+                    searchPlaces = container::searchPlaces,
+                    onRunSetup = {
+                        lifecycleScope.launch {
+                            // Stored first, then home shows the setup.
+                            container.settings.update { it.copy(setup = SetupStep.HomeApp) }
+                            finish()
                         }
                     },
                 )

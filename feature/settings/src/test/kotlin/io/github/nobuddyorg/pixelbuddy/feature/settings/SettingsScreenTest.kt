@@ -157,6 +157,25 @@ class SettingsScreenTest {
         compose.onNodeWithText("Source code").assertIsDisplayed()
     }
 
+    @Test
+    fun `the setup can be run again`() {
+        var runs = 0
+        compose.setContent {
+            SettingsRoute(
+                store = store,
+                appVersion = "1.2.3",
+                settings = settings,
+                onUpdate = {},
+                onRunSetup = { runs++ },
+                ioDispatcher = Dispatchers.Unconfined,
+            )
+        }
+
+        compose.onNodeWithText("Run setup again").performScrollTo().performClick()
+
+        assertEquals(1, runs)
+    }
+
     // Appearance
 
     @Test

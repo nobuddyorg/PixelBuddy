@@ -1,27 +1,25 @@
 package io.github.nobuddyorg.pixelbuddy
 
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.content.edit
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.SetupStep
 import io.github.nobuddyorg.pixelbuddy.feature.home.HomeRoute
+import io.github.nobuddyorg.pixelbuddy.feature.settings.SetupRoute
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     /** Counts Home presses while home is shown; each one resets home to the favorites. */
     private var homePresses by mutableIntStateOf(0)
-
-    private val roleRequest =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            // Declining is a valid answer; the user can change the home app in system settings.
-        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -35,22 +33,39 @@ class MainActivity : ComponentActivity() {
             },
         )
 
+        val container = appContainer
+        val homeApp = RoleHomeAppAccess(this)
+        val launchableApps = container.appRepository.home.map { home -> home.apps.map { it.app } }
         setContent {
-            StoredAppearanceTheme(appContainer.settings) { appearance ->
-                HomeRoute(
-                    repository = appContainer.appRepository,
-                    settings = appContainer.settings,
-                    icons = appContainer.iconRepository,
-                    onOpenSettings = ::openSettings,
-                    resetKey = homePresses,
-                    weather = appContainer.weatherRepository,
-                    appearance = appearance,
-                )
-            }
-        }
+            StoredAppearanceTheme(container.settings) { appearance ->
+                val setup by container.settings.setupStep.collectAsStateWithLifecycle(initialValue = null)
+                when (setup) {
+                    // Still reading: the theme's plain background shows.
+                    null -> {}
 
-        if (savedInstanceState == null) {
-            requestHomeRoleOnFirstStart()
+                    SetupStep.Done -> {
+                        HomeRoute(
+                            repository = container.appRepository,
+                            settings = container.settings,
+                            icons = container.iconRepository,
+                            onOpenSettings = ::openSettings,
+                            resetKey = homePresses,
+                            weather = container.weatherRepository,
+                            appearance = appearance,
+                        )
+                    }
+
+                    else -> {
+                        SetupRoute(
+                            settings = container.settings.settings,
+                            onUpdate = { change -> lifecycleScope.launch { container.settings.update(change) } },
+                            homeApp = homeApp,
+                            apps = launchableApps,
+                            searchPlaces = container::searchPlaces,
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -71,46 +86,7 @@ class MainActivity : ComponentActivity() {
         homePresses++
     }
 
-    private fun requestHomeRoleOnFirstStart() {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        if (prefs.getBoolean(KEY_HOME_ROLE_ASKED, false)) return
-
-        when (val action = HomeRole.nextAction(this)) {
-            HomeRoleAction.None -> {
-                // Already the default home app.
-            }
-
-            is HomeRoleAction.RequestRole -> {
-                try {
-                    roleRequest.launch(action.intent)
-                } catch (_: ActivityNotFoundException) {
-                    openDefaultAppsSettings()
-                }
-            }
-
-            is HomeRoleAction.OpenDefaultAppsSettings -> {
-                openDefaultAppsSettings()
-            }
-        }
-        prefs.edit { putBoolean(KEY_HOME_ROLE_ASKED, true) }
-    }
-
-    private fun openDefaultAppsSettings() {
-        val intents = listOf(HomeRole.defaultAppsSettingsIntent(), HomeRole.homeSettingsIntent())
-        for (intent in intents) {
-            try {
-                startActivity(intent)
-                return
-            } catch (_: ActivityNotFoundException) {
-                // Try the next screen.
-            }
-        }
-    }
-
     companion object {
-        internal const val PREFS_NAME = "first_start"
-        internal const val KEY_HOME_ROLE_ASKED = "home_role_asked"
-
         internal fun isHomeIntent(intent: Intent): Boolean =
             intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)
     }

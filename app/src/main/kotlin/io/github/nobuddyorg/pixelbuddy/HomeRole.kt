@@ -4,8 +4,9 @@ import android.app.role.RoleManager
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
+import io.github.nobuddyorg.pixelbuddy.feature.settings.HomeAppAccess
 
-/** What to do on first start to become the default home app. */
+/** What to do to become the default home app. */
 sealed interface HomeRoleAction {
     /** PixelBuddy already holds the home role. */
     data object None : HomeRoleAction
@@ -43,4 +44,18 @@ object HomeRole {
 
     /** Older or customised systems without the default-apps screen still have this one. */
     fun homeSettingsIntent(): Intent = Intent(Settings.ACTION_HOME_SETTINGS)
+}
+
+/** The setup's view of the home role, through [HomeRole]. */
+class RoleHomeAppAccess(
+    private val context: Context,
+) : HomeAppAccess {
+    override fun isDefault(): Boolean = HomeRole.nextAction(context) == HomeRoleAction.None
+
+    override fun requestIntents(): List<Intent> =
+        when (val action = HomeRole.nextAction(context)) {
+            HomeRoleAction.None -> emptyList()
+            is HomeRoleAction.RequestRole -> listOf(action.intent, HomeRole.defaultAppsSettingsIntent())
+            is HomeRoleAction.OpenDefaultAppsSettings -> listOf(action.intent, HomeRole.homeSettingsIntent())
+        }
 }

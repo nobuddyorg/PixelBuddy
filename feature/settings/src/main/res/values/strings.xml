@@ -129,4 +129,22 @@
     <string name="license_apache">Apache License 2.0</string>
     <string name="license_font_text">Font licence, full text</string>
     <string name="crash_reports_count">Saved: %1$d</string>
+    <string name="setup_progress">Setup · %1$d of %2$d</string>
+    <string name="setup_skip">Skip setup</string>
+    <string name="setup_next">Next</string>
+    <string name="setup_home_title">Home app</string>
+    <string name="setup_home_text">Make PixelBuddy your home app, so the Home button brings you here.</string>
+    <string name="setup_home_button">Make PixelBuddy the home app</string>
+    <string name="setup_home_later">Not now</string>
+    <string name="setup_home_done">PixelBuddy is your home app.</string>
+    <string name="setup_home_not_yet">PixelBuddy isn\'t the home app yet. You can change that later in the phone\'s settings.</string>
+    <string name="setup_favorites_title">Favorites</string>
+    <string name="setup_favorites_text">Tap the apps you use most. They show first on home, in this order. Change them any time with a long press.</string>
+    <string name="setup_favorites_count">Picked: %1$d</string>
+    <string name="setup_favorite_position">Favorite %1$d</string>
+    <string name="setup_weather_text">Show the weather next to the clock? It\'s the only thing PixelBuddy uses the internet for.</string>
+    <string name="setup_weather_off">No weather</string>
+    <string name="setup_weather_place">Choose a place</string>
+    <string name="settings_run_setup">Run setup again</string>
+    <string name="settings_run_setup_summary">Home app, favorites, weather</string>
 </resources>

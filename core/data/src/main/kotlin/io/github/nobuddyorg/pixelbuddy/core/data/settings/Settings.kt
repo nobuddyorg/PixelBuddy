@@ -25,6 +25,8 @@ data class Settings(
     val iconOverrides: List<IconOverride> = emptyList(),
     val weather: WeatherSettings = WeatherSettings(),
     val gestures: Gestures = Gestures(),
+    /** Where the first-start setup is (#20); [SetupStep.Done] once it was finished or skipped. */
+    val setup: SetupStep = SetupStep.HomeApp,
 ) {
     /** Every app this file refers to, e.g. to clean up after uninstalls. */
     val appKeys: Set<AppKey>
@@ -111,6 +113,25 @@ enum class Sky(
     Forest(0xFF0E1A14.toInt(), 0xFF1F3B2A.toInt(), 0xFF3E6B3F.toInt(), 0xFF6E9A4A.toInt()),
     Ocean(0xFF08142B.toInt(), 0xFF0F3057.toInt(), 0xFF1F6F8B.toInt(), 0xFF3FA0A0.toInt()),
     Mono(0xFF101014.toInt(), 0xFF26262E.toInt(), 0xFF44444F.toInt(), 0xFF6A6A78.toInt()),
+}
+
+/**
+ * Steps of the first-start setup, in order. Stored, so the setup goes on where it was after the process was
+ * killed (e.g. while the system's home-app dialog was open).
+ */
+@Serializable
+enum class SetupStep {
+    HomeApp,
+    Favorites,
+    Weather,
+    Done,
+    ;
+
+    /** The step after this one. */
+    val next: SetupStep get() = entries[minOf(ordinal + 1, entries.lastIndex)]
+
+    /** The step before this one, or this one if it is the first. */
+    val previous: SetupStep get() = entries[maxOf(ordinal - 1, 0)]
 }
 
 /** What the gestures on home do (#12). */
