@@ -59,14 +59,13 @@ sealed interface WeatherAction {
     data object OpenAttribution : WeatherAction
 }
 
-/** The weather rows of the main settings page. */
+/** The weather settings page. */
 @Composable
 internal fun WeatherSection(
     weather: WeatherOptions,
     onAction: (WeatherAction) -> Unit,
 ) {
     val settings = weather.settings
-    SectionHeader(stringResource(R.string.weather_title))
     ListRow(
         title = stringResource(R.string.weather_show),
         subtitle = stringResource(if (settings.enabled) R.string.weather_on else R.string.weather_off),

@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -50,10 +52,16 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppSorter
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppSource
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.HomeApps
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.TemperatureUnit
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherPlace
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.BatteryState
+import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyStyle
+import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyTheme
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
 import io.github.nobuddyorg.pixelbuddy.core.weather.HttpGet
 import io.github.nobuddyorg.pixelbuddy.core.weather.OpenMeteoClient
@@ -142,6 +150,7 @@ class HomeScreenTest {
         onAppClick: (LauncherApp) -> Unit = {},
         onOpenSettings: () -> Unit = {},
         onSwipeDown: () -> Boolean = { false },
+        gestures: Gestures = Gestures(),
     ) = compose.setContent {
         HomeScreen(
             home = HomeApps(favorites, apps),
@@ -149,7 +158,8 @@ class HomeScreenTest {
             onAppAction = { actions += it },
             onOpenSettings = onOpenSettings,
             resetKey = resetKey,
-            onSwipeDown = onSwipeDown,
+            gestures = gestures,
+            onOpenNotifications = onSwipeDown,
             header = {
                 HomeHeader(
                     LocalDateTime.of(2026, 11, 6, 21, 45),
@@ -203,6 +213,49 @@ class HomeScreenTest {
         compose.onRoot().performTouchInput { longClick() }
 
         assertEquals(1, opened)
+    }
+
+    @Test
+    fun `gestures do what the settings say`() {
+        var settingsOpened = 0
+        var pulled = 0
+        show(
+            favorites = favorites,
+            onOpenSettings = { settingsOpened++ },
+            onSwipeDown = { pulled++ > -1 },
+            gestures =
+                Gestures(
+                    swipeUp = GestureAction.Notifications,
+                    swipeDown = GestureAction.Settings,
+                    longPress = GestureAction.Search,
+                ),
+        )
+
+        compose.onRoot().performTouchInput { swipeUp(startY = height * 0.2f, endY = height * 0.05f) }
+        assertEquals(1, pulled)
+        compose.onRoot().performTouchInput { swipeDown(startY = height * 0.1f, endY = height * 0.4f) }
+        assertEquals(1, settingsOpened)
+        compose.onRoot().performTouchInput { longClick(Offset(width * 0.5f, height * 0.6f)) }
+        searchField().assertIsFocused()
+        assertEquals(1, settingsOpened)
+    }
+
+    @Test
+    fun `gestures set to nothing do nothing, and the long press then still opens the settings`() {
+        var settingsOpened = 0
+        show(
+            apps = emptyList(),
+            onOpenSettings = { settingsOpened++ },
+            gestures = Gestures(GestureAction.Nothing, GestureAction.Nothing, GestureAction.Nothing),
+        )
+
+        compose.onRoot().performTouchInput { swipeUp(startY = height * 0.7f, endY = height * 0.4f) }
+        compose.onRoot().performTouchInput { swipeDown(startY = height * 0.3f, endY = height * 0.7f) }
+        searchField().assertDoesNotExist()
+        assertEquals(0, settingsOpened)
+
+        compose.onRoot().performTouchInput { longClick() }
+        assertEquals(1, settingsOpened)
     }
 
     @Test
@@ -694,6 +747,65 @@ class HomeScreenTest {
         }
 
         compose.onRoot().captureRoboImage("HomeScreen_rail.png")
+    }
+
+    @Test
+    fun `screenshot with the user's appearance`() {
+        val style =
+            PixelBuddyStyle(
+                accent = Color(0xFFFF6FAE),
+                scanlines = true,
+                sky = listOf(Color(0xFF0E1A14), Color(0xFF1F3B2A), Color(0xFF3E6B3F), Color(0xFF6E9A4A)),
+                textScale = 1.2f,
+            )
+        compose.setContent {
+            PixelBuddyTheme(style) {
+                HomeScreen(
+                    home = HomeApps(favorites, sampleApps),
+                    onAppClick = {},
+                    onAppAction = {},
+                    onOpenSettings = {},
+                    header = {
+                        HomeHeader(
+                            LocalDateTime.of(2026, 11, 6, 21, 45),
+                            true,
+                            BatteryState(58, charging = false),
+                            {},
+                            {},
+                            clockHeight = 96.dp,
+                            clockShadow = false,
+                        )
+                    },
+                    icon = { app -> AppIcon(app, icons, IconPreset.Default.style) },
+                )
+            }
+        }
+        compose.onRoot().captureRoboImage("HomeScreen_appearance.png")
+    }
+
+    @Test
+    fun `the route uses the clock format from the settings`() {
+        val settings = SettingsRepository.create(File(folder.root, "settings.json"), Dispatchers.IO + storeJob)
+        compose.setContent {
+            HomeRoute(
+                AppRepository(FailingSource, settings),
+                settings,
+                icons,
+                onOpenSettings = {},
+                appearance = Appearance(clockFormat = ClockFormat.TwentyFourHour),
+            )
+        }
+
+        val clock = Regex("""\d{2}:\d{2}""")
+        compose.waitUntil {
+            compose
+                .onAllNodesWithContentDescription("", substring = true)
+                .fetchSemanticsNodes()
+                .any { node ->
+                    node.config.getOrNull(SemanticsProperties.ContentDescription)?.any(clock::matches) ==
+                        true
+                }
+        }
     }
 
     private fun hasPaneTitle(title: String) = SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, title)

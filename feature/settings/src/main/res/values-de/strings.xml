@@ -38,4 +38,94 @@
     <string name="weather_search_failed">Suche nicht möglich. Prüfe die Verbindung.</string>
     <string name="weather_attribution">Wetterdaten von Open-Meteo.com</string>
     <string name="weather_attribution_licence">CC BY 4.0 · Orte: GeoNames</string>
+    <string name="settings_appearance">Aussehen &amp; Themen</string>
+    <string name="settings_clock">Uhr &amp; Schrift</string>
+    <string name="settings_icons">App-Symbole</string>
+    <string name="settings_apps">Favoriten &amp; ausgeblendete Apps</string>
+    <string name="settings_apps_summary">Favoriten: %1$d · Ausgeblendet: %2$d</string>
+    <string name="settings_gestures">Gesten</string>
+    <string name="settings_gestures_summary">Nach oben und unten wischen, lange drücken</string>
+    <string name="settings_wallpaper">Hintergrund</string>
+    <string name="settings_about_summary">Version %1$s · Lizenzen · Absturzberichte</string>
+
+    <string name="accent_title">Akzentfarbe</string>
+    <string name="accent_orange">Orange</string>
+    <string name="accent_pink">Pink</string>
+    <string name="accent_yellow">Gelb</string>
+    <string name="accent_green">Grün</string>
+    <string name="accent_cyan">Cyan</string>
+    <string name="accent_lavender">Lavendel</string>
+    <string name="scanlines">Scanlines</string>
+    <string name="scanlines_summary">Feine Röhrenbildschirm-Linien über dem Himmel</string>
+    <string name="toggle_on">AN</string>
+    <string name="toggle_off">AUS</string>
+
+    <string name="clock_format">Uhrzeitformat</string>
+    <string name="clock_format_system">Wie das Telefon (%1$s)</string>
+    <string name="clock_format_12">12 h</string>
+    <string name="clock_format_24">24 h</string>
+    <string name="clock_shadow">Schatten der Uhr</string>
+    <string name="clock_size">Größe der Uhr</string>
+    <string name="text_size">Textgröße auf dem Startbildschirm</string>
+    <string name="text_size_summary">Zusätzlich zur Schriftgröße des Telefons</string>
+    <string name="size_small">Klein</string>
+    <string name="size_medium">Mittel</string>
+    <string name="size_large">Groß</string>
+    <string name="preview">Vorschau</string>
+
+    <string name="icons_style">Stil für alle Symbole</string>
+    <string name="icon_preset_eight_bit">8-Bit</string>
+    <string name="icon_preset_eight_bit_summary">Grob, 16 feste Retro-Farben</string>
+    <string name="icon_preset_sixteen_bit">16-Bit</string>
+    <string name="icon_preset_sixteen_bit_summary">Detailliert, Farben je Symbol, Umriss (Standard)</string>
+    <string name="icon_preset_pocket">Pocket</string>
+    <string name="icon_preset_pocket_summary">Vier Grüntöne, wie eine alte Handheld-Konsole</string>
+    <string name="icon_preset_neon">Neon</string>
+    <string name="icon_preset_neon_summary">Leuchtende Farben mit dunklem Umriss</string>
+    <string name="icon_preset_mono">Mono</string>
+    <string name="icon_preset_mono_summary">Abstufungen der Textfarbe</string>
+
+    <string name="favorites_title">Favoriten</string>
+    <string name="favorites_empty">Keine Favoriten. Halte eine App auf dem Startbildschirm gedrückt, um sie hinzuzufügen.</string>
+    <string name="favorite_up">%1$s nach oben</string>
+    <string name="favorite_down">%1$s nach unten</string>
+    <string name="favorite_remove">%1$s aus den Favoriten entfernen</string>
+
+    <string name="gesture_swipe_up">Nach oben wischen</string>
+    <string name="gesture_swipe_down">Nach unten wischen</string>
+    <string name="gesture_long_press">Lange auf freie Fläche drücken</string>
+    <string name="gesture_long_press_forced">Öffnet die Einstellungen, solange kein Wischen es tut</string>
+    <string name="gesture_nothing">Nichts</string>
+    <string name="gesture_search">Suche</string>
+    <string name="gesture_notifications">Benachrichtigungen</string>
+    <string name="gesture_settings">Einstellungen</string>
+
+    <string name="sky_title">Himmelsfarben</string>
+    <string name="sky_dusk">Abend</string>
+    <string name="sky_night">Nacht</string>
+    <string name="sky_dawn">Morgen</string>
+    <string name="sky_forest">Wald</string>
+    <string name="sky_ocean">Ozean</string>
+    <string name="sky_mono">Grau</string>
+    <string name="dithering">Dithering</string>
+    <string name="dithering_summary">Pixelstufen statt eines weichen Verlaufs</string>
+    <string name="wallpaper_set">Als Hintergrundbild festlegen</string>
+    <string name="wallpaper_explain">Nutzt diesen Himmel in der genauen Größe deines Bildschirms. Der Sperrbildschirm behält seine eigene Uhr.</string>
+    <string name="wallpaper_home">Startbildschirm</string>
+    <string name="wallpaper_lock">Sperrbildschirm</string>
+    <string name="wallpaper_both">Beide</string>
+    <string name="wallpaper_working">Hintergrundbild wird festgelegt…</string>
+    <string name="wallpaper_done">Hintergrundbild festgelegt</string>
+    <string name="wallpaper_failed">Hintergrundbild konnte nicht festgelegt werden</string>
+    <string name="wallpaper_not_allowed">Dieses Telefon erlaubt keine Änderung des Hintergrundbilds</string>
+
+    <string name="source_code">Quellcode</string>
+    <string name="licenses">Lizenzen</string>
+    <string name="licenses_summary">Schrift, Wetterdaten, Bibliotheken</string>
+    <string name="license_font">Schrift Departure Mono</string>
+    <string name="license_font_name">SIL Open Font License 1.1</string>
+    <string name="license_libraries">AndroidX, Jetpack Compose, Kotlin, kotlinx.coroutines, kotlinx.serialization</string>
+    <string name="license_apache">Apache License 2.0</string>
+    <string name="license_font_text">Schriftlizenz, vollständiger Text</string>
+    <string name="crash_reports_count">Gespeichert: %1$d</string>
 </resources>

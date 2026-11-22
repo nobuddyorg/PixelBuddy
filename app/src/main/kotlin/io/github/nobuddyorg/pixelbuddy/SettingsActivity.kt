@@ -16,22 +16,33 @@ class SettingsActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val container = appContainer
-        val launchableApps = container.appRepository.home.map { home -> home.apps.map { it.app } }
+        val home = container.appRepository.home
+        val launchableApps = home.map { apps -> apps.apps.map { it.app } }
+        val favoriteApps = home.map { it.favorites }
         setContent {
-            SettingsRoute(
-                store = container.crashReports,
-                appVersion = container.deviceInfo.appVersionName,
-                hiddenApps = container.appRepository.hiddenApps,
-                onShowApp = { app -> lifecycleScope.launch { container.settings.unhide(app.key) } },
-                weatherSettings = container.settings.weather,
-                onUpdateWeather = { change -> lifecycleScope.launch { container.settings.updateWeather(change) } },
-                searchPlaces = { name ->
-                    container.weatherRepository.searchPlaces(name, Locale.getDefault().language).map {
-                        WeatherPlace(it.name, it.region, it.country, it.coordinates.latitude, it.coordinates.longitude)
-                    }
-                },
-                apps = launchableApps,
-            )
+            // The accent and sky apply here too, as soon as they change.
+            StoredAppearanceTheme(container.settings) {
+                SettingsRoute(
+                    store = container.crashReports,
+                    appVersion = container.deviceInfo.appVersionName,
+                    settings = container.settings.settings,
+                    onUpdate = { change -> lifecycleScope.launch { container.settings.update(change) } },
+                    favoriteApps = favoriteApps,
+                    hiddenApps = container.appRepository.hiddenApps,
+                    apps = launchableApps,
+                    searchPlaces = { name ->
+                        container.weatherRepository.searchPlaces(name, Locale.getDefault().language).map {
+                            WeatherPlace(
+                                it.name,
+                                it.region,
+                                it.country,
+                                it.coordinates.latitude,
+                                it.coordinates.longitude,
+                            )
+                        }
+                    },
+                )
+            }
         }
     }
 }

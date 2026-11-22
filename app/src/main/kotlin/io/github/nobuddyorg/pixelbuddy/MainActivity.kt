@@ -12,7 +12,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.edit
-import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyTheme
 import io.github.nobuddyorg.pixelbuddy.feature.home.HomeRoute
 
 class MainActivity : ComponentActivity() {
@@ -37,7 +36,7 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            PixelBuddyTheme {
+            StoredAppearanceTheme(appContainer.settings) { appearance ->
                 HomeRoute(
                     repository = appContainer.appRepository,
                     settings = appContainer.settings,
@@ -45,6 +44,7 @@ class MainActivity : ComponentActivity() {
                     onOpenSettings = ::openSettings,
                     resetKey = homePresses,
                     weather = appContainer.weatherRepository,
+                    appearance = appearance,
                 )
             }
         }

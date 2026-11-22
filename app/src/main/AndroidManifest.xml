@@ -12,6 +12,8 @@
     <!-- Swipe down on home pulls down the notification shade (#10). -->
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
 
+    <!-- Merged from :feature:settings: SET_WALLPAPER for "Set as wallpaper" (#12). -->
+
     <!-- Package visibility: see launchable apps without QUERY_ALL_PACKAGES (#4). -->
     <queries>
         <intent>

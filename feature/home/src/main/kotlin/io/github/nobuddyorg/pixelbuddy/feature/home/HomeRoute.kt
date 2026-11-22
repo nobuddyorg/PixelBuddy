@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,6 +27,9 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.HomeApps
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LaunchResult
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyles
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherSettings
@@ -51,12 +55,15 @@ fun HomeRoute(
     resetKey: Int = 0,
     /** Weather for the info line; null leaves it out. */
     weather: WeatherRepository? = null,
+    /** Clock settings; colours and text size come from the theme. */
+    appearance: Appearance = Appearance(),
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val home by repository.home.collectAsStateWithLifecycle(initialValue = HomeApps())
     val iconStyles by settings.iconStyles.collectAsStateWithLifecycle(initialValue = IconStyles())
+    val gestures by settings.gestures.collectAsStateWithLifecycle(initialValue = Gestures())
 
     // Null until the stored settings are read, so no request goes out for the defaults first.
     val storedWeather by settings.weather.collectAsStateWithLifecycle(initialValue = null)
@@ -120,9 +127,14 @@ fun HomeRoute(
         onOpenSettings = onOpenSettings,
         modifier = modifier,
         resetKey = resetKey,
-        onSwipeDown = context::expandNotificationShade,
+        gestures = gestures,
+        onOpenNotifications = context::expandNotificationShade,
         header = {
-            LiveHomeHeader(onClockClick = context::openAlarms, onDateClick = context::openCalendar) { now ->
+            LiveHomeHeader(
+                appearance = appearance,
+                onClockClick = context::openAlarms,
+                onDateClick = context::openCalendar,
+            ) { now ->
                 val current = report
                 if (weather != null && weatherSettings.enabled && current != null) {
                     WeatherInfo(
@@ -153,14 +165,28 @@ fun HomeRoute(
 /** Reads time and battery itself, so a new minute only recomposes the header, not the app list. */
 @Composable
 private fun LiveHomeHeader(
+    appearance: Appearance,
     onClockClick: () -> Unit,
     onDateClick: () -> Unit,
     weather: @Composable (now: Instant) -> Unit,
 ) {
     val now by rememberCurrentTime()
-    val is24Hour by rememberIs24Hour()
+    val system24Hour by rememberIs24Hour()
     val battery by rememberBatteryState()
-    HomeHeader(now, is24Hour, battery, onClockClick, onDateClick) {
+    HomeHeader(
+        now = now,
+        is24Hour =
+            when (appearance.clockFormat) {
+                ClockFormat.System -> system24Hour
+                ClockFormat.TwelveHour -> false
+                ClockFormat.TwentyFourHour -> true
+            },
+        battery = battery,
+        onClockClick = onClockClick,
+        onDateClick = onDateClick,
+        clockHeight = appearance.clockSize.clockHeightDp.dp,
+        clockShadow = appearance.clockShadow,
+    ) {
         weather(now.atZone(ZoneId.systemDefault()).toInstant())
     }
 }

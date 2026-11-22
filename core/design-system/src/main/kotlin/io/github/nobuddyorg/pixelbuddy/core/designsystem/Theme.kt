@@ -12,11 +12,17 @@ data class PixelBuddyStyle(
     val accent: Color = PixelBuddyColors.DefaultAccent,
     /** Faint CRT scanlines over the background; off by default. */
     val scanlines: Boolean = false,
+    /** Sky gradient, top to bottom. */
+    val sky: List<Color> = PixelBuddyColors.Sky,
+    /** Dithered bands (pixel look) or a smooth gradient. */
+    val dithering: Boolean = true,
+    /** Factor for [PixelText] sizes, on top of the system font size. */
+    val textScale: Float = 1f,
 )
 
 private val LocalPixelBuddyStyle = staticCompositionLocalOf { PixelBuddyStyle() }
 
-/** Provides the user's style (accent colour, scanlines) to all PixelBuddy components. */
+/** Provides the user's style (accent colour, sky, scanlines, text size) to all PixelBuddy components. */
 @Composable
 fun PixelBuddyTheme(
     style: PixelBuddyStyle = PixelBuddyStyle(),

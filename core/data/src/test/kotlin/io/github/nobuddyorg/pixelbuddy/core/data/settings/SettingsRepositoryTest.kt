@@ -124,6 +124,57 @@ class SettingsRepositoryTest {
         }
 
     @Test
+    fun `appearance and gestures are observed on their own`() =
+        runTest {
+            val job = Job()
+            val settings = open(job)
+
+            settings.appearance.test {
+                assertEquals(Appearance(), awaitItem())
+                settings.addFavorite(maps)
+                settings.update { it.copy(appearance = it.appearance.copy(accent = Accent.Cyan, sky = Sky.Ocean)) }
+                assertEquals(Appearance(accent = Accent.Cyan, sky = Sky.Ocean), awaitItem())
+            }
+            settings.gestures.test {
+                assertEquals(Gestures(), awaitItem())
+                settings.update { it.copy(gestures = Gestures(swipeUp = GestureAction.Nothing)) }
+                assertEquals(GestureAction.Nothing, awaitItem().swipeUp)
+            }
+            job.cancel()
+        }
+
+    @Test
+    fun `the long press opens the settings while no swipe does`() {
+        assertEquals(GestureAction.Settings, Gestures(longPress = GestureAction.Search).effectiveLongPress)
+        assertEquals(
+            GestureAction.Search,
+            Gestures(swipeDown = GestureAction.Settings, longPress = GestureAction.Search).effectiveLongPress,
+        )
+        assertEquals(
+            GestureAction.Nothing,
+            Gestures(swipeUp = GestureAction.Settings, longPress = GestureAction.Nothing).effectiveLongPress,
+        )
+    }
+
+    @Test
+    fun `every sky stays readable and has four stops`() {
+        Sky.entries.forEach { sky ->
+            assertEquals(4, sky.stops.size, sky.name)
+            // The bottom is no brighter than the default orange, so light text stays readable.
+            assertTrue(luminance(sky.stops.last()) <= luminance(Sky.Dusk.stops.last()) + 1e-6, sky.name)
+        }
+    }
+
+    private fun luminance(argb: Int): Double {
+        fun linear(channel: Int): Double {
+            val c = channel / 255.0
+            return if (c <= 0.03928) c / 12.92 else Math.pow((c + 0.055) / 1.055, 2.4)
+        }
+        return 0.2126 * linear(argb shr 16 and 0xFF) + 0.7152 * linear(argb shr 8 and 0xFF) +
+            0.0722 * linear(argb and 0xFF)
+    }
+
+    @Test
     fun `weather settings are updated on their own`() =
         runTest {
             val job = Job()

@@ -49,6 +49,8 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.HomeApps
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.DitheredSky
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyColors
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyTheme
@@ -61,9 +63,10 @@ internal const val SEARCH = "search"
  * Home screen: the dithered sky, the [header] (clock and info line), the app list and the [AlphabetRail].
  *
  * The list shows the favorites; a rail letter swaps in that letter's apps until a tap on empty space, Back or
- * Home ([resetKey] changes). Swiping up (or "Search") opens the search with the keyboard; swiping down calls
- * [onSwipeDown] (the notification shade) and opens the search if that returns false. Tapping an app starts it, a
- * long press opens its menu ([AppMenu]); a long press on empty space opens the settings.
+ * Home ([resetKey] changes). "Search" opens the search with the keyboard. Swipes up and down and a long press on
+ * empty space do what [gestures] say; [onOpenNotifications] opens the notification shade and returns false if it
+ * can't, then the search opens instead. Tapping an app starts it, a long press opens its menu ([AppMenu]).
+ * TalkBack always offers opening the settings.
  */
 @Composable
 fun HomeScreen(
@@ -73,7 +76,8 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     resetKey: Int = 0,
-    onSwipeDown: () -> Boolean = { false },
+    gestures: Gestures = Gestures(),
+    onOpenNotifications: () -> Boolean = { false },
     header: @Composable () -> Unit = {},
     icon: @Composable (LauncherApp) -> Unit = {},
 ) {
@@ -91,12 +95,22 @@ fun HomeScreen(
         view = Rail.FAVORITES
     }
     BackHandler(enabled = view != Rail.FAVORITES) { view = Rail.FAVORITES }
-    val gestures by rememberUpdatedState(
+    val perform: (GestureAction) -> Unit = { action ->
+        when (action) {
+            GestureAction.Nothing -> Unit
+            GestureAction.Search -> view = SEARCH
+            GestureAction.Notifications -> if (!onOpenNotifications()) view = SEARCH
+            GestureAction.Settings -> openSettings()
+        }
+    }
+    val swipes by rememberUpdatedState(
         VerticalSwipes(
-            onUp = { if (view != SEARCH) view = SEARCH },
-            onDown = { if (view != SEARCH && !onSwipeDown()) view = SEARCH },
+            // In the search, swipes move the list or close the keyboard.
+            onUp = { if (view != SEARCH) perform(gestures.swipeUp) },
+            onDown = { if (view != SEARCH) perform(gestures.swipeDown) },
         ),
     )
+    val longPress by rememberUpdatedState { perform(gestures.effectiveLongPress) }
 
     val entry: SearchEntry = { rowId, app, highlight, top ->
         AppEntry(
@@ -122,8 +136,8 @@ fun HomeScreen(
                 .fillMaxSize()
                 .background(PixelBuddyColors.Navy)
                 .pointerInput(Unit) {
-                    detectTapGestures(onTap = { view = Rail.FAVORITES }, onLongPress = { openSettings() })
-                }.verticalSwipes { gestures }
+                    detectTapGestures(onTap = { view = Rail.FAVORITES }, onLongPress = { longPress() })
+                }.verticalSwipes { swipes }
                 .semantics {
                     paneTitle = title
                     onLongClick(label = openSettingsLabel) {
@@ -155,7 +169,7 @@ fun HomeScreen(
                         AppList(
                             view = view,
                             home = home,
-                            swipes = { gestures },
+                            swipes = { swipes },
                             entry = { rowId, app -> entry(rowId, app, emptyList(), false) },
                             modifier = Modifier.weight(1f),
                         )

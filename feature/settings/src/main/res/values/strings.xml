@@ -38,4 +38,95 @@
     <string name="weather_search_failed">Couldn\'t search. Check the connection.</string>
     <string name="weather_attribution">Weather data by Open-Meteo.com</string>
     <string name="weather_attribution_licence">CC BY 4.0 · Places: GeoNames</string>
+    <string name="settings_appearance">Appearance &amp; themes</string>
+    <string name="settings_clock">Clock &amp; typography</string>
+    <string name="settings_icons">App icons</string>
+    <string name="settings_apps">Favorites &amp; hidden apps</string>
+    <string name="settings_apps_summary">Favorites: %1$d · Hidden: %2$d</string>
+    <string name="settings_gestures">Gestures</string>
+    <string name="settings_gestures_summary">Swipe up and down, long press</string>
+    <string name="settings_wallpaper">Wallpaper &amp; background</string>
+    <string name="settings_about_summary">Version %1$s · Licences · Crash reports</string>
+
+    <string name="accent_title">Accent colour</string>
+    <string name="accent_orange">Orange</string>
+    <string name="accent_pink">Pink</string>
+    <string name="accent_yellow">Yellow</string>
+    <string name="accent_green">Green</string>
+    <string name="accent_cyan">Cyan</string>
+    <string name="accent_lavender">Lavender</string>
+    <string name="scanlines">Scanlines</string>
+    <string name="scanlines_summary">Faint CRT lines over the sky</string>
+    <string name="toggle_on">ON</string>
+    <string name="toggle_off">OFF</string>
+
+    <string name="clock_format">Clock format</string>
+    <string name="clock_format_system">Like the phone (%1$s)</string>
+    <string name="clock_format_12">12 h</string>
+    <string name="clock_format_24">24 h</string>
+    <string name="clock_shadow">Clock shadow</string>
+    <string name="clock_size">Clock size</string>
+    <string name="text_size">Text size on home</string>
+    <string name="text_size_summary">On top of the phone\'s font size</string>
+    <string name="size_small">Small</string>
+    <string name="size_medium">Medium</string>
+    <string name="size_large">Large</string>
+    <string name="preview">Preview</string>
+
+    <string name="icons_style">Style for all icons</string>
+    <string name="icon_preset_eight_bit">8-bit</string>
+    <string name="icon_preset_eight_bit_summary">Chunky, 16 fixed retro colours</string>
+    <string name="icon_preset_sixteen_bit">16-bit</string>
+    <string name="icon_preset_sixteen_bit_summary">Detailed, colours per icon, outline (default)</string>
+    <string name="icon_preset_pocket">Pocket</string>
+    <string name="icon_preset_pocket_summary">Four greens, like an old handheld</string>
+    <string name="icon_preset_neon">Neon</string>
+    <string name="icon_preset_neon_summary">Bright colours with a dark outline</string>
+    <string name="icon_preset_mono">Mono</string>
+    <string name="icon_preset_mono_summary">Shades of the text colour</string>
+
+    <string name="favorites_title">Favorites</string>
+    <string name="favorites_empty">No favorites. Long-press an app on home to add one.</string>
+    <string name="favorite_up">Move %1$s up</string>
+    <string name="favorite_down">Move %1$s down</string>
+    <string name="favorite_remove">Remove %1$s from favorites</string>
+
+    <string name="gesture_swipe_up">Swipe up</string>
+    <string name="gesture_swipe_down">Swipe down</string>
+    <string name="gesture_long_press">Long press on empty space</string>
+    <string name="gesture_long_press_forced">Opens the settings while no swipe does</string>
+    <string name="gesture_nothing">Nothing</string>
+    <string name="gesture_search">Search</string>
+    <string name="gesture_notifications">Notifications</string>
+    <string name="gesture_settings">Settings</string>
+
+    <string name="sky_title">Sky colours</string>
+    <string name="sky_dusk">Dusk</string>
+    <string name="sky_night">Night</string>
+    <string name="sky_dawn">Dawn</string>
+    <string name="sky_forest">Forest</string>
+    <string name="sky_ocean">Ocean</string>
+    <string name="sky_mono">Grey</string>
+    <string name="dithering">Dithering</string>
+    <string name="dithering_summary">Pixel bands instead of a smooth gradient</string>
+    <string name="wallpaper_set">Set as wallpaper</string>
+    <string name="wallpaper_explain">Uses this sky at your screen\'s exact size. The lock screen keeps its own clock.</string>
+    <string name="wallpaper_home">Home screen</string>
+    <string name="wallpaper_lock">Lock screen</string>
+    <string name="wallpaper_both">Both</string>
+    <string name="wallpaper_working">Setting the wallpaper…</string>
+    <string name="wallpaper_done">Wallpaper set</string>
+    <string name="wallpaper_failed">Couldn\'t set the wallpaper</string>
+    <string name="wallpaper_not_allowed">This phone doesn\'t allow changing the wallpaper</string>
+
+    <string name="source_code">Source code</string>
+    <string name="source_code_link" translatable="false">github.com/nobuddyorg/PixelBuddy</string>
+    <string name="licenses">Licences</string>
+    <string name="licenses_summary">Font, weather data, libraries</string>
+    <string name="license_font">Departure Mono font</string>
+    <string name="license_font_name">SIL Open Font License 1.1</string>
+    <string name="license_libraries">AndroidX, Jetpack Compose, Kotlin, kotlinx.coroutines, kotlinx.serialization</string>
+    <string name="license_apache">Apache License 2.0</string>
+    <string name="license_font_text">Font licence, full text</string>
+    <string name="crash_reports_count">Saved: %1$d</string>
 </resources>

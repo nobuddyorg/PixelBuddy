@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.BatteryState
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.HpBar
@@ -27,7 +28,8 @@ import java.time.LocalDateTime
 
 /**
  * Home header: big pixel clock and the info line (date, battery as HP bar, weather slot for #11).
- * Tapping the clock opens the alarms, tapping the date opens the calendar.
+ * Tapping the clock opens the alarms, tapping the date opens the calendar. [clockHeight] and [clockShadow] come
+ * from the settings.
  */
 @Composable
 fun HomeHeader(
@@ -37,6 +39,8 @@ fun HomeHeader(
     onClockClick: () -> Unit,
     onDateClick: () -> Unit,
     modifier: Modifier = Modifier,
+    clockHeight: Dp = 72.dp,
+    clockShadow: Boolean = true,
     weather: (@Composable () -> Unit)? = null,
 ) {
     val locale = LocalConfiguration.current.locales[0]
@@ -52,7 +56,12 @@ fun HomeHeader(
                     onClick = onClockClick,
                 ),
         ) {
-            PixelClock(text = clockText, contentDescription = clockText)
+            PixelClock(
+                text = clockText,
+                height = clockHeight,
+                shadow = if (clockShadow) PixelBuddyColors.Shadow else null,
+                contentDescription = clockText,
+            )
             if (!is24Hour) {
                 Spacer(Modifier.width(8.dp))
                 BasicText(HeaderFormat.amPm(now.toLocalTime(), locale), style = small)
