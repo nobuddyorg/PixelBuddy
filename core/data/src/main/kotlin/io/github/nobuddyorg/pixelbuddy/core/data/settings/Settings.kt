@@ -2,7 +2,10 @@ package io.github.nobuddyorg.pixelbuddy.core.data.settings
 
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppKey
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconShape
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconStyle
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.Palette
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.Palettes
 import kotlinx.serialization.Serializable
 
 /**
@@ -157,17 +160,128 @@ data class Gestures(
 @Serializable
 enum class GestureAction { Nothing, Search, Notifications, Settings }
 
-/** An icon style; for now a preset, the editor (#13) adds its own parameters. */
+/**
+ * An icon style: a [preset], or the user's own [custom] style made from one in the editor (#13), shown as
+ * "Custom (based on [preset])".
+ */
 @Serializable
 data class IconStyleSetting(
     /** [IconPreset] name. Unknown names (from a newer version) fall back to the default. */
     val preset: String = IconPreset.Default.name,
+    val custom: CustomIconStyle? = null,
 ) {
+    /** The preset, or the one the custom style is based on. */
+    val basePreset: IconPreset
+        get() = IconPreset.entries.firstOrNull { it.name == preset } ?: IconPreset.Default
+
     val style: IconStyle
-        get() = (IconPreset.entries.firstOrNull { it.name == preset } ?: IconPreset.Default).style
+        get() = custom?.toStyle() ?: basePreset.style
+
+    /** This style changed by [change]; a preset becomes a custom style based on it. */
+    fun edited(change: (CustomIconStyle) -> CustomIconStyle): IconStyleSetting =
+        IconStyleSetting(basePreset.name, change(custom ?: CustomIconStyle.from(style)))
 
     companion object {
         fun of(preset: IconPreset): IconStyleSetting = IconStyleSetting(preset.name)
+    }
+}
+
+/**
+ * Every parameter the icon editor offers. Values from a damaged or newer file are brought into range by
+ * [toStyle], so they can never stop icons from rendering.
+ */
+@Serializable
+data class CustomIconStyle(
+    val grid: Int = 24,
+    val palette: PaletteChoice = PaletteChoice.Adaptive,
+    /** Colours of an adaptive palette, shades of the mono one; see [PaletteChoice.colorRange]. */
+    val colors: Int = 16,
+    /** 0 keeps the averaged original colours, 1 uses the palette's. */
+    val intensity: Float = 1f,
+    val dithering: Boolean = false,
+    val outline: Boolean = false,
+    val outlineColor: Int = IconStyle.DEFAULT_OUTLINE,
+    /** On a rounded square plate (masked) or free-standing. */
+    val masked: Boolean = true,
+) {
+    fun toStyle(): IconStyle =
+        IconStyle(
+            grid = grid.takeIf { it in IconStyle.GRIDS } ?: IconStyle().grid,
+            palette = palette.toPalette(colors),
+            intensity = intensity.takeUnless { it.isNaN() }?.coerceIn(0f, 1f) ?: 1f,
+            dithering = dithering,
+            outline = outline,
+            outlineColor = outlineColor or OPAQUE,
+            shape = if (masked) IconShape.Masked else IconShape.FreeStanding,
+        )
+
+    companion object {
+        private const val OPAQUE = 0xFF shl 24
+
+        /** The editor's view of [style]; palettes the editor doesn't offer become adaptive ones. */
+        fun from(style: IconStyle): CustomIconStyle {
+            val (choice, colors) =
+                when (val palette = style.palette) {
+                    is Palette.Adaptive -> {
+                        PaletteChoice.Adaptive to palette.colors
+                    }
+
+                    Palette.Original -> {
+                        PaletteChoice.Original to 16
+                    }
+
+                    is Palette.MonochromeTint -> {
+                        PaletteChoice.Mono to palette.shades
+                    }
+
+                    is Palette.Fixed -> {
+                        (
+                            PaletteChoice.entries.firstOrNull { it.fixed == palette }
+                                ?: PaletteChoice.Adaptive
+                        ) to
+                            16
+                    }
+                }
+            return CustomIconStyle(
+                grid = style.grid,
+                palette = choice,
+                colors = colors,
+                intensity = style.intensity,
+                dithering = style.dithering,
+                outline = style.outline,
+                outlineColor = style.outlineColor,
+                masked = style.shape == IconShape.Masked,
+            )
+        }
+    }
+}
+
+/** The palettes the icon editor offers. */
+@Serializable
+enum class PaletteChoice(
+    internal val fixed: Palette.Fixed? = null,
+    /** How many colours can be chosen, or null if the palette has fixed colours. */
+    val colorRange: IntRange? = null,
+) {
+    Adaptive(colorRange = 2..32),
+    Original,
+    Retro16(Palettes.Retro16),
+    Pocket(Palettes.Pocket),
+    Neon(Palettes.Neon),
+    Mono(colorRange = 2..16),
+    ;
+
+    fun toPalette(colors: Int): Palette =
+        when (this) {
+            Adaptive -> Palette.Adaptive(colors.coerceIn(colorRange!!))
+            Original -> Palette.Original
+            Mono -> Palette.MonochromeTint(MONO_TINT, colors.coerceIn(colorRange!!))
+            else -> fixed!!
+        }
+
+    private companion object {
+        /** The light text colour, like the Mono preset. */
+        const val MONO_TINT = 0xFFF2EEFF.toInt()
     }
 }
 

@@ -30,6 +30,14 @@ class SettingsActivity : ComponentActivity() {
                     hiddenApps = container.appRepository.hiddenApps,
                     apps = launchableApps,
                     searchPlaces = container::searchPlaces,
+                    icons = container.iconRepository,
+                    onIconStyleApplied = { setting ->
+                        lifecycleScope.launch {
+                            // Once stored, so the background renders use the new style.
+                            container.settings.update { it.copy(iconStyle = setting) }
+                            container.refreshIcons(resources.configuration.densityDpi)
+                        }
+                    },
                     onRunSetup = {
                         lifecycleScope.launch {
                             // Stored first, then home shows the setup.

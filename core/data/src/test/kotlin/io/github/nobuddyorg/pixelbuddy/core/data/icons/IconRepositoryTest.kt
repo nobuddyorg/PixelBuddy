@@ -11,6 +11,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppKey
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.Palette
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -146,6 +147,67 @@ class IconRepositoryTest {
             loader.drawable = null
 
             assertNull(repository().icon(app, style, 420))
+        }
+
+    @Test
+    fun `previews draw the source once per session and write nothing to disk`() =
+        runTest {
+            val repository = repository()
+
+            val first = repository.preview(app, style, 420)!!
+            repository.preview(app, style.copy(dithering = true, palette = Palette.Original), 420)
+            assertEquals(1, loader.loads)
+            assertEquals(style.grid, first.width)
+            assertEquals(
+                emptyList(),
+                folder.root
+                    .walk()
+                    .filter { it.isFile }
+                    .toList(),
+            )
+
+            // Another grid needs a source of another size.
+            repository.preview(app, IconPreset.EightBit.style, 420)
+            assertEquals(2, loader.loads)
+            repository.endPreview()
+            repository.preview(app, style, 420)
+            assertEquals(3, loader.loads)
+        }
+
+    @Test
+    fun `the original icon is drawn at the asked size`() =
+        runTest {
+            val original = repository().original(app, sizePx = 100, densityDpi = 420)!!
+
+            assertEquals(100, original.width)
+            // The plate at the edge, the white glyph in the middle.
+            assertEquals(Color.RED, original.getPixel(2, 50))
+            assertEquals(Color.WHITE, original.getPixel(50, 50))
+            loader.drawable = null
+            assertNull(repository().original(app, 100, 420))
+            assertNull(repository().preview(app, style, 420))
+        }
+
+    @Test
+    fun `prewarming renders every app and drops other styles from the cache`() =
+        runTest {
+            val repository = repository()
+            val old = IconPreset.Neon.style
+            repository.icon(app, old, 420)
+            val other = app.copy(key = AppKey("org.other", "org.other.Main", 0), label = "Other")
+
+            repository.prewarm(listOf(app, other), setOf(style), 420)
+
+            assertEquals(3, repository.renderCount)
+            val files =
+                folder.root
+                    .walk()
+                    .filter { it.isFile }
+                    .toList()
+            assertEquals(2, files.size)
+            // The kept style is served without rendering again.
+            repository.icon(other, style, 420)
+            assertEquals(3, repository.renderCount)
         }
 
     @Test

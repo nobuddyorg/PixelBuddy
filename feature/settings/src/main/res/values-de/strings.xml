@@ -73,17 +73,11 @@
     <string name="size_large">Groß</string>
     <string name="preview">Vorschau</string>
 
-    <string name="icons_style">Stil für alle Symbole</string>
     <string name="icon_preset_eight_bit">8-Bit</string>
-    <string name="icon_preset_eight_bit_summary">Grob, 16 feste Retro-Farben</string>
     <string name="icon_preset_sixteen_bit">16-Bit</string>
-    <string name="icon_preset_sixteen_bit_summary">Detailliert, Farben je Symbol, Umriss (Standard)</string>
     <string name="icon_preset_pocket">Pocket</string>
-    <string name="icon_preset_pocket_summary">Vier Grüntöne, wie eine alte Handheld-Konsole</string>
     <string name="icon_preset_neon">Neon</string>
-    <string name="icon_preset_neon_summary">Leuchtende Farben mit dunklem Umriss</string>
     <string name="icon_preset_mono">Mono</string>
-    <string name="icon_preset_mono_summary">Abstufungen der Textfarbe</string>
 
     <string name="favorites_title">Favoriten</string>
     <string name="favorites_empty">Keine Favoriten. Halte eine App auf dem Startbildschirm gedrückt, um sie hinzuzufügen.</string>
@@ -146,4 +140,31 @@
     <string name="setup_weather_place">Ort auswählen</string>
     <string name="settings_run_setup">Einrichtung wiederholen</string>
     <string name="settings_run_setup_summary">Startbildschirm-App, Favoriten, Wetter</string>
+    <string name="icons_custom">Eigener Stil (aus %1$s)</string>
+    <string name="icons_preview">Vorschau deiner Symbole in diesem Stil</string>
+    <string name="icons_preview_originals">Deine Symbole, wie die Apps sie zeichnen</string>
+    <string name="icons_show_originals">Originale zeigen</string>
+    <string name="icons_show_originals_summary">Oder die Vorschau gedrückt halten</string>
+    <string name="icons_presets">Vorlagen</string>
+    <string name="icons_adjust">Anpassen</string>
+    <string name="icons_grid">Pixel pro Seite</string>
+    <string name="icons_palette">Palette</string>
+    <string name="palette_adaptive">Je Symbol</string>
+    <string name="palette_original">Original</string>
+    <string name="palette_retro16">Retro 16</string>
+    <string name="palette_pocket">Pocket</string>
+    <string name="palette_neon">Neon</string>
+    <string name="palette_mono">Mono</string>
+    <string name="icons_colors">Farben</string>
+    <string name="icons_intensity">Stärke der Palette</string>
+    <string name="icons_dithering_summary">Mischt Palettenfarben in einem Pixelmuster</string>
+    <string name="icons_outline">Umriss</string>
+    <string name="icons_outline_summary">Ein dunkler Rand von 1 Pixel</string>
+    <string name="icons_masked">Abgerundetes Quadrat</string>
+    <string name="icons_masked_summary">Aus: nur die gezeichnete Form</string>
+    <string name="icons_apply">Übernehmen</string>
+    <string name="icons_reset">Zurücksetzen</string>
+    <string name="icons_discard_title">Änderungen verwerfen?</string>
+    <string name="icons_discard">Verwerfen</string>
+    <string name="icons_keep">Weiter bearbeiten</string>
 </resources>

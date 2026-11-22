@@ -5,10 +5,13 @@ import android.content.pm.LauncherApps
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconShape
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconStyle
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.PixelEngine
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.PixelImage
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
@@ -69,7 +72,12 @@ class IconRepository(
     private val loader: IconLoader,
     private val cache: IconCache,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(2),
+    /** For [prewarm]: one at a time, so icons on screen keep [dispatcher] to themselves. */
+    private val background: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(1),
 ) {
+    /** Drawn sources for [preview], by app, density, size and shape: drawn once per editor session. */
+    private val previewSources = ConcurrentHashMap<String, Pair<IconShape, PixelImage>>()
+
     /** App id and density → verified base (version, icon fingerprint, density) for this session. */
     private val verified = ConcurrentHashMap<String, String>()
 
@@ -89,27 +97,92 @@ class IconRepository(
         style: IconStyle,
         densityDpi: Int,
         layer: IconLayer = IconLayer.Full,
+    ): Bitmap? = withContext(dispatcher) { cachedIcon(app, style, densityDpi, layer) }
+
+    private fun cachedIcon(
+        app: LauncherApp,
+        style: IconStyle,
+        densityDpi: Int,
+        layer: IconLayer,
+    ): Bitmap? {
+        val id = app.key.id
+        val session = "$id|$densityDpi"
+        val styleKey = styleKey(style, layer)
+        verified[session]?.let { base -> cache.get(id, base, styleKey)?.let { return it } }
+
+        val drawable = loader.load(app, densityDpi) ?: return null
+        val base = "${loader.version(app)}|${IconSourceRenderer.fingerprint(drawable)}|$densityDpi"
+        verified[session] = base
+        cache.get(id, base, styleKey)?.let { return it }
+
+        val shape = IconSourceRenderer.shapeFor(drawable, style.shape)
+        val effective = style.copy(shape = shape)
+        val source = IconSourceRenderer.render(drawable, effective.sourceSize, layer, shape)
+        val bitmap = PixelEngine.render(source, effective).toBitmap()
+        renderCount++
+        cache.put(id, base, styleKey, bitmap)
+        return bitmap
+    }
+
+    /**
+     * [app] in [style] for the icon editor's live preview. The source is drawn once per session ([endPreview]
+     * forgets it) and nothing is cached on disk, so trying styles leaves no files behind. A cancelled preview stops
+     * before rendering, so only the latest style costs time.
+     */
+    suspend fun preview(
+        app: LauncherApp,
+        style: IconStyle,
+        densityDpi: Int,
     ): Bitmap? =
         withContext(dispatcher) {
-            val id = app.key.id
-            val session = "$id|$densityDpi"
-            val styleKey = "$style|$layer"
-            verified[session]?.let { base -> cache.get(id, base, styleKey)?.let { return@withContext it } }
-
-            val drawable = loader.load(app, densityDpi) ?: return@withContext null
-            val base = "${loader.version(app)}|${IconSourceRenderer.fingerprint(drawable)}|$densityDpi"
-            verified[session] = base
-            cache.get(id, base, styleKey)?.let { return@withContext it }
-
-            val shape = IconSourceRenderer.shapeFor(drawable, style.shape)
-            val effective = style.copy(shape = shape)
-            val source = IconSourceRenderer.render(drawable, effective.sourceSize, layer, shape)
-            val pixels = PixelEngine.render(source, effective)
-            val bitmap = Bitmap.createBitmap(pixels.pixels, pixels.width, pixels.height, Bitmap.Config.ARGB_8888)
-            renderCount++
-            cache.put(id, base, styleKey, bitmap)
-            bitmap
+            val key = "${app.key.id}|$densityDpi|${style.sourceSize}|${style.shape}"
+            val (shape, source) =
+                previewSources[key] ?: run {
+                    val drawable = loader.load(app, densityDpi) ?: return@withContext null
+                    val shape = IconSourceRenderer.shapeFor(drawable, style.shape)
+                    (shape to IconSourceRenderer.render(drawable, style.sourceSize, IconLayer.Full, shape))
+                        .also { previewSources[key] = it }
+                }
+            ensureActive()
+            PixelEngine.render(source, style.copy(shape = shape)).toBitmap()
         }
+
+    /** The app's own icon at [sizePx], to compare with the pixelated one. */
+    suspend fun original(
+        app: LauncherApp,
+        sizePx: Int,
+        densityDpi: Int,
+    ): Bitmap? =
+        withContext(dispatcher) {
+            val drawable = loader.load(app, densityDpi) ?: return@withContext null
+            IconSourceRenderer.render(drawable, sizePx).toBitmap()
+        }
+
+    /** The editor closed: forget its sources. */
+    fun endPreview() = previewSources.clear()
+
+    /**
+     * After a style change: renders every app in [styles] ahead, one at a time in the background, so icons further
+     * down the list are ready too; icons on screen are requested by home itself and come first. Then removes cached
+     * icons of styles no longer in use.
+     */
+    suspend fun prewarm(
+        apps: List<LauncherApp>,
+        styles: Set<IconStyle>,
+        densityDpi: Int,
+    ) {
+        for (app in apps) {
+            for (style in styles) withContext(background) { cachedIcon(app, style, densityDpi, IconLayer.Full) }
+        }
+        withContext(background) { cache.retainStyles(styles.mapTo(HashSet()) { styleKey(it, IconLayer.Full) }) }
+    }
+
+    private fun styleKey(
+        style: IconStyle,
+        layer: IconLayer,
+    ) = "$style|$layer"
+
+    private fun PixelImage.toBitmap(): Bitmap = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
 
     /**
      * Apps may have changed (installed, updated, icon theme): re-check fingerprints on the next request. Cheap: an
