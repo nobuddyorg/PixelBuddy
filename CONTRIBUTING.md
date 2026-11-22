@@ -27,6 +27,7 @@ The plan and the order of work are in [docs/PLAN.md](docs/PLAN.md) and the
 | Coverage report | `./gradlew :koverHtmlReportUnit` → `build/reports/kover/htmlUnit/index.html` |
 | Screenshot tests | `./gradlew verifyRoborazziDebug`; after an intended UI change `./gradlew recordRoborazziDebug` |
 | Pixel engine golden images | `./gradlew :core:pixel-engine:test`; after an intended change add `-Dpixelengine.record=true` and review `core/pixel-engine/src/test/resources/golden` |
+| Outline icon prototype (#29) | `cd tools/icon-outline && python3 -m unittest -v`, see its README |
 | Mutation tests (nightly in CI) | `./gradlew :core:pixel-engine:pitest` → `core/pixel-engine/build/reports/pitest/index.html` |
 
 Reference screenshots are recorded on Linux, like CI. Rendering on macOS or Windows can differ slightly; if
