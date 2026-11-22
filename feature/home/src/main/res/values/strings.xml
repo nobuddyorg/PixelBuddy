@@ -25,4 +25,8 @@
     <string name="home_menu_uninstall">Uninstall</string>
     <string name="home_app_hidden">%1$s hidden. Show it again in the settings.</string>
     <string name="home_action_failed">Not possible for %1$s</string>
+    <!-- Alphabet rail, for TalkBack. -->
+    <string name="home_rail">Alphabet</string>
+    <string name="home_rail_favorites">Favorites</string>
+    <string name="home_rail_letter">Apps with %1$s</string>
 </resources>

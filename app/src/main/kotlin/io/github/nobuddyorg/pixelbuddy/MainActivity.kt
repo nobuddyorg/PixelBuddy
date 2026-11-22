@@ -8,11 +8,17 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.content.edit
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyTheme
 import io.github.nobuddyorg.pixelbuddy.feature.home.HomeRoute
 
 class MainActivity : ComponentActivity() {
+    /** Counts Home presses while home is shown; each one resets home to the favorites. */
+    private var homePresses by mutableIntStateOf(0)
+
     private val roleRequest =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             // Declining is a valid answer; the user can change the home app in system settings.
@@ -37,6 +43,7 @@ class MainActivity : ComponentActivity() {
                     settings = appContainer.settings,
                     icons = appContainer.iconRepository,
                     onOpenSettings = ::openSettings,
+                    resetKey = homePresses,
                 )
             }
         }
@@ -58,8 +65,10 @@ class MainActivity : ComponentActivity() {
         startActivity(Intent(this, SettingsActivity::class.java))
     }
 
-    /** Home pressed while already on home. Later issues reset the list, rail and search here. */
-    private fun onHomePressed() = Unit
+    /** Home pressed (also when coming back from an app): show the favorites again. */
+    private fun onHomePressed() {
+        homePresses++
+    }
 
     private fun requestHomeRoleOnFirstStart() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)

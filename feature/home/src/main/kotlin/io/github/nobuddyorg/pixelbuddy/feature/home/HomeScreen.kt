@@ -1,6 +1,8 @@
 package io.github.nobuddyorg.pixelbuddy.feature.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -18,13 +20,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -35,6 +44,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.HomeApps
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
@@ -43,10 +53,15 @@ import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyColors
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyTheme
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelText
 
+/** The list view next to the rail's ★ and letters: every app, sorted with section headers. */
+internal const val ALL_APPS = "all"
+
 /**
- * Home screen: the dithered sky, the [header] (clock and info line), the favorites and, below them, all apps;
- * the rail follows in #9. Tapping an app starts it, a long press opens its menu ([AppMenu]); a long press on empty
- * space opens the settings.
+ * Home screen: the dithered sky, the [header] (clock and info line), the app list and the [AlphabetRail].
+ *
+ * The list shows the favorites; a rail letter swaps in that letter's apps until a tap on empty space, Back or
+ * Home ([resetKey] changes); swiping up (or "All apps") shows every app. Tapping an app starts it, a long press
+ * opens its menu ([AppMenu]); a long press on empty space opens the settings.
  */
 @Composable
 fun HomeScreen(
@@ -55,21 +70,33 @@ fun HomeScreen(
     onAppAction: (AppAction) -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    resetKey: Int = 0,
     header: @Composable () -> Unit = {},
     icon: @Composable (LauncherApp) -> Unit = {},
 ) {
     val title = stringResource(R.string.home_screen_title)
     val openSettingsLabel = stringResource(R.string.home_open_settings)
     val openSettings by rememberUpdatedState(onOpenSettings)
+    // Rail.FAVORITES, a section letter or ALL_APPS; Home (a new resetKey) goes back to the favorites.
+    var view by rememberSaveable(resetKey) { mutableStateOf(Rail.FAVORITES) }
     // The row whose menu is open; an app can have two rows (favorite and in the list).
-    var menuRow by rememberSaveable { mutableStateOf<String?>(null) }
+    var menuRow by rememberSaveable(resetKey) { mutableStateOf<String?>(null) }
+    val sections = remember(home.apps) { home.apps.mapTo(LinkedHashSet()) { it.section } }
+    val railEntries = remember(sections) { Rail.entries(sections) }
+    // A letter whose last app was removed or hidden has nothing to show.
+    if (view != Rail.FAVORITES && view != ALL_APPS && home.apps.isNotEmpty() && view !in sections) {
+        view = Rail.FAVORITES
+    }
+    BackHandler(enabled = view != Rail.FAVORITES) { view = Rail.FAVORITES }
+
     Box(
         modifier =
             modifier
                 .fillMaxSize()
                 .background(PixelBuddyColors.Navy)
-                .pointerInput(Unit) { detectTapGestures(onLongPress = { openSettings() }) }
-                .semantics {
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { view = Rail.FAVORITES }, onLongPress = { openSettings() })
+                }.semantics {
                     paneTitle = title
                     onLongClick(label = openSettingsLabel) {
                         openSettings()
@@ -80,22 +107,60 @@ fun HomeScreen(
         DitheredSky(Modifier.fillMaxSize())
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
             Box(Modifier.padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 16.dp)) { header() }
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 32.dp, vertical = 8.dp),
-                modifier = Modifier.weight(1f),
-            ) {
-                items(home.favorites, key = { "favorite/" + it.key.id }) { app ->
-                    val rowId = "favorite/" + app.key.id
-                    AppEntry(
-                        app,
-                        home,
-                        rowId == menuRow,
-                        icon,
-                        onAppClick,
-                        onAppAction,
-                        { menuRow = it?.let { rowId } },
-                    )
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                Column(Modifier.fillMaxSize().padding(end = 40.dp)) {
+                    val entry: @Composable (String, LauncherApp) -> Unit = { rowId, app ->
+                        AppEntry(
+                            app = app,
+                            home = home,
+                            menuOpen = rowId == menuRow,
+                            icon = icon,
+                            onAppClick = onAppClick,
+                            onAppAction = onAppAction,
+                            onMenu = { menuRow = it?.let { rowId } },
+                        )
+                    }
+                    // Each view starts at its top.
+                    key(view) {
+                        AppList(
+                            view = view,
+                            home = home,
+                            onSwipeUp = { if (view == Rail.FAVORITES) view = ALL_APPS },
+                            entry = entry,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    if (view != ALL_APPS && home.apps.isNotEmpty()) {
+                        AllAppsButton(onClick = { view = ALL_APPS })
+                    }
                 }
+                AlphabetRail(
+                    entries = railEntries,
+                    selected = view,
+                    onSelect = { view = it },
+                    modifier = Modifier.align(Alignment.CenterEnd).padding(top = 8.dp, bottom = 8.dp, end = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AppList(
+    view: String,
+    home: HomeApps,
+    onSwipeUp: () -> Unit,
+    entry: @Composable (rowId: String, app: LauncherApp) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val swipeUp = rememberSwipeUpConnection(onSwipeUp)
+    LazyColumn(
+        contentPadding = PaddingValues(start = 32.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+        modifier = modifier.fillMaxWidth().nestedScroll(swipeUp),
+    ) {
+        when (view) {
+            Rail.FAVORITES -> {
+                items(home.favorites, key = { "favorite/" + it.key.id }) { app -> entry("favorite/" + app.key.id, app) }
                 // No apps yet means they are still loading; the hint would only flash.
                 if (home.favorites.isEmpty() && home.apps.isNotEmpty()) {
                     item(key = "favorites-hint") {
@@ -106,26 +171,88 @@ fun HomeScreen(
                         )
                     }
                 }
-                if (home.apps.isNotEmpty()) {
-                    item(key = "all-apps") {
-                        BasicText(
-                            stringResource(R.string.home_all_apps).uppercase(),
-                            style = PixelText.small.copy(color = PixelBuddyTheme.style.accent),
-                            modifier = Modifier.padding(top = 24.dp, bottom = 8.dp).semantics { heading() },
-                        )
-                    }
+            }
+
+            ALL_APPS -> {
+                home.apps.groupBy { it.section }.forEach { (section, apps) ->
+                    item(key = "section/$section") { SectionLabel(section) }
+                    items(apps, key = { "app/" + it.app.key.id }) { entry("app/" + it.app.key.id, it.app) }
                 }
-                items(home.apps, key = { "app/" + it.app.key.id }) { entry ->
-                    val rowId = "app/" + entry.app.key.id
-                    AppEntry(entry.app, home, rowId == menuRow, icon, onAppClick, onAppAction, {
-                        menuRow =
-                            it?.let { rowId }
-                    })
-                }
+            }
+
+            else -> {
+                item(key = "section/$view") { SectionLabel(view) }
+                val apps = home.apps.filter { it.section == view }
+                items(apps, key = { "app/" + it.app.key.id }) { entry("app/" + it.app.key.id, it.app) }
             }
         }
     }
 }
+
+/** Dragging up past the end of the list (or flinging up) calls [onSwipeUp]. */
+@Composable
+private fun rememberSwipeUpConnection(onSwipeUp: () -> Unit): NestedScrollConnection {
+    val current by rememberUpdatedState(onSwipeUp)
+    val threshold = with(LocalDensity.current) { SwipeUpDistance.toPx() }
+    return remember(threshold) {
+        object : NestedScrollConnection {
+            private var pulled = 0f
+
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource,
+            ): Offset {
+                if (source != NestedScrollSource.UserInput) return Offset.Zero
+                // Finger up = negative y: content would move up, but the list is already at its end.
+                pulled = if (available.y < 0f) pulled - available.y else 0f
+                if (pulled > threshold) {
+                    pulled = 0f
+                    current()
+                }
+                return Offset.Zero
+            }
+
+            override suspend fun onPostFling(
+                consumed: Velocity,
+                available: Velocity,
+            ): Velocity {
+                pulled = 0f
+                if (available.y < -SWIPE_UP_VELOCITY) current()
+                return Velocity.Zero
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionLabel(section: String) {
+    BasicText(
+        section,
+        style = PixelText.small.copy(color = PixelBuddyTheme.style.accent),
+        modifier = Modifier.padding(top = 16.dp, bottom = 4.dp).semantics { heading() },
+    )
+}
+
+@Composable
+private fun AllAppsButton(onClick: () -> Unit) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clickable(role = Role.Button, onClick = onClick),
+    ) {
+        BasicText(
+            "▲ " + stringResource(R.string.home_all_apps).uppercase(),
+            style = PixelText.small.copy(color = PixelBuddyColors.Text),
+        )
+    }
+}
+
+private val SwipeUpDistance = 48.dp
+private const val SWIPE_UP_VELOCITY = 1500f
 
 /** An app row with its menu while [menuOpen]; [onMenu] gets the app to open the menu, null to close it. */
 @Composable

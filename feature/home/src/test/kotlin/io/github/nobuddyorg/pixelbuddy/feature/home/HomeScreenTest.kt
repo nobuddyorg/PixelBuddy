@@ -5,24 +5,36 @@ import android.content.ComponentName
 import android.graphics.Rect
 import android.os.Process
 import android.os.UserHandle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.TouchInjectionScope
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppKey
@@ -107,6 +119,8 @@ class HomeScreenTest {
 
     private val actions = mutableListOf<AppAction>()
 
+    private var resetKey by mutableIntStateOf(0)
+
     private fun show(
         apps: List<AppListEntry> = sampleApps,
         favorites: List<LauncherApp> = emptyList(),
@@ -118,6 +132,7 @@ class HomeScreenTest {
             onAppClick = onAppClick,
             onAppAction = { actions += it },
             onOpenSettings = onOpenSettings,
+            resetKey = resetKey,
             header = {
                 HomeHeader(
                     LocalDateTime.of(2026, 11, 6, 21, 45),
@@ -133,7 +148,7 @@ class HomeScreenTest {
 
     @Test
     fun `apps are listed in order`() {
-        show()
+        showAll()
 
         val labels =
             compose
@@ -149,6 +164,7 @@ class HomeScreenTest {
     fun `tapping an app opens it`() {
         val clicked = mutableListOf<LauncherApp>()
         show(onAppClick = { clicked += it })
+        openAllApps()
 
         compose.onNodeWithContentDescription("Signal").performClick()
 
@@ -157,7 +173,7 @@ class HomeScreenTest {
 
     @Test
     fun `work apps are marked`() {
-        show()
+        showAll()
 
         compose.onNodeWithContentDescription("Teams, work profile").assertIsDisplayed()
     }
@@ -191,7 +207,8 @@ class HomeScreenTest {
         val settings = SettingsRepository.create(File(folder.root, "settings.json"), Dispatchers.IO + storeJob)
         val repository = AppRepository(source, settings)
         compose.setContent { HomeRoute(repository, settings, icons, onOpenSettings = {}) }
-        compose.waitUntil { hasApp("Maps") }
+        compose.waitUntil { compose.onAllNodesWithText("▲ ALL APPS").fetchSemanticsNodes().isNotEmpty() }
+        openAllApps()
         return settings
     }
 
@@ -205,13 +222,102 @@ class HomeScreenTest {
     }
 
     @Test
-    fun `favorites are listed above all apps`() {
+    fun `home shows the favorites in their order`() {
         show(favorites = favorites)
 
-        val rows = appRowLabels()
-        assertEquals(favorites.map { it.label }, rows.take(3))
-        assertEquals(sampleApps.first().app.label, rows[3])
-        compose.onNodeWithText("ALL APPS").assertIsDisplayed()
+        assertEquals(favorites.map { it.label }, appRowLabels())
+        allAppsButton().assertIsDisplayed()
+    }
+
+    @Test
+    fun `swiping up shows all apps and Back returns to the favorites`() {
+        show(favorites = favorites)
+
+        compose.onRoot().performTouchInput { swipeUp(startY = height * 0.7f, endY = height * 0.4f) }
+
+        assertEquals(sampleApps.take(6).map { it.app.label }, appRowLabels().take(6))
+        allAppsButton().assertDoesNotExist()
+        Espresso.pressBack()
+        assertEquals(favorites.map { it.label }, appRowLabels())
+    }
+
+    @Test
+    fun `tapping a rail letter shows that letter's apps until a tap elsewhere`() {
+        show(favorites = favorites)
+
+        tapRail("S")
+
+        assertEquals(listOf("Signal", "Spotify"), appRowLabels())
+        compose.onNode(hasText("S") and isHeading()).assertIsDisplayed()
+        compose.onRoot().performTouchInput { click(Offset(width / 2f, height - 300f)) }
+        assertEquals(favorites.map { it.label }, appRowLabels())
+    }
+
+    @Test
+    fun `letters without apps select the nearest letter`() {
+        show()
+
+        // No app starts with R; S is the nearest letter with apps.
+        tapRail("R")
+
+        assertEquals(listOf("Signal", "Spotify"), appRowLabels())
+    }
+
+    @Test
+    fun `dragging along the rail follows the finger and lifting keeps the group`() {
+        show(favorites = favorites)
+
+        compose.onNodeWithContentDescription("Alphabet").performTouchInput {
+            down(Offset(centerX, railY("A")))
+            moveTo(Offset(centerX, railY("F")))
+        }
+        assertEquals(listOf("Firefox"), appRowLabels())
+        compose.onNodeWithContentDescription("Alphabet").performTouchInput {
+            moveTo(Offset(centerX, railY("T")))
+            up()
+        }
+
+        assertEquals(listOf("Teams", "Telefon"), appRowLabels())
+    }
+
+    @Test
+    fun `Back and Home return to the favorites`() {
+        show(favorites = favorites)
+
+        tapRail("M")
+        assertEquals(listOf("Maps"), appRowLabels())
+        Espresso.pressBack()
+        assertEquals(favorites.map { it.label }, appRowLabels())
+
+        tapRail("S")
+        resetKey++
+        compose.waitForIdle()
+        assertEquals(favorites.map { it.label }, appRowLabels())
+    }
+
+    @Test
+    fun `the rail has an accessibility action per letter with apps`() {
+        show(favorites = favorites)
+        val rail = compose.onNodeWithContentDescription("Alphabet")
+        val custom = rail.fetchSemanticsNode().config[SemanticsActions.CustomActions]
+        val actions = custom.map { it.label }
+
+        assertEquals(
+            listOf(
+                "Favorites",
+                "Apps with A",
+                "Apps with F",
+                "Apps with M",
+                "Apps with P",
+                "Apps with S",
+                "Apps with T",
+                "Apps with #",
+            ),
+            actions,
+        )
+        compose.runOnIdle { custom.first { it.label == "Apps with P" }.action() }
+        assertEquals(listOf("Proton Mail"), appRowLabels())
+        rail.assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "P"))
     }
 
     @Test
@@ -230,7 +336,7 @@ class HomeScreenTest {
 
     @Test
     fun `long press opens the app menu and picking an entry closes it`() {
-        show()
+        showAll()
 
         compose.onNodeWithContentDescription("Signal").performTouchInput { longClick() }
         compose.onNodeWithText("Uninstall", substring = true).assertIsDisplayed()
@@ -242,7 +348,7 @@ class HomeScreenTest {
 
     @Test
     fun `the menu is reachable with accessibility services`() {
-        show()
+        showAll()
 
         compose.onNodeWithContentDescription("Maps").performSemanticsAction(SemanticsActions.OnLongClick)
         compose.onNodeWithText("App info", substring = true).performClick()
@@ -262,7 +368,7 @@ class HomeScreenTest {
         openMenu("Maps")
         compose.onNodeWithText("Move down", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Move up", substring = true).performClick()
-        openMenu("Firefox", row = 1)
+        openMenu("Firefox")
         compose.onNodeWithText("Remove from favorites", substring = true).performClick()
 
         assertEquals(
@@ -279,6 +385,7 @@ class HomeScreenTest {
     fun `system apps have no uninstall entry`() {
         val system = app("Telefon").copy(canUninstall = false)
         show(apps = listOf(AppListEntry(system, "T")))
+        openAllApps()
 
         openMenu("Telefon")
 
@@ -292,10 +399,11 @@ class HomeScreenTest {
 
         openMenu("Maps")
         compose.onNodeWithText("Add to favorites", substring = true).performClick()
-        compose.waitUntil { appRowLabels().count { it == "Maps" } == 2 }
         openMenu("Signal")
         compose.onNodeWithText("Hide", substring = true).performClick()
         compose.waitUntil { !hasApp("Signal") }
+        Espresso.pressBack()
+        compose.waitUntil { appRowLabels() == listOf("Maps") }
 
         assertEquals("Signal hidden. Show it again in the settings.", ShadowToast.getTextOfLatestToast())
         val stored = runBlocking { settings.settings.first() }
@@ -323,6 +431,24 @@ class HomeScreenTest {
         assertEquals(IntOffset(500, 300), rtl)
     }
 
+    private fun showAll() {
+        show()
+        openAllApps()
+    }
+
+    private fun allAppsButton() = compose.onNodeWithText("▲ ALL APPS")
+
+    private fun openAllApps() {
+        allAppsButton().performClick()
+    }
+
+    /** Centre of [key]'s cell on the rail, in the rail's coordinates. */
+    private fun TouchInjectionScope.railY(key: String) = (Rail.KEYS.indexOf(key) + 0.5f) * height / Rail.KEYS.size
+
+    private fun tapRail(key: String) {
+        compose.onNodeWithContentDescription("Alphabet").performTouchInput { click(Offset(centerX, railY(key))) }
+    }
+
     private fun openMenu(
         label: String,
         row: Int = 0,
@@ -336,6 +462,7 @@ class HomeScreenTest {
             .onAllNodesWithContentDescription("", substring = true)
             .fetchSemanticsNodes()
             .mapNotNull { it.config.getOrNull(SemanticsProperties.ContentDescription)?.single() }
+            .map { it.removeSuffix(", work profile") }
             .filter { it in apps }
     }
 
@@ -364,8 +491,9 @@ class HomeScreenTest {
         show()
 
         compose.onNode(hasPaneTitle("Startbildschirm")).assertIsDisplayed()
-        compose.onNodeWithContentDescription("Teams, Arbeitsprofil").assertIsDisplayed()
         compose.onNodeWithText("Halte eine App gedrückt, um sie zu den Favoriten hinzuzufügen.").assertIsDisplayed()
+        compose.onNodeWithText("▲ ALLE APPS").performClick()
+        compose.onNodeWithContentDescription("Teams, Arbeitsprofil").assertIsDisplayed()
         compose.onRoot().captureRoboImage("HomeScreen_de.png")
     }
 
@@ -377,6 +505,18 @@ class HomeScreenTest {
         openMenu("Firefox")
         compose.onNodeWithText("Move up", substring = true).assertIsDisplayed()
         compose.onNode(hasPaneTitle("Firefox")).captureRoboImage("AppMenu.png")
+    }
+
+    @Test
+    fun `screenshot rail while dragging`() {
+        show(favorites = favorites)
+
+        compose.onNodeWithContentDescription("Alphabet").performTouchInput {
+            down(Offset(centerX, railY("P")))
+            moveTo(Offset(centerX, railY("S")))
+        }
+
+        compose.onRoot().captureRoboImage("HomeScreen_rail.png")
     }
 
     private fun hasPaneTitle(title: String) = SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, title)
