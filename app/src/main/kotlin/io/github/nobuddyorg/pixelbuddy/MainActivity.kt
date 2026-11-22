@@ -44,6 +44,7 @@ class MainActivity : ComponentActivity() {
                     icons = appContainer.iconRepository,
                     onOpenSettings = ::openSettings,
                     resetKey = homePresses,
+                    weather = appContainer.weatherRepository,
                 )
             }
         }

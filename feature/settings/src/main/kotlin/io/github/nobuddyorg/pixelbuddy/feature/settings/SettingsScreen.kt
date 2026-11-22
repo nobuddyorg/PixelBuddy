@@ -34,14 +34,16 @@ data class OpenCrashReport(
 )
 
 /**
- * Settings. For now the hidden apps (#8), "About" with the app version and the local crash reports (#22); the
- * full settings follow in #12. Stateless: [SettingsRoute] holds the state.
+ * Settings. For now the hidden apps (#8), weather (#11), "About" with the app version and the local crash reports
+ * (#22); the full settings follow in #12. Stateless: [SettingsRoute] holds the state.
  */
 @Composable
 fun SettingsScreen(
     appVersion: String,
     hiddenApps: List<LauncherApp>,
     onShowApp: (LauncherApp) -> Unit,
+    weather: WeatherOptions,
+    onWeather: (WeatherAction) -> Unit,
     reports: List<CrashReport>,
     openReport: OpenCrashReport?,
     onOpenReport: (String) -> Unit,
@@ -61,7 +63,17 @@ fun SettingsScreen(
                 .padding(horizontal = 24.dp, vertical = 16.dp),
     ) {
         if (openReport == null) {
-            MainContent(appVersion, hiddenApps, onShowApp, reports, zone, onOpenReport, onDeleteAllReports)
+            MainContent(
+                appVersion,
+                hiddenApps,
+                onShowApp,
+                weather,
+                onWeather,
+                reports,
+                zone,
+                onOpenReport,
+                onDeleteAllReports,
+            )
         } else {
             BackHandler(onBack = onCloseReport)
             CrashReportContent(openReport, onCloseReport, onShareReport, onDeleteReport)
@@ -74,6 +86,8 @@ private fun MainContent(
     appVersion: String,
     hiddenApps: List<LauncherApp>,
     onShowApp: (LauncherApp) -> Unit,
+    weather: WeatherOptions,
+    onWeather: (WeatherAction) -> Unit,
     reports: List<CrashReport>,
     zone: ZoneId,
     onOpenReport: (String) -> Unit,
@@ -97,8 +111,11 @@ private fun MainContent(
             }
         }
 
+        WeatherSection(weather, onWeather)
+
         SectionHeader(stringResource(R.string.settings_about))
         BasicText(stringResource(R.string.settings_version, appVersion), style = BodyStyle)
+        WeatherAttribution(onClick = { onWeather(WeatherAction.OpenAttribution) })
 
         SectionHeader(stringResource(R.string.crash_reports_title))
         BasicText(stringResource(R.string.crash_reports_privacy), style = MutedStyle)

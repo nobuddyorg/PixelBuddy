@@ -9,6 +9,11 @@ import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconCache
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.LauncherIconLoader
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsRepository
+import io.github.nobuddyorg.pixelbuddy.core.weather.OpenMeteoClient
+import io.github.nobuddyorg.pixelbuddy.core.weather.PlatformLocationSource
+import io.github.nobuddyorg.pixelbuddy.core.weather.UrlConnectionHttpGet
+import io.github.nobuddyorg.pixelbuddy.core.weather.WeatherCache
+import io.github.nobuddyorg.pixelbuddy.core.weather.WeatherRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import java.io.File
@@ -36,6 +41,15 @@ class AppContainer(
     /** Every app list reload also re-checks icons, so updates and icon themes show up. */
     val appRepository: AppRepository =
         AppRepository(LauncherAppsSource(context), settings, onReload = iconRepository::recheck)
+
+    /** Weather (#11): the only network access, and only while weather is on. Cached outside backups. */
+    val weatherRepository: WeatherRepository =
+        WeatherRepository(
+            settings = settings.weather,
+            client = OpenMeteoClient(UrlConnectionHttpGet()),
+            cache = WeatherCache(File(context.noBackupFilesDir, "weather.json")),
+            location = PlatformLocationSource(context),
+        )
 
     companion object {
         const val CRASH_REPORTS_DIR = "crash-reports"

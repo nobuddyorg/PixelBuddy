@@ -17,4 +17,25 @@
     <string name="settings_hidden_apps_empty">No hidden apps. Long-press an app on home to hide it.</string>
     <string name="settings_hidden_app_show">Tap to show it on home again</string>
     <string name="settings_work_app">%1$s (work)</string>
+    <string name="weather_title">Weather</string>
+    <string name="weather_show">Weather on home</string>
+    <string name="weather_on">On</string>
+    <string name="weather_off">Off: no network access at all</string>
+    <string name="weather_location">Weather location</string>
+    <string name="weather_location_approximate">Approximate location (rounded to about 10 km)</string>
+    <string name="weather_location_none">Not set</string>
+    <string name="weather_location_use_approximate">Use approximate location</string>
+    <string name="weather_location_denied">Location not allowed. Search for a place instead.</string>
+    <string name="weather_unit">Unit</string>
+    <string name="weather_unit_system">Automatic (%1$s)</string>
+    <string name="weather_tap">Tap on the weather</string>
+    <string name="weather_tap_refresh">Refresh the weather</string>
+    <string name="weather_tap_default">Default</string>
+    <string name="weather_search_hint">City or postcode</string>
+    <string name="weather_search_privacy">Only what you type is sent, to Open-Meteo.</string>
+    <string name="weather_searching">Searching…</string>
+    <string name="weather_search_empty">Nothing found</string>
+    <string name="weather_search_failed">Couldn\'t search. Check the connection.</string>
+    <string name="weather_attribution">Weather data by Open-Meteo.com</string>
+    <string name="weather_attribution_licence">CC BY 4.0 · Places: GeoNames</string>
 </resources>

@@ -27,4 +27,16 @@
     <string name="home_rail">Alphabet</string>
     <string name="home_rail_favorites">Favoriten</string>
     <string name="home_rail_letter">Apps mit %1$s</string>
+    <string name="home_weather_celsius">%1$s, %2$d °C</string>
+    <string name="home_weather_fahrenheit">%1$s, %2$d °F</string>
+    <string name="home_weather_refresh">Wetter aktualisieren</string>
+    <string name="home_weather_open_app">%1$s öffnen</string>
+    <string name="weather_clear">Klar</string>
+    <string name="weather_clear_night">Klare Nacht</string>
+    <string name="weather_partly_cloudy">Teilweise bewölkt</string>
+    <string name="weather_cloudy">Bewölkt</string>
+    <string name="weather_fog">Nebel</string>
+    <string name="weather_rain">Regen</string>
+    <string name="weather_snow">Schnee</string>
+    <string name="weather_thunder">Gewitter</string>
 </resources>

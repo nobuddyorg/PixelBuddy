@@ -27,7 +27,7 @@ data class Settings(
 ) {
     /** Every app this file refers to, e.g. to clean up after uninstalls. */
     val appKeys: Set<AppKey>
-        get() = favorites.toSet() + hidden + iconOverrides.map { it.app }
+        get() = favorites.toSet() + hidden + iconOverrides.map { it.app } + listOfNotNull(weather.tapApp)
 }
 
 /** Home look (#12). */
@@ -64,6 +64,25 @@ data class IconOverride(
 data class WeatherSettings(
     val enabled: Boolean = false,
     val unit: TemperatureUnit = TemperatureUnit.System,
+    /** A place chosen by name; used unless [approximateLocation] is on. */
+    val place: WeatherPlace? = null,
+    /** Use the phone's approximate location instead of [place] (needs the coarse location permission). */
+    val approximateLocation: Boolean = false,
+    /** App opened by tapping the weather; null refreshes it. */
+    val tapApp: AppKey? = null,
+) {
+    /** True once there is somewhere to get the weather for. */
+    val hasLocation: Boolean get() = approximateLocation || place != null
+}
+
+/** A place picked from the name search. */
+@Serializable
+data class WeatherPlace(
+    val name: String,
+    val region: String? = null,
+    val country: String? = null,
+    val latitude: Double,
+    val longitude: Double,
 )
 
 @Serializable

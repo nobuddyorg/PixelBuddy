@@ -31,4 +31,17 @@
     <string name="home_rail">Alphabet</string>
     <string name="home_rail_favorites">Favorites</string>
     <string name="home_rail_letter">Apps with %1$s</string>
+    <!-- Weather in the info line, for TalkBack: condition, temperature. -->
+    <string name="home_weather_celsius">%1$s, %2$d °C</string>
+    <string name="home_weather_fahrenheit">%1$s, %2$d °F</string>
+    <string name="home_weather_refresh">Refresh weather</string>
+    <string name="home_weather_open_app">Open %1$s</string>
+    <string name="weather_clear">Clear</string>
+    <string name="weather_clear_night">Clear night</string>
+    <string name="weather_partly_cloudy">Partly cloudy</string>
+    <string name="weather_cloudy">Cloudy</string>
+    <string name="weather_fog">Fog</string>
+    <string name="weather_rain">Rain</string>
+    <string name="weather_snow">Snow</string>
+    <string name="weather_thunder">Thunderstorm</string>
 </resources>

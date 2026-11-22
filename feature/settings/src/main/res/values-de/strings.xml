@@ -17,4 +17,25 @@
     <string name="settings_hidden_apps_empty">Keine ausgeblendeten Apps. Halte eine App auf dem Startbildschirm gedrückt, um sie auszublenden.</string>
     <string name="settings_hidden_app_show">Tippen, um sie wieder anzuzeigen</string>
     <string name="settings_work_app">%1$s (Arbeit)</string>
+    <string name="weather_title">Wetter</string>
+    <string name="weather_show">Wetter auf dem Startbildschirm</string>
+    <string name="weather_on">An</string>
+    <string name="weather_off">Aus: überhaupt kein Netzwerkzugriff</string>
+    <string name="weather_location">Wetter-Ort</string>
+    <string name="weather_location_approximate">Ungefährer Standort (auf etwa 10 km gerundet)</string>
+    <string name="weather_location_none">Nicht festgelegt</string>
+    <string name="weather_location_use_approximate">Ungefähren Standort verwenden</string>
+    <string name="weather_location_denied">Standort nicht erlaubt. Suche stattdessen einen Ort.</string>
+    <string name="weather_unit">Einheit</string>
+    <string name="weather_unit_system">Automatisch (%1$s)</string>
+    <string name="weather_tap">Tippen auf das Wetter</string>
+    <string name="weather_tap_refresh">Wetter aktualisieren</string>
+    <string name="weather_tap_default">Standard</string>
+    <string name="weather_search_hint">Stadt oder Postleitzahl</string>
+    <string name="weather_search_privacy">Nur deine Eingabe wird gesendet, an Open-Meteo.</string>
+    <string name="weather_searching">Suche…</string>
+    <string name="weather_search_empty">Nichts gefunden</string>
+    <string name="weather_search_failed">Suche nicht möglich. Prüfe die Verbindung.</string>
+    <string name="weather_attribution">Wetterdaten von Open-Meteo.com</string>
+    <string name="weather_attribution_licence">CC BY 4.0 · Orte: GeoNames</string>
 </resources>

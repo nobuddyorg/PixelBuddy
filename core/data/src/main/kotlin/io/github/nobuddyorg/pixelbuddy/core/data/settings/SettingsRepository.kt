@@ -27,7 +27,13 @@ class SettingsRepository(
             .map { s -> IconStyles(s.iconStyle.style, s.iconOverrides.associate { it.app to it.style.style }) }
             .distinctUntilChanged()
 
+    val weather: Flow<WeatherSettings> = settings.map { it.weather }.distinctUntilChanged()
+
     suspend fun update(transform: (Settings) -> Settings): Settings = store.updateData { transform(it) }
+
+    suspend fun updateWeather(transform: (WeatherSettings) -> WeatherSettings) {
+        update { it.copy(weather = transform(it.weather)) }
+    }
 
     /** Adds [app] at the end of the favorites; does nothing if it is one already. */
     suspend fun addFavorite(app: AppKey) {
@@ -69,6 +75,7 @@ class SettingsRepository(
                 favorites = s.favorites - apps,
                 hidden = s.hidden - apps,
                 iconOverrides = s.iconOverrides.filterNot { it.app in apps },
+                weather = if (s.weather.tapApp in apps) s.weather.copy(tapApp = null) else s.weather,
             )
         }
     }

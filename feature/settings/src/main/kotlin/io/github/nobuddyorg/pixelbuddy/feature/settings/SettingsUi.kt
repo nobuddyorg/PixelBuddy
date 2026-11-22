@@ -88,7 +88,7 @@ internal fun ListRow(
     ) {
         Column {
             BasicText(title, style = BodyStyle)
-            BasicText(subtitle, style = MutedStyle, maxLines = 2)
+            if (subtitle.isNotEmpty()) BasicText(subtitle, style = MutedStyle, maxLines = 2)
         }
     }
 }
