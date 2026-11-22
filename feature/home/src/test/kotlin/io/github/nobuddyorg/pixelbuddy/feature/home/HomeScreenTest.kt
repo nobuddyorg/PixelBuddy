@@ -51,8 +51,14 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppSource
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.HomeApps
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsRepository
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.TemperatureUnit
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherPlace
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.BatteryState
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
+import io.github.nobuddyorg.pixelbuddy.core.weather.HttpGet
+import io.github.nobuddyorg.pixelbuddy.core.weather.OpenMeteoClient
+import io.github.nobuddyorg.pixelbuddy.core.weather.WeatherCache
+import io.github.nobuddyorg.pixelbuddy.core.weather.WeatherRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.emptyFlow
@@ -69,6 +75,7 @@ import org.robolectric.shadows.ShadowToast
 import java.io.File
 import java.time.LocalDateTime
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -220,6 +227,59 @@ class HomeScreenTest {
         compose.waitUntil { compose.onAllNodesWithText("▲ SEARCH").fetchSemanticsNodes().isNotEmpty() }
         openSearch()
         return settings
+    }
+
+    private fun showWeather(enabled: Boolean): AtomicInteger {
+        val calls = AtomicInteger()
+        val http =
+            HttpGet {
+                calls.incrementAndGet()
+                """{"current":{"temperature_2m":4.4,"weather_code":3,"is_day":1}}"""
+            }
+        val settings = SettingsRepository.create(File(folder.root, "settings.json"), Dispatchers.IO + storeJob)
+        val berlin = WeatherPlace("Berlin", latitude = 52.52, longitude = 13.41)
+        runBlocking {
+            settings.updateWeather { it.copy(enabled = enabled, place = berlin, unit = TemperatureUnit.Celsius) }
+        }
+        val weather =
+            WeatherRepository(
+                settings.weather,
+                OpenMeteoClient(http),
+                WeatherCache(File(folder.root, "w.json")),
+                { null },
+            )
+        compose.setContent {
+            HomeRoute(AppRepository(WorkingSource, settings), settings, icons, onOpenSettings = {}, weather = weather)
+        }
+        compose.waitUntil {
+            hasApp(
+                "Maps",
+            ) || compose.onAllNodesWithText("▲ SEARCH").fetchSemanticsNodes().isNotEmpty()
+        }
+        return calls
+    }
+
+    @Test
+    fun `weather shows in the header and a tap refreshes it`() {
+        val calls = showWeather(enabled = true)
+
+        compose.waitUntil(
+            5_000,
+        ) { compose.onAllNodesWithContentDescription("Cloudy, 4 °C").fetchSemanticsNodes().isNotEmpty() }
+        assertEquals(1, calls.get())
+        compose.onNodeWithContentDescription("Cloudy, 4 °C").performClick()
+        compose.waitUntil(5_000) { calls.get() == 2 }
+    }
+
+    @Test
+    fun `weather off shows nothing and sends nothing`() {
+        val calls = showWeather(enabled = false)
+
+        compose.waitForIdle()
+        Thread.sleep(200)
+        compose.waitForIdle()
+        compose.onNodeWithContentDescription("Cloudy, 4 °C").assertDoesNotExist()
+        assertEquals(0, calls.get())
     }
 
     @Test

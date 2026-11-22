@@ -119,6 +119,22 @@ class SettingsRepositoryTest {
             assertEquals(listOf(zug), after.favorites)
             assertEquals(emptySet(), after.hidden)
             assertEquals(emptyList(), after.iconOverrides)
+            assertEquals(null, after.weather.tapApp)
+            job.cancel()
+        }
+
+    @Test
+    fun `weather settings are updated on their own`() =
+        runTest {
+            val job = Job()
+            val settings = open(job)
+
+            settings.weather.test {
+                assertEquals(WeatherSettings(), awaitItem())
+                settings.updateWeather { it.copy(enabled = true, approximateLocation = true) }
+                val on = awaitItem()
+                assertTrue(on.enabled && on.hasLocation)
+            }
             job.cancel()
         }
 

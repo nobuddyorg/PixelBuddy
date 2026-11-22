@@ -31,7 +31,14 @@ class SettingsSerializerTest {
                     appearance = Appearance(ClockFormat.TwentyFourHour),
                     iconStyle = IconStyleSetting.of(IconPreset.Pocket),
                     iconOverrides = listOf(IconOverride(maps, IconStyleSetting.of(IconPreset.Mono))),
-                    weather = WeatherSettings(enabled = true, unit = TemperatureUnit.Fahrenheit),
+                    weather =
+                        WeatherSettings(
+                            enabled = true,
+                            unit = TemperatureUnit.Fahrenheit,
+                            place = WeatherPlace("Berlin", "Land Berlin", "Deutschland", 52.52437, 13.41053),
+                            approximateLocation = true,
+                            tapApp = teams,
+                        ),
                 )
             val serializer = SettingsSerializer()
 
