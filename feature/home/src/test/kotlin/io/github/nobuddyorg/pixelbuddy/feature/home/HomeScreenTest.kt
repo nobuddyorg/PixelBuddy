@@ -16,7 +16,9 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.TouchInjectionScope
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -27,8 +29,12 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
@@ -64,6 +70,8 @@ import java.io.File
 import java.time.LocalDateTime
 import java.util.Locale
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /** Galaxy S24: 1080 × 2340 px at 2.625 density. */
 private const val S24 = "w411dp-h891dp-420dpi"
@@ -126,6 +134,7 @@ class HomeScreenTest {
         favorites: List<LauncherApp> = emptyList(),
         onAppClick: (LauncherApp) -> Unit = {},
         onOpenSettings: () -> Unit = {},
+        onSwipeDown: () -> Boolean = { false },
     ) = compose.setContent {
         HomeScreen(
             home = HomeApps(favorites, apps),
@@ -133,6 +142,7 @@ class HomeScreenTest {
             onAppAction = { actions += it },
             onOpenSettings = onOpenSettings,
             resetKey = resetKey,
+            onSwipeDown = onSwipeDown,
             header = {
                 HomeHeader(
                     LocalDateTime.of(2026, 11, 6, 21, 45),
@@ -164,7 +174,7 @@ class HomeScreenTest {
     fun `tapping an app opens it`() {
         val clicked = mutableListOf<LauncherApp>()
         show(onAppClick = { clicked += it })
-        openAllApps()
+        openSearch()
 
         compose.onNodeWithContentDescription("Signal").performClick()
 
@@ -207,8 +217,8 @@ class HomeScreenTest {
         val settings = SettingsRepository.create(File(folder.root, "settings.json"), Dispatchers.IO + storeJob)
         val repository = AppRepository(source, settings)
         compose.setContent { HomeRoute(repository, settings, icons, onOpenSettings = {}) }
-        compose.waitUntil { compose.onAllNodesWithText("▲ ALL APPS").fetchSemanticsNodes().isNotEmpty() }
-        openAllApps()
+        compose.waitUntil { compose.onAllNodesWithText("▲ SEARCH").fetchSemanticsNodes().isNotEmpty() }
+        openSearch()
         return settings
     }
 
@@ -226,19 +236,103 @@ class HomeScreenTest {
         show(favorites = favorites)
 
         assertEquals(favorites.map { it.label }, appRowLabels())
-        allAppsButton().assertIsDisplayed()
+        searchButton().assertIsDisplayed()
     }
 
     @Test
-    fun `swiping up shows all apps and Back returns to the favorites`() {
+    fun `swiping up on the list opens the search with all apps and Back returns to the favorites`() {
         show(favorites = favorites)
 
         compose.onRoot().performTouchInput { swipeUp(startY = height * 0.7f, endY = height * 0.4f) }
 
-        assertEquals(sampleApps.take(6).map { it.app.label }, appRowLabels().take(6))
-        allAppsButton().assertDoesNotExist()
+        searchField().assertIsFocused()
+        assertEquals(sampleApps.take(5).map { it.app.label }, appRowLabels().take(5))
+        searchButton().assertDoesNotExist()
         Espresso.pressBack()
         assertEquals(favorites.map { it.label }, appRowLabels())
+    }
+
+    @Test
+    fun `swiping up on the header opens the search too`() {
+        show(favorites = favorites)
+
+        compose.onRoot().performTouchInput { swipeUp(startY = height * 0.2f, endY = height * 0.05f) }
+
+        searchField().assertIsFocused()
+    }
+
+    @Test
+    fun `swiping down pulls the notification shade`() {
+        var pulled = 0
+        show(favorites = favorites, onSwipeDown = { pulled++ > -1 })
+
+        compose.onRoot().performTouchInput { swipeDown(startY = height * 0.3f, endY = height * 0.7f) }
+
+        assertEquals(1, pulled)
+        searchField().assertDoesNotExist()
+    }
+
+    @Test
+    fun `without the shade a swipe down opens the search`() {
+        show(favorites = favorites, onSwipeDown = { false })
+
+        compose.onRoot().performTouchInput { swipeDown(startY = height * 0.1f, endY = height * 0.4f) }
+
+        searchField().assertIsFocused()
+    }
+
+    @Test
+    fun `search ranks matches per keystroke and highlights them`() {
+        showSearch()
+
+        searchField().performTextInput("p")
+        assertEquals(listOf("Proton Mail", "1Password"), appRowLabels())
+        searchField().performTextInput("m")
+        assertEquals(listOf("Proton Mail"), appRowLabels())
+        searchField().performTextClearance()
+        searchField().performTextInput("arz")
+        assertEquals(listOf("Ärzte"), appRowLabels())
+        searchField().performTextInput("xyz")
+        compose.onNodeWithText("No apps found").assertIsDisplayed()
+    }
+
+    @Test
+    fun `Enter launches the top match and returns to the favorites`() {
+        val launched = mutableListOf<String>()
+        show(favorites = favorites, onAppClick = { launched += it.label })
+        openSearch()
+
+        searchField().performTextInput("sp")
+        searchField().performImeAction()
+
+        assertEquals(listOf("Spotify"), launched)
+        searchField().assertDoesNotExist()
+        assertEquals(favorites.map { it.label }, appRowLabels())
+    }
+
+    @Test
+    fun `Enter without a match does nothing`() {
+        val launched = mutableListOf<String>()
+        show(onAppClick = { launched += it.label })
+        openSearch()
+
+        searchField().performImeAction()
+        searchField().performTextInput("xyz")
+        searchField().performImeAction()
+
+        assertEquals(emptyList(), launched)
+    }
+
+    @Test
+    fun `tapping a result launches it`() {
+        val launched = mutableListOf<String>()
+        show(onAppClick = { launched += it.label })
+        openSearch()
+
+        searchField().performTextInput("tel")
+        compose.onNodeWithContentDescription("Telefon").performClick()
+
+        assertEquals(listOf("Telefon"), launched)
     }
 
     @Test
@@ -385,7 +479,7 @@ class HomeScreenTest {
     fun `system apps have no uninstall entry`() {
         val system = app("Telefon").copy(canUninstall = false)
         show(apps = listOf(AppListEntry(system, "T")))
-        openAllApps()
+        openSearch()
 
         openMenu("Telefon")
 
@@ -412,6 +506,14 @@ class HomeScreenTest {
     }
 
     @Test
+    fun `the shade is pulled through the status bar service when it exists`() {
+        assertTrue(expandNotificationShade(FakeStatusBar()))
+        assertFalse(expandNotificationShade(Any()))
+        assertFalse(expandNotificationShade(null))
+        assertFalse(expandNotificationShade(FailingStatusBar()))
+    }
+
+    @Test
     fun `menu opens below its row or above it near the bottom`() {
         val window = IntSize(1000, 2000)
         val menu = IntSize(400, 600)
@@ -433,13 +535,20 @@ class HomeScreenTest {
 
     private fun showAll() {
         show()
-        openAllApps()
+        openSearch()
     }
 
-    private fun allAppsButton() = compose.onNodeWithText("▲ ALL APPS")
+    private fun searchField() = compose.onNode(hasSetTextAction())
 
-    private fun openAllApps() {
-        allAppsButton().performClick()
+    private fun showSearch() {
+        show()
+        openSearch()
+    }
+
+    private fun searchButton() = compose.onNodeWithText("▲ SEARCH")
+
+    private fun openSearch() {
+        searchButton().performClick()
     }
 
     /** Centre of [key]'s cell on the rail, in the rail's coordinates. */
@@ -492,7 +601,7 @@ class HomeScreenTest {
 
         compose.onNode(hasPaneTitle("Startbildschirm")).assertIsDisplayed()
         compose.onNodeWithText("Halte eine App gedrückt, um sie zu den Favoriten hinzuzufügen.").assertIsDisplayed()
-        compose.onNodeWithText("▲ ALLE APPS").performClick()
+        compose.onNodeWithText("▲ SUCHEN").performClick()
         compose.onNodeWithContentDescription("Teams, Arbeitsprofil").assertIsDisplayed()
         compose.onRoot().captureRoboImage("HomeScreen_de.png")
     }
@@ -508,6 +617,14 @@ class HomeScreenTest {
     }
 
     @Test
+    fun `screenshot search`() {
+        showSearch()
+        searchField().performTextInput("ma")
+
+        compose.onRoot().captureRoboImage("HomeScreen_search.png")
+    }
+
+    @Test
     fun `screenshot rail while dragging`() {
         show(favorites = favorites)
 
@@ -520,6 +637,16 @@ class HomeScreenTest {
     }
 
     private fun hasPaneTitle(title: String) = SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, title)
+
+    @Suppress("unused")
+    class FakeStatusBar {
+        fun expandNotificationsPanel() = Unit
+    }
+
+    @Suppress("unused")
+    class FailingStatusBar {
+        fun expandNotificationsPanel(): Unit = throw SecurityException("no EXPAND_STATUS_BAR")
+    }
 
     private open class FakeSource(
         private val apps: List<LauncherApp>,

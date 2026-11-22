@@ -39,4 +39,5 @@ include(
     ":core:weather",
     ":core:design-system",
     ":core:pixel-engine",
+    ":core:search",
 )

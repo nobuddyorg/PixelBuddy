@@ -12,7 +12,9 @@
     <string name="home_battery">Battery %1$s</string>
     <string name="home_battery_charging">Battery %1$s, charging</string>
     <string name="home_battery_full">Battery full</string>
-    <string name="home_all_apps">All apps</string>
+    <string name="home_search">Search</string>
+    <string name="home_search_hint">Search apps</string>
+    <string name="home_search_empty">No apps found</string>
     <string name="home_favorites_hint">Long-press an app to add it to your favorites.</string>
     <!-- Label of the long-press action on an app, announced by TalkBack. -->
     <string name="home_app_options">App options</string>

@@ -10,6 +10,7 @@ android {
 dependencies {
     implementation(projects.core.designSystem)
     implementation(projects.core.data)
+    implementation(projects.core.search)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

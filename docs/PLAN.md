@@ -40,6 +40,7 @@ accent colour (orange default). Icons: pixel presets (#6) and automatic neon out
 :core:weather         Open-Meteo client, location, refresh policy (only module that uses the network)
 :core:design-system   colors, font, pixel clock glyphs, dithered gradient, components
 :core:pixel-engine    pure Kotlin/JVM: downscale, alpha threshold, outline, palettes, quantization, dithering, outline-icon geometry
+:core:search          pure Kotlin/JVM: app search matching and ranking (accents, prefix, word starts, initials)
 ```
 
 No DI framework, no navigation library, no Room. One typed DataStore with versioned JSON (kotlinx.serialization).
@@ -51,7 +52,7 @@ Shared build configuration lives in `build-logic` as convention plugins:
 | `pixelbuddy.android.application` | `:app` |
 | `pixelbuddy.android.library` | all Android library modules |
 | `pixelbuddy.android.compose` | modules with Compose UI (applied next to one of the above) |
-| `pixelbuddy.jvm.library` | `:core:pixel-engine` |
+| `pixelbuddy.jvm.library` | `:core:pixel-engine`, `:core:search` |
 
 ## Permissions
 

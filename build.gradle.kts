@@ -40,6 +40,7 @@ dependencies {
     kover(projects.core.weather)
     kover(projects.core.designSystem)
     kover(projects.core.pixelEngine)
+    kover(projects.core.search)
 }
 
 kover {

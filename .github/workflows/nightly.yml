@@ -26,24 +26,28 @@ jobs:
         uses: ./.github/actions/setup-build
 
       - name: Run Pitest
-        run: ./gradlew :core:pixel-engine:pitest
+        run: ./gradlew :core:pixel-engine:pitest :core:search:pitest
 
       - name: Summary
         if: ${{ !cancelled() }}
         run: |
-          report=core/pixel-engine/build/reports/pitest/mutations.xml
-          if [ -f "$report" ]; then
-            total=$(grep -c '<mutation ' "$report" || true)
-            killed=$(grep -c "status='KILLED'" "$report" || true)
-            echo "### Pitest: pixel engine" >> "$GITHUB_STEP_SUMMARY"
-            echo "$killed of $total mutations killed" >> "$GITHUB_STEP_SUMMARY"
-          fi
+          for module in pixel-engine search; do
+            report=core/$module/build/reports/pitest/mutations.xml
+            if [ -f "$report" ]; then
+              total=$(grep -c '<mutation ' "$report" || true)
+              killed=$(grep -c "status='KILLED'" "$report" || true)
+              echo "### Pitest: $module" >> "$GITHUB_STEP_SUMMARY"
+              echo "$killed of $total mutations killed" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
 
       - name: Upload report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: pitest-report
-          path: core/pixel-engine/build/reports/pitest/
+          path: |
+            core/pixel-engine/build/reports/pitest/
+            core/search/build/reports/pitest/
           retention-days: 14
           if-no-files-found: ignore
