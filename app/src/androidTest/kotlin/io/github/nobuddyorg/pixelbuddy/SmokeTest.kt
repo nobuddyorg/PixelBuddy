@@ -35,7 +35,10 @@ class SmokeTest {
     @Test
     fun homeListsTheAppsAndStartsOne() {
         device.findObject(By.textContains("SEARCH")).click()
-        // Every image has the system settings app.
+        // Every image has the system settings app; the list only draws the rows on screen, so search for it.
+        val field = device.wait(Until.findObject(By.focused(true)), TIMEOUT_MS)
+        assertNotNull(field, "the search field isn't focused")
+        field.text = "Sett"
         val settingsApp = device.wait(Until.findObject(By.desc("Settings")), TIMEOUT_MS)
         assertNotNull(settingsApp, "the app list doesn't show the Settings app")
 
