@@ -70,7 +70,8 @@ jobs:
             image: "29"
           - api: 33
             image: "33"
-          - api: 37
+          # Android 17 is "37.0" in the SDK (platform and system image).
+          - api: "37.0"
             image: "37.0"
     steps:
       - name: Check out
