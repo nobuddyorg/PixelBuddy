@@ -46,4 +46,5 @@ explained before you enable them, and are documented here when they are added.
 
 ## Questions
 
-Open an issue, or for anything sensitive see [SECURITY.md](SECURITY.md).
+PixelBuddy doesn't take outside issues (see [Contributing](README.md#contributing)). Privacy or security problems
+can be reported privately, see [SECURITY.md](SECURITY.md).
