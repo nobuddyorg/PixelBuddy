@@ -1,13 +1,19 @@
 # Contributing to PixelBuddy
 
-Thanks for helping. PixelBuddy is built in small steps: every change is one focused pull request with green CI.
-The plan and the order of work are in [docs/PLAN.md](docs/PLAN.md) and the
-[MVP tracking issue](https://github.com/nobuddyorg/PixelBuddy/issues/1).
+## No outside contributions
 
-## Before you start
+PixelBuddy is a personal hobby project. I don't accept pull requests, issues or feature requests from outside the
+project; they are closed without review. That keeps the project small enough to finish and maintain in spare time.
 
-- For anything larger than a small fix, open or comment on an issue first so we agree on the approach.
-- Security problems: do not open an issue, follow [SECURITY.md](SECURITY.md).
+The one exception is security: please report vulnerabilities privately as described in [SECURITY.md](SECURITY.md),
+not as a public issue.
+
+You are welcome to fork it. The [MIT License](LICENSE) lets you use, change and redistribute the code in your own
+fork without asking. There is no support for forks; use your own `applicationId` and signing key (see
+[docs/RELEASING.md](docs/RELEASING.md)) so your builds install next to the official ones.
+
+The rest of this guide describes how the project itself is worked on and applies to a fork just as well: every
+change is one focused pull request with green CI, following [docs/PLAN.md](docs/PLAN.md).
 
 ## Setup
 
@@ -75,5 +81,3 @@ Reference screenshots are recorded on Linux, like CI. Rendering on macOS or Wind
 - Fill in the PR template. Describe what you tested, on which device or emulator if relevant.
 - CI must be green: formatting, lint, unit and screenshot tests, coverage and CodeQL.
 - Commits: short imperative subject line (`Add alphabet rail drag handling`), details in the body when useful.
-
-By contributing you agree that your contributions are licensed under the [MIT License](LICENSE).
