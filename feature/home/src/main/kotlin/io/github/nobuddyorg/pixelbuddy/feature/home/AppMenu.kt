@@ -3,10 +3,13 @@ package io.github.nobuddyorg.pixelbuddy.feature.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -17,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -30,6 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppShortcut
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppShortcuts
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyColors
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyTheme
@@ -69,6 +75,13 @@ sealed interface AppAction {
     data class Uninstall(
         override val app: LauncherApp,
     ) : AppAction
+
+    /** Starts one of the app's shortcuts (#17). */
+    data class OpenShortcut(
+        val shortcut: AppShortcut,
+    ) : AppAction {
+        override val app: LauncherApp get() = shortcut.app
+    }
 }
 
 /** Where [app] stands in the favorites, for the menu entries. */
@@ -82,7 +95,8 @@ internal data class FavoritePosition(
 
 /**
  * The long-press menu of [app], shown below its row (or above, near the bottom of the screen). [favorite] is its
- * place among the favorites, or null if it is none. Back or a tap outside closes it.
+ * place among the favorites, or null if it is none. The app's [shortcuts] come first (null while loading), each
+ * with its [shortcutIcon]. Back or a tap outside closes it.
  */
 @Composable
 internal fun AppMenu(
@@ -90,6 +104,8 @@ internal fun AppMenu(
     favorite: FavoritePosition?,
     onAction: (AppAction) -> Unit,
     onDismiss: () -> Unit,
+    shortcuts: AppShortcuts? = AppShortcuts.None,
+    shortcutIcon: @Composable (AppShortcut) -> Unit = {},
 ) {
     Popup(
         popupPositionProvider = BelowOrAboveAnchor,
@@ -120,6 +136,29 @@ internal fun AppMenu(
                 maxLines = 1,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
+            when (shortcuts) {
+                is AppShortcuts.Available -> {
+                    if (shortcuts.shortcuts.isNotEmpty()) {
+                        shortcuts.shortcuts.forEach { shortcut ->
+                            ShortcutItem(shortcut, shortcutIcon) { pick(AppAction.OpenShortcut(shortcut)) }
+                        }
+                        MenuDivider()
+                    }
+                }
+
+                AppShortcuts.NeedsHomeApp -> {
+                    BasicText(
+                        text = stringResource(R.string.home_menu_shortcuts_need_home),
+                        style = PixelText.small.copy(color = PixelBuddyColors.TextMuted),
+                        // Wraps within the menu instead of widening it.
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).widthIn(max = 220.dp),
+                    )
+                    MenuDivider()
+                }
+
+                // Still loading: the rest of the menu is there already.
+                null -> {}
+            }
             if (favorite == null) {
                 MenuItem(stringResource(R.string.home_menu_add_favorite)) { pick(AppAction.AddFavorite(app)) }
             } else {
@@ -157,6 +196,47 @@ private fun MenuItem(
     ) {
         BasicText("▶ $text", style = PixelText.body.copy(color = PixelBuddyTheme.style.accent), maxLines = 1)
     }
+}
+
+@Composable
+private fun ShortcutItem(
+    shortcut: AppShortcut,
+    icon: @Composable (AppShortcut) -> Unit,
+    onClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clickable(role = Role.Button, onClick = onClick)
+                .semantics(mergeDescendants = true) {}
+                .padding(horizontal = 16.dp),
+    ) {
+        icon(shortcut)
+        BasicText(shortcut.label, style = PixelText.body.copy(color = PixelBuddyColors.Text), maxLines = 1)
+    }
+}
+
+/** A dotted pixel line between the shortcuts and the menu's own entries. */
+@Composable
+private fun MenuDivider() {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .height(3.dp)
+            .drawBehind {
+                val dot = 3.dp.toPx()
+                var x = 0f
+                while (x < size.width) {
+                    drawRect(PixelBuddyColors.TextMuted, topLeft = Offset(x, 0f), size = Size(dot, dot))
+                    x += dot * 2
+                }
+            },
+    )
 }
 
 private val ShadowOffset = 4.dp

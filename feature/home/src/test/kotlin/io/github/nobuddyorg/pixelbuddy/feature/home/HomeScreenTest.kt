@@ -50,6 +50,8 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppKey
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppListEntry
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppRepository
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppShortcut
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppShortcuts
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppSorter
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppSource
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.HomeApps
@@ -154,6 +156,7 @@ class HomeScreenTest {
         onSwipeDown: () -> Boolean = { false },
         gestures: Gestures = Gestures(),
         onLock: () -> Unit = {},
+        shortcuts: suspend (LauncherApp) -> AppShortcuts = { AppShortcuts.None },
     ) = compose.setContent {
         HomeScreen(
             home = HomeApps(favorites, apps),
@@ -174,8 +177,13 @@ class HomeScreenTest {
                 )
             },
             icon = { app -> AppIcon(app, icons, IconPreset.Default.style) },
+            shortcuts = shortcuts,
+            shortcutIcon = { shortcut -> ShortcutIcon(shortcut, icons, IconPreset.Default.style) },
         )
     }
+
+    private fun shortcutsOf(vararg labels: String): suspend (LauncherApp) -> AppShortcuts =
+        { app -> AppShortcuts.Available(labels.mapIndexed { i, label -> AppShortcut(app, "s$i", label) }) }
 
     @Test
     fun `apps are listed in order`() {
@@ -860,6 +868,49 @@ class HomeScreenTest {
         compose.onNodeWithText("▲ SUCHEN").performClick()
         compose.onNodeWithContentDescription("Teams, Arbeitsprofil").assertIsDisplayed()
         compose.onRoot().captureRoboImage("HomeScreen_de.png")
+    }
+
+    // App shortcuts (#17)
+
+    @Test
+    fun `the menu lists the app's shortcuts first and starts the picked one`() {
+        show(favorites = favorites, shortcuts = shortcutsOf("New tab", "New private tab"))
+
+        openMenu("Firefox")
+        compose.onNodeWithText("New private tab").assertIsDisplayed()
+        compose.onNodeWithText("New tab").performClick()
+
+        assertEquals(listOf<AppAction>(AppAction.OpenShortcut(AppShortcut(app("Firefox"), "s0", "New tab"))), actions)
+        assertEquals(app("Firefox"), actions.single().app)
+        compose.onNodeWithText("New private tab").assertDoesNotExist()
+    }
+
+    @Test
+    fun `without being the home app the menu says where shortcuts come from`() {
+        show(favorites = favorites, shortcuts = { AppShortcuts.NeedsHomeApp })
+
+        openMenu("Firefox")
+
+        compose.onNodeWithText("App shortcuts show here while PixelBuddy is the home app.").assertIsDisplayed()
+        compose.onNodeWithText("App info", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `the menu with shortcuts is accessible`() {
+        show(favorites = favorites, shortcuts = shortcutsOf("New tab", "New private tab"))
+
+        openMenu("Firefox")
+
+        assertAccessible()
+    }
+
+    @Test
+    fun `screenshot app menu with shortcuts`() {
+        show(favorites = favorites, shortcuts = shortcutsOf("New tab", "New private tab", "Scan QR code"))
+
+        openMenu("Firefox")
+        compose.onNodeWithText("Scan QR code").assertIsDisplayed()
+        compose.onNode(hasPaneTitle("Firefox")).captureRoboImage("AppMenu_shortcuts.png")
     }
 
     // Robolectric draws popup windows at the screen's corner, so only the menu itself is captured.

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 /** What home shows: favorites in the user's order and all apps sorted, both without hidden apps. */
@@ -78,6 +79,15 @@ class AppRepository(
         app: LauncherApp,
         sourceBounds: Rect? = null,
     ): LaunchResult = attempt { source.showDetails(app.component, app.user, sourceBounds) }
+
+    /** [app]'s shortcuts for its long-press menu (#17), read off the main thread. */
+    suspend fun shortcuts(app: LauncherApp): AppShortcuts = withContext(dispatcher) { source.shortcuts(app) }
+
+    /** Starts [shortcut]. Never throws: a removed or disabled shortcut gives [LaunchResult.Failed]. */
+    fun launch(
+        shortcut: AppShortcut,
+        sourceBounds: Rect? = null,
+    ): LaunchResult = attempt { source.startShortcut(shortcut, sourceBounds) }
 
     /** Asks the system to uninstall [app]; the system shows its own confirmation. */
     fun uninstall(app: LauncherApp): LaunchResult = attempt { source.uninstall(app.key.packageName, app.user) }

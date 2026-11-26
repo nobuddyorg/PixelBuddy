@@ -137,6 +137,14 @@ fun HomeRoute(
                 is AppAction.Uninstall -> {
                     if (repository.uninstall(app) is LaunchResult.Failed) toast(R.string.home_action_failed, app)
                 }
+
+                is AppAction.OpenShortcut -> {
+                    val shortcut = action.shortcut
+                    if (repository.launch(shortcut) is LaunchResult.Failed) {
+                        val message = resources.getString(R.string.home_launch_failed, shortcut.label)
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         },
         onOpenSettings = onOpenSettings,
@@ -179,6 +187,8 @@ fun HomeRoute(
             }
         },
         icon = { app -> AppIcon(app, icons, iconStyles.lookFor(app.key)) },
+        shortcuts = repository::shortcuts,
+        shortcutIcon = { shortcut -> ShortcutIcon(shortcut, icons, iconStyles.lookFor(shortcut.app.key).style) },
     )
 }
 

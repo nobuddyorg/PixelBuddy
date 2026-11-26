@@ -1,5 +1,6 @@
 package io.github.nobuddyorg.pixelbuddy.core.data.apps
 
+import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
@@ -9,6 +10,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
+import android.content.pm.ShortcutInfo
 import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
@@ -57,12 +59,44 @@ interface AppSource {
      * waiting to be (re)installed. Unknown states (locked or paused profile) give false.
      */
     fun isRemoved(key: AppKey): Boolean
+
+    /** [app]'s shortcuts for its menu (#17). */
+    fun shortcuts(app: LauncherApp): AppShortcuts = AppShortcuts.None
+
+    /** Starts [shortcut]; throws like [start] if it is gone or disabled. */
+    fun startShortcut(
+        shortcut: AppShortcut,
+        sourceBounds: Rect?,
+    ): Unit = throw ActivityNotFoundException(shortcut.id)
+}
+
+/** What [selectShortcuts] needs of a platform shortcut. */
+internal data class ShortcutCandidate(
+    val id: String,
+    val label: String,
+    val fromManifest: Boolean,
+    val rank: Int,
+    val enabled: Boolean,
+)
+
+/**
+ * The shortcuts a menu shows, as Android's shortcut guide describes launchers: enabled ones with a label, the app's
+ * manifest (static) shortcuts first, then its dynamic ones, each by rank; at most [AppShortcuts.MAX], half of each
+ * kind unless one kind has fewer.
+ */
+internal fun selectShortcuts(candidates: List<ShortcutCandidate>): List<ShortcutCandidate> {
+    val usable = candidates.filter { it.enabled && it.label.isNotBlank() }.distinctBy { it.id }
+    val (static, dynamic) = usable.sortedBy { it.rank }.partition { it.fromManifest }
+    val staticCount = minOf(static.size, maxOf(AppShortcuts.MAX / 2, AppShortcuts.MAX - dynamic.size))
+    return static.take(staticCount) + dynamic.take(AppShortcuts.MAX - staticCount)
 }
 
 class LauncherAppsSource(
     private val context: Context,
     /** Packages with a pending install in a profile; by default from all install sessions the launcher sees. */
     private val pendingInstalls: ((UserHandle) -> Set<String>)? = null,
+    /** Reads shortcuts; by default from [LauncherApps] (a seam: Robolectric can't query manifest shortcuts). */
+    private val queryShortcuts: ((LauncherApps.ShortcutQuery, UserHandle) -> List<ShortcutInfo>?)? = null,
 ) : AppSource {
     private val launcherApps = context.getSystemService(LauncherApps::class.java)
     private val userManager = context.getSystemService(UserManager::class.java)
@@ -201,6 +235,54 @@ class LauncherAppsSource(
                 .putExtra(Intent.EXTRA_USER, user)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
         context.startActivity(intent)
+    }
+
+    override fun shortcuts(app: LauncherApp): AppShortcuts {
+        val query =
+            LauncherApps
+                .ShortcutQuery()
+                .setPackage(app.component.packageName)
+                .setActivity(app.component)
+                .setQueryFlags(
+                    LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST or LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC,
+                )
+        val infos =
+            try {
+                // Only the default home app may read shortcuts.
+                if (!launcherApps.hasShortcutHostPermission()) return AppShortcuts.NeedsHomeApp
+                (queryShortcuts ?: launcherApps::getShortcuts).invoke(query, app.user).orEmpty()
+            } catch (_: SecurityException) {
+                return AppShortcuts.NeedsHomeApp
+            } catch (_: IllegalStateException) {
+                // The profile is locked or paused: nothing to show now.
+                return AppShortcuts.None
+            }
+        val chosen =
+            selectShortcuts(
+                infos.map {
+                    ShortcutCandidate(
+                        id = it.id,
+                        label = (it.shortLabel ?: it.longLabel)?.toString()?.trim().orEmpty(),
+                        fromManifest = it.isDeclaredInManifest,
+                        rank = it.rank,
+                        enabled = it.isEnabled,
+                    )
+                },
+            )
+        return AppShortcuts.Available(chosen.map { AppShortcut(app, it.id, it.label) })
+    }
+
+    override fun startShortcut(
+        shortcut: AppShortcut,
+        sourceBounds: Rect?,
+    ) {
+        launcherApps.startShortcut(
+            shortcut.app.component.packageName,
+            shortcut.id,
+            sourceBounds,
+            null,
+            shortcut.app.user,
+        )
     }
 
     override fun isRemoved(key: AppKey): Boolean {

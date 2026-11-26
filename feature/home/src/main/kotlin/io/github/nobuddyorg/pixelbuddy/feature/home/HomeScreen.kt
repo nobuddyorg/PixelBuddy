@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -53,6 +54,8 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.roundToIntRect
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppShortcut
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppShortcuts
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.HomeApps
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
@@ -88,6 +91,9 @@ fun HomeScreen(
     onLock: () -> Unit = {},
     header: @Composable () -> Unit = {},
     icon: @Composable (LauncherApp) -> Unit = {},
+    /** An app's shortcuts for its menu (#17), read when the menu opens. */
+    shortcuts: suspend (LauncherApp) -> AppShortcuts = { AppShortcuts.None },
+    shortcutIcon: @Composable (AppShortcut) -> Unit = {},
 ) {
     val title = stringResource(R.string.home_screen_title)
     val openSettingsLabel = stringResource(R.string.home_open_settings)
@@ -139,6 +145,8 @@ fun HomeScreen(
             onMenu = { menuRow = it?.let { rowId } },
             highlight = highlight,
             top = top,
+            shortcuts = shortcuts,
+            shortcutIcon = shortcutIcon,
         )
     }
 
@@ -371,6 +379,8 @@ private fun AppEntry(
     onMenu: (LauncherApp?) -> Unit,
     highlight: List<IntRange> = emptyList(),
     top: Boolean = false,
+    shortcuts: suspend (LauncherApp) -> AppShortcuts = { AppShortcuts.None },
+    shortcutIcon: @Composable (AppShortcut) -> Unit = {},
 ) {
     AppRow(
         app = app,
@@ -381,11 +391,14 @@ private fun AppEntry(
         top = top,
     )
     if (menuOpen) {
+        val appShortcuts by produceState<AppShortcuts?>(null, app) { value = shortcuts(app) }
         AppMenu(
             app = app,
             favorite = home.favoritePosition(app),
             onAction = onAppAction,
             onDismiss = { onMenu(null) },
+            shortcuts = appShortcuts,
+            shortcutIcon = shortcutIcon,
         )
     }
 }

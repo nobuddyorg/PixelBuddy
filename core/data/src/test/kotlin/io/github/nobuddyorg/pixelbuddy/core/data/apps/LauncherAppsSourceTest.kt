@@ -7,6 +7,7 @@ import android.content.pm.ActivityInfo
 import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
+import android.content.pm.ShortcutInfo
 import android.os.Process
 import android.os.UserHandle
 import android.os.UserManager
@@ -188,4 +189,59 @@ class LauncherAppsSourceTest {
                 assertEquals(Unit, awaitItem())
             }
         }
+
+    // Shortcuts (#17)
+
+    private val firefox = app("Firefox", packageName = "org.mozilla.firefox")
+    private var published = listOf<ShortcutInfo>()
+    private var queryFailure: RuntimeException? = null
+    private val shortcutSource =
+        LauncherAppsSource(context, pendingInstalls = { installing }, queryShortcuts = { _, _ ->
+            queryFailure?.let { throw it }
+            published
+        })
+
+    private fun shortcut(
+        id: String,
+        label: String,
+        rank: Int,
+    ): ShortcutInfo =
+        ShortcutInfo
+            .Builder(context, id)
+            .setShortLabel(label)
+            .setActivity(firefox.component)
+            .setIntent(Intent(Intent.ACTION_VIEW))
+            .setRank(rank)
+            .build()
+
+    @Test
+    fun `without being the home app there are no shortcuts`() {
+        published = listOf(shortcut("tab", "New tab", 0))
+        shadowOf(launcherApps).setHasShortcutHostPermission(false)
+
+        assertEquals(AppShortcuts.NeedsHomeApp, shortcutSource.shortcuts(firefox))
+    }
+
+    @Test
+    fun `the home app gets the app's shortcuts by rank`() {
+        shadowOf(launcherApps).setHasShortcutHostPermission(true)
+        published = listOf(shortcut("private", "New private tab", 1), shortcut("tab", " New tab ", 0))
+
+        assertEquals(
+            AppShortcuts.Available(
+                listOf(AppShortcut(firefox, "tab", "New tab"), AppShortcut(firefox, "private", "New private tab")),
+            ),
+            shortcutSource.shortcuts(firefox),
+        )
+    }
+
+    @Test
+    fun `a locked profile has no shortcuts for now and a refusal needs the home app`() {
+        shadowOf(launcherApps).setHasShortcutHostPermission(true)
+
+        queryFailure = IllegalStateException("user locked")
+        assertEquals(AppShortcuts.None, shortcutSource.shortcuts(firefox))
+        queryFailure = SecurityException("not the launcher")
+        assertEquals(AppShortcuts.NeedsHomeApp, shortcutSource.shortcuts(firefox))
+    }
 }
