@@ -85,12 +85,19 @@ Requirements: JDK 17 or newer and the Android SDK with platform `android-37.2`.
 
 More commands, code style and how to update dependencies: [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Contributing
+
+PixelBuddy is a personal hobby project and doesn't accept outside pull requests, issues or feature requests; they
+are closed without review. Security problems are the exception: report them privately as described in
+[SECURITY.md](SECURITY.md). Want to change something? Fork it: [CONTRIBUTING.md](CONTRIBUTING.md) has why, local
+setup, and the checks CI runs.
+
 ## Project documents
 
 | Document | Contents |
 |---|---|
 | [docs/PLAN.md](docs/PLAN.md) | Decisions, architecture, order of work |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Setup, commands, code style, pull requests |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | No outside contributions, forking, setup, commands, code style |
 | [PRIVACY.md](PRIVACY.md) | What data PixelBuddy uses and sends (almost nothing) |
 | [SECURITY.md](SECURITY.md) | Supported versions and how to report a vulnerability privately |
 | [docs/RELEASING.md](docs/RELEASING.md) | Release workflow, signing key, APK size budget |
