@@ -53,6 +53,7 @@ class MainActivity : ComponentActivity() {
                             weather = container.weatherRepository,
                             appearance = appearance,
                             onEditIcon = { app -> openSettings(editIconOf = app.key.id) },
+                            screenLock = LockService,
                         )
                     }
 

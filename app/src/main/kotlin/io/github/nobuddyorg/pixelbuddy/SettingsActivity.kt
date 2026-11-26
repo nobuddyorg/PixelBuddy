@@ -53,6 +53,7 @@ class SettingsActivity : ComponentActivity() {
                     },
                     editIconOf = intent.getStringExtra(EXTRA_EDIT_ICON),
                     onDone = ::finish,
+                    screenLock = LockService,
                     onRunSetup = {
                         lifecycleScope.launch {
                             // Stored first, then home shows the setup.

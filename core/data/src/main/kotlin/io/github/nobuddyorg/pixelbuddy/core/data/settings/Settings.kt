@@ -164,7 +164,13 @@ data class Gestures(
     val swipeUp: GestureAction = GestureAction.Search,
     val swipeDown: GestureAction = GestureAction.Notifications,
     val longPress: GestureAction = GestureAction.Settings,
+    /** Double tap on empty space (#16); off by default, so a single tap isn't delayed. */
+    val doubleTap: GestureAction = GestureAction.Nothing,
 ) {
+    /** Whether a gesture locks the screen, which needs the lock service. */
+    val usesLock: Boolean
+        get() = GestureAction.Lock in listOf(swipeUp, swipeDown, effectiveLongPress, doubleTap)
+
     /**
      * The long press on empty space, as used: it opens the settings whenever no swipe does, so the settings can
      * always be reached.
@@ -179,7 +185,15 @@ data class Gestures(
 }
 
 @Serializable
-enum class GestureAction { Nothing, Search, Notifications, Settings }
+enum class GestureAction {
+    Nothing,
+    Search,
+    Notifications,
+    Settings,
+
+    /** Locks the screen through the opt-in lock service (#16). */
+    Lock,
+}
 
 /**
  * An icon style: a [preset], or the user's own [custom] style made from one in the editor (#13), shown as

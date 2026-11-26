@@ -44,7 +44,7 @@
     <string name="settings_apps">Favorites &amp; hidden apps</string>
     <string name="settings_apps_summary">Favorites: %1$d · Hidden: %2$d</string>
     <string name="settings_gestures">Gestures</string>
-    <string name="settings_gestures_summary">Swipe up and down, long press</string>
+    <string name="settings_gestures_summary">Swipe up and down, double tap, long press</string>
     <string name="settings_wallpaper">Wallpaper &amp; background</string>
     <string name="settings_about_summary">Version %1$s · Licences · Crash reports</string>
 
@@ -93,6 +93,14 @@
     <string name="gesture_search">Search</string>
     <string name="gesture_notifications">Notifications</string>
     <string name="gesture_settings">Settings</string>
+    <string name="gesture_lock">Lock screen</string>
+    <string name="gesture_double_tap">Double tap on empty space</string>
+    <string name="lock_service_title">Lock service</string>
+    <string name="lock_service_on">On: the gesture locks the screen.</string>
+    <string name="lock_service_off">Off: turn it on so the gesture can lock the screen.</string>
+    <string name="lock_service_explanation">Android lets apps lock the screen only through an accessibility service. PixelBuddy\'s lock service does nothing else: it gets no accessibility events and can\'t see the screen, what you type or other apps. Fingerprint and face unlock keep working. It turns itself off when no gesture locks the screen any more.</string>
+    <string name="lock_service_turn_on">Turn on in accessibility settings</string>
+    <string name="lock_service_restricted">There, open Installed apps (or Downloaded apps) → PixelBuddy lock. If Android says the setting is restricted: Settings → Apps → PixelBuddy → ⋮ → Allow restricted settings, then try again.</string>
 
     <string name="sky_title">Sky colours</string>
     <string name="sky_dusk">Dusk</string>

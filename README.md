@@ -67,9 +67,11 @@ Apps → Choose default apps → Home app.
 | Swipe up / ▲ Search | Search; Enter opens the top match |
 | Swipe down | Notifications |
 | Long-press empty space | Settings |
+| Double-tap empty space | Nothing, or e.g. lock the screen (opt-in) |
 | Tap the clock / the date / the weather | Alarms / calendar / refresh (or an app you choose) |
 
-The swipes and the long press can be changed in Settings → Gestures. Settings → Back up & move exports everything
+The swipes, the double tap and the long press can be changed in Settings → Gestures. Locking the screen needs
+PixelBuddy's lock service, an accessibility service that does nothing else (see [PRIVACY.md](PRIVACY.md)). Settings → Back up & move exports everything
 to one file for a new phone.
 
 Maintainers: see [docs/RELEASING.md](docs/RELEASING.md).

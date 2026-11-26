@@ -28,6 +28,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.HomeApps
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LaunchResult
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
+import io.github.nobuddyorg.pixelbuddy.core.data.lock.ScreenLock
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
@@ -60,6 +61,8 @@ fun HomeRoute(
     appearance: Appearance = Appearance(),
     /** Opens the editor for an app's own icon (#14). */
     onEditIcon: (LauncherApp) -> Unit = {},
+    /** Locks the screen for the lock gesture (#16); without it, the gesture only explains. */
+    screenLock: ScreenLock? = null,
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -141,6 +144,11 @@ fun HomeRoute(
         resetKey = resetKey,
         gestures = gestures,
         onOpenNotifications = context::expandNotificationShade,
+        onLock = {
+            if (screenLock?.lock() != true) {
+                Toast.makeText(context, R.string.home_lock_needs_service, Toast.LENGTH_LONG).show()
+            }
+        },
         header = {
             LiveHomeHeader(
                 appearance = appearance,

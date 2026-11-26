@@ -28,6 +28,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppKey
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReportStore
+import io.github.nobuddyorg.pixelbuddy.core.data.lock.ScreenLock
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Accent
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
@@ -107,7 +108,7 @@ class SettingsScreenTest {
         settings.value = settings.value.copy(weather = change(settings.value.weather))
     }
 
-    private fun showRoute() =
+    private fun showRoute(screenLock: ScreenLock? = null) =
         compose.setContent {
             SettingsRoute(
                 store = store,
@@ -123,8 +124,19 @@ class SettingsScreenTest {
                     listOf(berlin, WeatherPlace("Berlin", "New Hampshire", "USA", 44.47, -71.19))
                 },
                 ioDispatcher = Dispatchers.Unconfined,
+                screenLock = screenLock,
             )
         }
+
+    private class FakeScreenLock(
+        on: Boolean,
+    ) : ScreenLock {
+        override val available = MutableStateFlow(on)
+
+        override fun lock() = available.value
+
+        override fun settingsIntent() = Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
+    }
 
     private fun open(category: String) {
         compose.onNodeWithText(category).performScrollTo().performClick()
@@ -285,6 +297,43 @@ class SettingsScreenTest {
         // A swipe opens the settings now, so the long press is free.
         compose.onNodeWithText("Long press on empty space").performClick()
         assertEquals(GestureAction.Nothing, settings.value.gestures.longPress)
+    }
+
+    @Test
+    fun `with locking available the gestures can lock, and the page explains the lock service`() {
+        val lock = FakeScreenLock(on = false)
+        showRoute(lock)
+        open("Gestures")
+        compose.onNodeWithText("Lock service".uppercase()).assertDoesNotExist()
+
+        repeat(4) { compose.onNodeWithText("Double tap on empty space").performClick() }
+        assertEquals(GestureAction.Lock, settings.value.gestures.doubleTap)
+        compose.onNodeWithText("Off: turn it on so the gesture can lock the screen.").assertIsDisplayed()
+        compose.onNodeWithText("▶ Turn on in accessibility settings").performScrollTo().performClick()
+        assertEquals(
+            android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS,
+            shadowOf(ApplicationProvider.getApplicationContext<Application>()).nextStartedActivity.action,
+        )
+
+        lock.available.value = true
+        compose.onNodeWithText("On: the gesture locks the screen.").assertIsDisplayed()
+        compose.onNodeWithText("▶ Turn on in accessibility settings").assertDoesNotExist()
+
+        // Past "Lock" the cycle starts over, and nothing locks any more.
+        compose.onNodeWithText("Double tap on empty space").performClick()
+        assertEquals(GestureAction.Nothing, settings.value.gestures.doubleTap)
+        compose.onNodeWithText("Lock service".uppercase()).assertDoesNotExist()
+    }
+
+    @Test
+    fun `without locking no gesture can be set to lock`() {
+        settings.value = Settings(gestures = Gestures(doubleTap = GestureAction.Settings))
+        showRoute()
+        open("Gestures")
+
+        compose.onNodeWithText("Double tap on empty space").performClick()
+
+        assertEquals(GestureAction.Nothing, settings.value.gestures.doubleTap)
     }
 
     @Test
@@ -651,6 +700,18 @@ class SettingsScreenTest {
     fun `screenshot gestures`() {
         showPage(SettingsPage.Gestures)
         compose.onRoot().captureRoboImage("SettingsScreen_gestures.png")
+    }
+
+    @Test
+    fun `screenshot gestures with the lock service off`() {
+        showPage(
+            SettingsPage.Gestures,
+            sampleState.copy(
+                settings = sampleState.settings.copy(gestures = Gestures(doubleTap = GestureAction.Lock)),
+                lockServiceOn = false,
+            ),
+        )
+        compose.onRoot().captureRoboImage("SettingsScreen_gestures_lock.png")
     }
 
     @Test

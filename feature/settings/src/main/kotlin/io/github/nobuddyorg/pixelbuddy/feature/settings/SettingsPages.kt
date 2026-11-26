@@ -40,6 +40,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.SizeStep
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Sky
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.DitheredSky
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyColors
+import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyTheme
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelClock
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
 import java.time.ZoneId
@@ -278,27 +279,39 @@ private fun IconButton(
     }
 }
 
+/**
+ * What the gestures do. "Lock" is offered only if [lockServiceOn] isn't null (locking is available at all); while a
+ * gesture locks, the page explains the lock service and, while it is off, offers turning it on.
+ */
 @Composable
 internal fun GesturesPage(
     gestures: Gestures,
+    lockServiceOn: Boolean?,
     update: Update,
+    onAction: (SettingsAction) -> Unit,
 ) {
+    val next: (GestureAction) -> GestureAction = { it.nextGesture(canLock = lockServiceOn != null) }
     Spacer(Modifier.height(16.dp))
     ListRow(
         title = stringResource(R.string.gesture_swipe_up),
         subtitle = stringResource(gestures.swipeUp.label),
-        onClick = { update.gestures { it.copy(swipeUp = it.swipeUp.next()) } },
+        onClick = { update.gestures { it.copy(swipeUp = next(it.swipeUp)) } },
     )
     ListRow(
         title = stringResource(R.string.gesture_swipe_down),
         subtitle = stringResource(gestures.swipeDown.label),
-        onClick = { update.gestures { it.copy(swipeDown = it.swipeDown.next()) } },
+        onClick = { update.gestures { it.copy(swipeDown = next(it.swipeDown)) } },
+    )
+    ListRow(
+        title = stringResource(R.string.gesture_double_tap),
+        subtitle = stringResource(gestures.doubleTap.label),
+        onClick = { update.gestures { it.copy(doubleTap = next(it.doubleTap)) } },
     )
     if (gestures.effectiveLongPress == gestures.longPress) {
         ListRow(
             title = stringResource(R.string.gesture_long_press),
             subtitle = stringResource(gestures.longPress.label),
-            onClick = { update.gestures { it.copy(longPress = it.longPress.next()) } },
+            onClick = { update.gestures { it.copy(longPress = next(it.longPress)) } },
         )
     } else {
         // Without a swipe to the settings, the long press is the way there: not changeable.
@@ -317,6 +330,38 @@ internal fun GesturesPage(
             )
         }
     }
+    if (gestures.usesLock && lockServiceOn != null) {
+        LockServiceInfo(on = lockServiceOn, onTurnOn = { onAction(SettingsAction.TurnOnLockService) })
+    }
+}
+
+/** What the lock service is and does (#16), and while it is off how to turn it on. */
+@Composable
+private fun LockServiceInfo(
+    on: Boolean,
+    onTurnOn: () -> Unit,
+) {
+    Column {
+        SectionHeader(stringResource(R.string.lock_service_title))
+        BasicText(
+            stringResource(if (on) R.string.lock_service_on else R.string.lock_service_off),
+            style = BodyStyle.copy(color = if (on) PixelBuddyTheme.style.accent else BodyStyle.color),
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        )
+        Spacer(Modifier.height(8.dp))
+        BasicText(stringResource(R.string.lock_service_explanation), style = MutedStyle)
+        if (!on) {
+            Spacer(Modifier.height(8.dp))
+            TextButton(stringResource(R.string.lock_service_turn_on), onTurnOn)
+            BasicText(stringResource(R.string.lock_service_restricted), style = MutedStyle)
+        }
+    }
+}
+
+/** The next gesture action to cycle to; [GestureAction.Lock] only if locking is available. */
+private fun GestureAction.nextGesture(canLock: Boolean): GestureAction {
+    val next = next()
+    return if (next == GestureAction.Lock && !canLock) next.next() else next
 }
 
 @Composable
@@ -555,6 +600,7 @@ private val GestureAction.label: Int
             GestureAction.Search -> R.string.gesture_search
             GestureAction.Notifications -> R.string.gesture_notifications
             GestureAction.Settings -> R.string.gesture_settings
+            GestureAction.Lock -> R.string.gesture_lock
         }
 
 internal val IconPreset.label: Int
