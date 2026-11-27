@@ -1,8 +1,15 @@
 # Outline icon prototype (#29)
 
 Python prototype of the automatic neon outline renderer: it turns an app icon into smooth, consistently thick
-outline strokes with a soft, tinted glow. The prototype settles the algorithm and its defaults; the app gets a
-Kotlin port in `:core:pixel-engine` (geometry, colour) and `:core:data` (rendering).
+outline strokes with a soft, tinted glow. The prototype settles the algorithm and its defaults. The app uses the
+Kotlin port in `:core:pixel-engine` (package `outline`, `IconOutline.trace` and `IconOutline.render`), tested on the
+same synthetic icons. Differences in the port:
+
+- Rendering is pure Kotlin too: analytic anti-aliased capsules at the target size (no supersampling) and the wide
+  glow as three box blurs, so outputs are deterministic and checked against golden images.
+- k-means fits its centres on at most 4096 evenly spaced pixels (Kotlin's random numbers differ from NumPy's anyway).
+- `sweep` spreads the colour stops evenly over the icon along the sweep direction, so colours whose centres sit
+  close together (a disc on a plate) still blend gradually.
 
 Only NumPy and Pillow are used, and only for primitives that are easy to write in Kotlin without OpenCV
 (`primitives.py`): Lab conversion, Gaussian blur, Sobel, connected components, distance transform, k-means.

@@ -53,6 +53,20 @@ Blocker on).
 
 Updates must come from the same signing key, so always install over the previous release.
 
+### Google developer verification
+
+Google is rolling out [developer verification](https://developer.android.com/developer-verification) for apps on
+certified Android devices. Since 30 September 2026 it applies to apps from participating stores (Google Play, Galaxy
+Store and other device makers' stores) in Brazil, Indonesia, Singapore and Thailand. Direct downloads like PixelBuddy's
+are not covered yet; global rollout is planned for 2027. PixelBuddy will be registered before then
+([#18](https://github.com/nobuddyorg/PixelBuddy/issues/18)), so installs and updates keep working as above.
+
+If your device ever refuses the APK as coming from an unverified developer:
+
+- **ADB** stays exempt: `adb install -r PixelBuddy-vX.Y.Z.apk` (`-r` keeps your settings when updating).
+- Or use Android's one-time *advanced flow*: enable developer options, restart, wait the one-day protection period,
+  then allow apps from unverified developers. Keep it enabled, otherwise updates to unregistered apps fail.
+
 ## Using it
 
 The first start walks you through three steps you can skip: make PixelBuddy the home app, pick favorites, and
