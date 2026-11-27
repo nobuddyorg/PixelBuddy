@@ -94,6 +94,17 @@
     <string name="gesture_notifications">Benachrichtigungen</string>
     <string name="gesture_settings">Einstellungen</string>
     <string name="gesture_lock">Bildschirm sperren</string>
+    <string name="settings_notifications">Benachrichtigungen &amp; Medien</string>
+    <string name="notifications_summary_on">An</string>
+    <string name="notifications_summary_off">Aus: kein Zugriff auf Benachrichtigungen</string>
+    <string name="notification_dots">Benachrichtigungspunkte</string>
+    <string name="notification_dots_summary">Ein Punkt neben Apps mit Benachrichtigungen; antippen zeigt die neueste zum Öffnen oder Schließen</string>
+    <string name="notification_access_title">Benachrichtigungszugriff</string>
+    <string name="notification_access_on">Erteilt</string>
+    <string name="notification_access_off">Nicht erteilt: Android fragt, sobald du ihn erlaubst.</string>
+    <string name="notification_access_explanation">Mit dem Benachrichtigungszugriff von Android kann eine App alle Benachrichtigungen lesen. PixelBuddy hält sie nur im Speicher, solange sie angezeigt werden: Sie werden nie gespeichert, protokolliert oder gesendet. Ist hier alles aus, gibt PixelBuddy den Zugriff wieder ab.</string>
+    <string name="notification_access_allow">Benachrichtigungszugriff erlauben</string>
+    <string name="notification_access_restricted">Meldet Android eine eingeschränkte Einstellung: Einstellungen → Apps → PixelBuddy → ⋮ → Eingeschränkte Einstellungen zulassen, dann erneut versuchen.</string>
     <string name="gesture_double_tap">Doppelt auf freie Fläche tippen</string>
     <string name="lock_service_title">Sperrdienst</string>
     <string name="lock_service_on">An: die Geste sperrt den Bildschirm.</string>

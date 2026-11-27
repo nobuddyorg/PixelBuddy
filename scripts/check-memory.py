@@ -2,8 +2,9 @@
 """Reports home's memory (MemoryBenchmark) and fails above the limits in .github/memory-budget.json (#56).
 
 The limits are per metric name, in kB (e.g. "memoryHeapSizeMaxKb"); a metric without a limit is only reported.
-Memory doesn't depend on the runner's speed, so the limits are absolute: 1.5× the first CI measurement (heap 9.2 MB,
-anonymous RSS 67 MB), which varied by less than 0.3 MB between iterations.
+The limits are absolute, about 1.5× the highest CI measurement. The same code measured a heap of 9.2 MB on most runners
+but 21.2 MB on one (anonymous RSS 67 vs 79 MB), steady within a run: the Java heap's size depends on the machine, not
+only on the app, so the limits sit above both and still catch a real leak.
 
 Usage: scripts/check-memory.py <directory with *-benchmarkData.json>
 """

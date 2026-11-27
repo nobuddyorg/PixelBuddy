@@ -30,6 +30,8 @@ data class Settings(
     val iconOverrides: List<IconOverride> = emptyList(),
     val weather: WeatherSettings = WeatherSettings(),
     val gestures: Gestures = Gestures(),
+    /** What home shows from notifications (#24, #25); everything off until the user opts in. */
+    val notifications: NotificationSettings = NotificationSettings(),
     /** Where the first-start setup is (#20); [SetupStep.Done] once it was finished or skipped. */
     val setup: SetupStep = SetupStep.HomeApp,
     /**
@@ -158,6 +160,20 @@ enum class SetupStep {
 
     /** The step before this one, or this one if it is the first. */
     val previous: SetupStep get() = entries[maxOf(ordinal - 1, 0)]
+}
+
+/**
+ * Features that need the notification access (#24, #25). Both are off by default; the access is only asked for
+ * when one is turned on, and the listener lets go of it when both are off.
+ */
+@Serializable
+data class NotificationSettings(
+    /** A dot next to apps with notifications, with an inline preview. */
+    val dots: Boolean = false,
+    /** Play/pause and track for the playing media on home. */
+    val media: Boolean = false,
+) {
+    val needsAccess: Boolean get() = dots || media
 }
 
 /** What the gestures on home do (#12). */

@@ -19,8 +19,11 @@ import io.github.nobuddyorg.pixelbuddy.core.weather.WeatherRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
 
@@ -89,6 +92,14 @@ class AppContainer(
     }
 
     init {
+        // Turning on a feature that needs the notification access connects the listener again (#24); it lets go by
+        // itself when none does. Cheap: it only reacts to settings changes.
+        appScope.launch {
+            settings.notifications
+                .map { it.needsAccess }
+                .distinctUntilChanged()
+                .collect { needed -> if (needed) withContext(Dispatchers.Main) { NotificationService.reconnect() } }
+        }
         // Pictures of overrides that are gone (reset, app uninstalled, older import) are deleted on start.
         appScope.launch { customIcons.retain(settings.settings.first().iconImages) }
     }

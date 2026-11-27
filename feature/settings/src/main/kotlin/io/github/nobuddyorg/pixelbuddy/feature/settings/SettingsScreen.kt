@@ -41,6 +41,7 @@ enum class SettingsPage {
     AppIconEditor,
     Apps,
     Gestures,
+    Notifications,
     Wallpaper,
     Weather,
     Backup,
@@ -83,6 +84,8 @@ data class SettingsState(
     val backupMessage: Int? = null,
     /** Whether the lock service is on (#16); null if locking isn't offered at all. */
     val lockServiceOn: Boolean? = null,
+    /** Whether the notification access is granted and connected (#24); null if not offered. */
+    val notificationAccessOn: Boolean? = null,
 )
 
 /** Something the user did in the settings. */
@@ -115,6 +118,9 @@ sealed interface SettingsAction {
 
     /** Opens the system screen to turn the lock service on (#16). */
     data object TurnOnLockService : SettingsAction
+
+    /** Opens the system screen to grant the notification access (#24). */
+    data object AllowNotificationAccess : SettingsAction
 
     /** Opens the editor for one app's own icon. */
     data class EditAppIcon(
@@ -222,6 +228,10 @@ private fun PageContent(
             AppsPage(state.favorites, state.hiddenApps, update)
         }
 
+        SettingsPage.Notifications -> {
+            NotificationsPage(state.settings.notifications, state.notificationAccessOn, update, onAction)
+        }
+
         SettingsPage.Gestures -> {
             GesturesPage(state.settings.gestures, state.lockServiceOn, update, onAction)
         }
@@ -271,6 +281,7 @@ private val SettingsPage.title: Int
             SettingsPage.AppIcons -> R.string.icons_single_apps
             SettingsPage.Apps -> R.string.settings_apps
             SettingsPage.Gestures -> R.string.settings_gestures
+            SettingsPage.Notifications -> R.string.settings_notifications
             SettingsPage.Wallpaper -> R.string.settings_wallpaper
             SettingsPage.Weather, SettingsPage.WeatherPlace, SettingsPage.WeatherTap -> R.string.weather_title
             SettingsPage.Backup -> R.string.backup_title

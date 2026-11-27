@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.TouchInjectionScope
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.click
@@ -56,6 +57,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppSorter
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppSource
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.HomeApps
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
+import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotification
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
@@ -157,6 +159,8 @@ class HomeScreenTest {
         gestures: Gestures = Gestures(),
         onLock: () -> Unit = {},
         shortcuts: suspend (LauncherApp) -> AppShortcuts = { AppShortcuts.None },
+        notifications: List<AppNotification> = emptyList(),
+        onNotification: (NotificationAction) -> Unit = {},
     ) = compose.setContent {
         HomeScreen(
             home = HomeApps(favorites, apps),
@@ -179,8 +183,26 @@ class HomeScreenTest {
             icon = { app -> AppIcon(app, icons, IconPreset.Default.style) },
             shortcuts = shortcuts,
             shortcutIcon = { shortcut -> ShortcutIcon(shortcut, icons, IconPreset.Default.style) },
+            notifications = notifications,
+            onNotification = onNotification,
         )
     }
+
+    private fun notification(
+        app: String,
+        title: String,
+        text: String = "",
+        clearable: Boolean = true,
+        key: String = "$app/$title",
+    ) = AppNotification(
+        key = key,
+        packageName = app(app).component.packageName,
+        user = app(app).user,
+        title = title,
+        text = text,
+        postedAt = 0,
+        clearable = clearable,
+    )
 
     private fun shortcutsOf(vararg labels: String): suspend (LauncherApp) -> AppShortcuts =
         { app -> AppShortcuts.Available(labels.mapIndexed { i, label -> AppShortcut(app, "s$i", label) }) }
@@ -868,6 +890,85 @@ class HomeScreenTest {
         compose.onNodeWithText("▲ SUCHEN").performClick()
         compose.onNodeWithContentDescription("Teams, Arbeitsprofil").assertIsDisplayed()
         compose.onRoot().captureRoboImage("HomeScreen_de.png")
+    }
+
+    // Notification dots (#24)
+
+    @Test
+    fun `apps with notifications get a dot that shows the newest inline`() {
+        val actions = mutableListOf<NotificationAction>()
+        show(
+            favorites = favorites,
+            notifications =
+                listOf(
+                    notification("Firefox", "Download complete", "report.pdf"),
+                    notification("Firefox", "Older"),
+                ),
+            onNotification = { actions += it },
+        )
+        compose.onNodeWithContentDescription("2 notifications from Firefox. Show the newest").performClick()
+
+        compose.onNodeWithText("Download complete").assertIsDisplayed()
+        compose.onNodeWithText("report.pdf").assertIsDisplayed()
+        compose.onNodeWithText("+1 more").assertIsDisplayed()
+        compose.onNodeWithText("Download complete").performClick()
+
+        assertEquals(listOf<NotificationAction>(NotificationAction.Open("Firefox/Download complete")), actions)
+        // Opening closes the preview.
+        compose.onNodeWithText("Download complete").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a notification can be dismissed unless it is ongoing`() {
+        val actions = mutableListOf<NotificationAction>()
+        show(
+            favorites = favorites,
+            notifications =
+                listOf(
+                    notification("Firefox", "Done"),
+                    notification("Signal", "Call", clearable = false),
+                ),
+            onNotification = { actions += it },
+        )
+
+        compose.onNodeWithContentDescription("1 notification from Firefox. Show it").performClick()
+        compose.onNodeWithContentDescription("Dismiss notification").performClick()
+        assertEquals(listOf<NotificationAction>(NotificationAction.Dismiss("Firefox/Done")), actions)
+
+        compose.onNodeWithContentDescription("Hide the notifications of Firefox").performClick()
+        compose.onNodeWithContentDescription("1 notification from Signal. Show it").performClick()
+        compose.onNodeWithContentDescription("Dismiss notification").assertDoesNotExist()
+    }
+
+    @Test
+    fun `without notifications there are no dots`() {
+        show(favorites = favorites)
+
+        compose.onAllNodesWithContentDescription("notification", substring = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun `dots and previews are accessible`() {
+        show(favorites = favorites, notifications = listOf(notification("Firefox", "Done", "report.pdf")))
+        compose.onNodeWithContentDescription("1 notification from Firefox. Show it").performClick()
+
+        assertAccessible()
+    }
+
+    @Test
+    fun `screenshot notification dot and preview`() {
+        show(
+            favorites = favorites,
+            notifications =
+                listOf(
+                    notification("Firefox", "Download complete", "report.pdf · 2.4 MB"),
+                    notification("Firefox", "Older"),
+                    notification("Signal", "Ada", "See you at eight?"),
+                ),
+        )
+        compose.onNodeWithContentDescription("2 notifications from Firefox. Show the newest").performClick()
+
+        compose.onRoot().captureRoboImage("HomeScreen_notifications.png")
     }
 
     // App shortcuts (#17)

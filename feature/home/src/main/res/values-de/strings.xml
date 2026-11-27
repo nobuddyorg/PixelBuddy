@@ -3,6 +3,18 @@
     <string name="home_screen_title">Startbildschirm</string>
     <string name="home_open_settings">Einstellungen öffnen</string>
     <string name="home_lock_screen">Bildschirm sperren</string>
+    <plurals name="home_notifications_show">
+        <item quantity="one">%1$d Benachrichtigung von %2$s. Anzeigen</item>
+        <item quantity="other">%1$d Benachrichtigungen von %2$s. Neueste anzeigen</item>
+    </plurals>
+    <string name="home_notifications_hide">Benachrichtigungen von %1$s ausblenden</string>
+    <plurals name="home_notifications_more">
+        <item quantity="one">+%1$d weitere</item>
+        <item quantity="other">+%1$d weitere</item>
+    </plurals>
+    <string name="home_notification_open">Benachrichtigung öffnen</string>
+    <string name="home_notification_dismiss">Benachrichtigung schließen</string>
+    <string name="home_notification_gone">Die Benachrichtigung ist nicht mehr da</string>
     <string name="home_lock_needs_service">Zum Sperren den Sperrdienst von PixelBuddy einschalten: Einstellungen → Gesten</string>
     <string name="home_launch_failed">%1$s konnte nicht geöffnet werden</string>
     <string name="home_work_app">Arbeit</string>

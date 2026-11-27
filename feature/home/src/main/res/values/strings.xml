@@ -4,6 +4,18 @@
     <string name="home_screen_title">Home screen</string>
     <string name="home_open_settings">Open settings</string>
     <string name="home_lock_screen">Lock screen</string>
+    <plurals name="home_notifications_show">
+        <item quantity="one">%1$d notification from %2$s. Show it</item>
+        <item quantity="other">%1$d notifications from %2$s. Show the newest</item>
+    </plurals>
+    <string name="home_notifications_hide">Hide the notifications of %1$s</string>
+    <plurals name="home_notifications_more">
+        <item quantity="one">+%1$d more</item>
+        <item quantity="other">+%1$d more</item>
+    </plurals>
+    <string name="home_notification_open">Open notification</string>
+    <string name="home_notification_dismiss">Dismiss notification</string>
+    <string name="home_notification_gone">The notification is gone</string>
     <string name="home_lock_needs_service">To lock the screen, turn on PixelBuddy\'s lock service: Settings → Gestures</string>
     <string name="home_launch_failed">Couldn\'t open %1$s</string>
     <!-- Marker after apps from the work profile. -->

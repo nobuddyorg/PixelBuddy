@@ -58,6 +58,8 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppShortcut
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppShortcuts
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.HomeApps
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
+import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotification
+import io.github.nobuddyorg.pixelbuddy.core.data.notifications.of
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.DitheredSky
@@ -94,6 +96,9 @@ fun HomeScreen(
     /** An app's shortcuts for its menu (#17), read when the menu opens. */
     shortcuts: suspend (LauncherApp) -> AppShortcuts = { AppShortcuts.None },
     shortcutIcon: @Composable (AppShortcut) -> Unit = {},
+    /** Notifications for the dots and previews (#24); empty without the opt-in access. */
+    notifications: List<AppNotification> = emptyList(),
+    onNotification: (NotificationAction) -> Unit = {},
 ) {
     val title = stringResource(R.string.home_screen_title)
     val openSettingsLabel = stringResource(R.string.home_open_settings)
@@ -103,6 +108,8 @@ fun HomeScreen(
     var view by rememberSaveable(resetKey) { mutableStateOf(Rail.FAVORITES) }
     // The row whose menu is open; an app can have two rows (favorite and in the list).
     var menuRow by rememberSaveable(resetKey) { mutableStateOf<String?>(null) }
+    // The row whose notification preview is open.
+    var previewRow by rememberSaveable(resetKey) { mutableStateOf<String?>(null) }
     val sections = remember(home.apps) { home.apps.mapTo(LinkedHashSet()) { it.section } }
     val railEntries = remember(sections) { Rail.entries(sections) }
     // A letter whose last app was removed or hidden has nothing to show.
@@ -147,6 +154,14 @@ fun HomeScreen(
             top = top,
             shortcuts = shortcuts,
             shortcutIcon = shortcutIcon,
+            notifications = notifications.of(app),
+            previewOpen = rowId == previewRow,
+            onPreview = { previewRow = if (previewRow == rowId) null else rowId },
+            onNotification = { action ->
+                // Opening or dismissing the last one closes the preview.
+                if (action is NotificationAction.Open) previewRow = null
+                onNotification(action)
+            },
         )
     }
 
@@ -381,6 +396,10 @@ private fun AppEntry(
     top: Boolean = false,
     shortcuts: suspend (LauncherApp) -> AppShortcuts = { AppShortcuts.None },
     shortcutIcon: @Composable (AppShortcut) -> Unit = {},
+    notifications: List<AppNotification> = emptyList(),
+    previewOpen: Boolean = false,
+    onPreview: () -> Unit = {},
+    onNotification: (NotificationAction) -> Unit = {},
 ) {
     AppRow(
         app = app,
@@ -389,7 +408,15 @@ private fun AppEntry(
         onLongClick = { onMenu(app) },
         highlight = highlight,
         top = top,
+        trailing = {
+            if (notifications.isNotEmpty()) {
+                NotificationDot(app.label, notifications.size, previewOpen && notifications.isNotEmpty(), onPreview)
+            }
+        },
     )
+    if (previewOpen && notifications.isNotEmpty()) {
+        NotificationPreview(notifications, onNotification)
+    }
     if (menuOpen) {
         val appShortcuts by produceState<AppShortcuts?>(null, app) { value = shortcuts(app) }
         AppMenu(
@@ -416,6 +443,8 @@ private fun AppRow(
     onLongClick: () -> Unit,
     highlight: List<IntRange> = emptyList(),
     top: Boolean = false,
+    /** After the name, e.g. the notification dot (#24). */
+    trailing: @Composable () -> Unit = {},
 ) {
     // Where the icon is, so the app can open out of it.
     var iconBounds by remember { mutableStateOf<IntRect?>(null) }
@@ -462,6 +491,8 @@ private fun AppRow(
                 },
             style = style,
             maxLines = 1,
+            modifier = Modifier.weight(1f, fill = false),
         )
+        trailing()
     }
 }

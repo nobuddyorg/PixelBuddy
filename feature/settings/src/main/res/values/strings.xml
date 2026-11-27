@@ -94,6 +94,17 @@
     <string name="gesture_notifications">Notifications</string>
     <string name="gesture_settings">Settings</string>
     <string name="gesture_lock">Lock screen</string>
+    <string name="settings_notifications">Notifications &amp; media</string>
+    <string name="notifications_summary_on">On</string>
+    <string name="notifications_summary_off">Off: no access to notifications</string>
+    <string name="notification_dots">Notification dots</string>
+    <string name="notification_dots_summary">A dot next to apps with notifications; tap it to read the newest, open or dismiss it</string>
+    <string name="notification_access_title">Notification access</string>
+    <string name="notification_access_on">Granted</string>
+    <string name="notification_access_off">Not granted: Android asks once you allow it.</string>
+    <string name="notification_access_explanation">Android\'s notification access lets an app read every notification. PixelBuddy keeps them in memory only while they are shown: it never stores, logs or sends them. When everything here is off, PixelBuddy lets go of the access.</string>
+    <string name="notification_access_allow">Allow notification access</string>
+    <string name="notification_access_restricted">If Android says the setting is restricted: Settings → Apps → PixelBuddy → ⋮ → Allow restricted settings, then try again.</string>
     <string name="gesture_double_tap">Double tap on empty space</string>
     <string name="lock_service_title">Lock service</string>
     <string name="lock_service_on">On: the gesture locks the screen.</string>

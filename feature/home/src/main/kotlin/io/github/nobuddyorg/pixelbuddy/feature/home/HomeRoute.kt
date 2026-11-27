@@ -29,10 +29,13 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.LaunchResult
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.lock.ScreenLock
+import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotification
+import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotifications
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyles
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.NotificationSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherSettings
 import io.github.nobuddyorg.pixelbuddy.core.weather.WeatherRepository
@@ -63,6 +66,8 @@ fun HomeRoute(
     onEditIcon: (LauncherApp) -> Unit = {},
     /** Locks the screen for the lock gesture (#16); without it, the gesture only explains. */
     screenLock: ScreenLock? = null,
+    /** Notifications for the dots (#24), only read while they are turned on. */
+    appNotifications: AppNotifications? = null,
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -71,6 +76,12 @@ fun HomeRoute(
     val home by repository.home.collectAsStateWithLifecycle(initialValue = HomeApps())
     val iconStyles by settings.iconStyles.collectAsStateWithLifecycle(initialValue = IconStyles())
     val gestures by settings.gestures.collectAsStateWithLifecycle(initialValue = Gestures())
+    val notificationSettings by settings.notifications.collectAsStateWithLifecycle(
+        initialValue = NotificationSettings(),
+    )
+    val noNotifications = remember { MutableStateFlow(emptyList<AppNotification>()) }
+    val notificationSource = appNotifications?.active?.takeIf { notificationSettings.dots } ?: noNotifications
+    val notifications by notificationSource.collectAsStateWithLifecycle()
 
     // Null until the stored settings are read, so no request goes out for the defaults first.
     val storedWeather by settings.weather.collectAsStateWithLifecycle(initialValue = null)
@@ -187,6 +198,20 @@ fun HomeRoute(
             }
         },
         icon = { app -> AppIcon(app, icons, iconStyles.lookFor(app.key)) },
+        notifications = notifications,
+        onNotification = { action ->
+            when (action) {
+                is NotificationAction.Open -> {
+                    if (appNotifications?.open(action.key) != true) {
+                        Toast.makeText(context, R.string.home_notification_gone, Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                is NotificationAction.Dismiss -> {
+                    appNotifications?.dismiss(action.key)
+                }
+            }
+        },
         shortcuts = repository::shortcuts,
         shortcutIcon = { shortcut -> ShortcutIcon(shortcut, icons, iconStyles.lookFor(shortcut.app.key).style) },
     )

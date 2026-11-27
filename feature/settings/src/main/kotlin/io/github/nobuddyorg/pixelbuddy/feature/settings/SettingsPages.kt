@@ -37,6 +37,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyleSetting
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.NotificationSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SizeStep
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Sky
@@ -100,6 +101,19 @@ internal fun MainPage(
         stringResource(R.string.settings_apps_summary, state.favorites.size, state.hiddenApps.size),
     )
     Category(SettingsPage.Gestures, R.string.settings_gestures, stringResource(R.string.settings_gestures_summary))
+    if (state.notificationAccessOn != null) {
+        Category(
+            SettingsPage.Notifications,
+            R.string.settings_notifications,
+            stringResource(
+                if (settings.notifications.needsAccess) {
+                    R.string.notifications_summary_on
+                } else {
+                    R.string.notifications_summary_off
+                },
+            ),
+        )
+    }
     Category(
         SettingsPage.Wallpaper,
         R.string.settings_wallpaper,
@@ -339,6 +353,48 @@ internal fun GesturesPage(
     }
     if (gestures.usesLock && lockServiceOn != null) {
         LockServiceInfo(on = lockServiceOn, onTurnOn = { onAction(SettingsAction.TurnOnLockService) })
+    }
+}
+
+/**
+ * Opt-in features that need the notification access (#24): what they show, what the access means, and while it
+ * isn't granted how to grant it.
+ */
+@Composable
+internal fun NotificationsPage(
+    notifications: NotificationSettings,
+    accessOn: Boolean?,
+    update: Update,
+    onAction: (SettingsAction) -> Unit,
+) {
+    Spacer(Modifier.height(16.dp))
+    ToggleRow(
+        title = stringResource(R.string.notification_dots),
+        subtitle = stringResource(R.string.notification_dots_summary),
+        checked = notifications.dots,
+        onChange = { on -> update { it.copy(notifications = it.notifications.copy(dots = on)) } },
+        on = stringResource(R.string.toggle_on),
+        off = stringResource(R.string.toggle_off),
+    )
+    if (notifications.needsAccess && accessOn != null) {
+        Column {
+            SectionHeader(stringResource(R.string.notification_access_title))
+            BasicText(
+                stringResource(if (accessOn) R.string.notification_access_on else R.string.notification_access_off),
+                style = BodyStyle.copy(color = if (accessOn) PixelBuddyTheme.style.accent else BodyStyle.color),
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
+            Spacer(Modifier.height(8.dp))
+            BasicText(stringResource(R.string.notification_access_explanation), style = MutedStyle)
+            if (!accessOn) {
+                Spacer(Modifier.height(8.dp))
+                TextButton(
+                    stringResource(R.string.notification_access_allow),
+                    { onAction(SettingsAction.AllowNotificationAccess) },
+                )
+                BasicText(stringResource(R.string.notification_access_restricted), style = MutedStyle)
+            }
+        }
     }
 }
 
