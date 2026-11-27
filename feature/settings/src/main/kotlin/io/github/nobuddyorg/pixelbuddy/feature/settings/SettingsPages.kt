@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -756,10 +757,10 @@ private fun IconTimings(
     Column(Modifier.padding(vertical = 8.dp).semantics(true) {}) {
         BasicText(stringResource(R.string.icon_timings), style = BodyStyle)
         listOfNotNull(
-            neon?.let { R.string.icon_timings_neon to it },
-            pixel?.let { R.string.icon_timings_pixels to it },
+            neon?.let { R.plurals.icon_timings_neon to it },
+            pixel?.let { R.plurals.icon_timings_pixels to it },
         ).forEach { (text, t) ->
-            BasicText(stringResource(text, t.medianMs, t.p90Ms, t.count), style = MutedStyle)
+            BasicText(pluralStringResource(text, t.count, t.medianMs, t.p90Ms, t.count), style = MutedStyle)
         }
     }
 }

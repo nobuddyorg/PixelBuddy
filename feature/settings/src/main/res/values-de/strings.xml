@@ -7,8 +7,14 @@
 
     <string name="crash_reports_title">Absturzberichte</string>
     <string name="icon_timings">Symbole zeichnen auf diesem Telefon</string>
-    <string name="icon_timings_neon">Neonlinien: Median %1$d ms, 90 %% in höchstens %2$d ms (%3$d Symbole)</string>
-    <string name="icon_timings_pixels">Pixel: Median %1$d ms, 90 %% in höchstens %2$d ms (%3$d Symbole)</string>
+    <plurals name="icon_timings_neon">
+        <item quantity="one">Neonlinien: Median %1$d ms, 90 %% in höchstens %2$d ms (%3$d Symbol)</item>
+        <item quantity="other">Neonlinien: Median %1$d ms, 90 %% in höchstens %2$d ms (%3$d Symbole)</item>
+    </plurals>
+    <plurals name="icon_timings_pixels">
+        <item quantity="one">Pixel: Median %1$d ms, 90 %% in höchstens %2$d ms (%3$d Symbol)</item>
+        <item quantity="other">Pixel: Median %1$d ms, 90 %% in höchstens %2$d ms (%3$d Symbole)</item>
+    </plurals>
     <string name="crash_reports_privacy">Berichte bleiben auf diesem Gerät. Es wird nichts gesendet, außer du teilst einen Bericht selbst.</string>
     <string name="crash_reports_empty">Keine Absturzberichte. Bisher ist nichts abgestürzt.</string>
     <string name="crash_reports_delete_all">Alle löschen</string>
