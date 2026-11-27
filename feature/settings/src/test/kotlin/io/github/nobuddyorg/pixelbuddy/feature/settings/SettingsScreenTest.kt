@@ -921,6 +921,28 @@ class SettingsScreenTest {
         }
     }
 
+    // German (#19): every page, to review the texts and catch layouts that break with longer words.
+    @Test
+    @Config(qualifiers = "+de")
+    fun `screenshot every settings page in German`() {
+        val pages =
+            SettingsPage.entries - listOf(SettingsPage.Icons, SettingsPage.AppIconEditor) -
+                listOf(SettingsPage.WeatherPlace, SettingsPage.WeatherTap)
+        var page by mutableStateOf(SettingsPage.Main)
+        val state =
+            sampleState.copy(
+                apps = sampleState.favorites,
+                neonTimings = RenderTimings.Summary(count = 87, medianMs = 14, p90Ms = 22),
+                pixelTimings = RenderTimings.Summary(count = 1, medianMs = 1, p90Ms = 1),
+            )
+        compose.setContent { SettingsScreen(page, state, onAction = {}, zone = ZoneOffset.UTC) }
+        pages.forEach {
+            page = it
+            compose.waitForIdle()
+            compose.onRoot().captureRoboImage("Settings_de_${it.name}.png")
+        }
+    }
+
     @Test
     fun `the weather place search is accessible`() {
         weather { WeatherSettings(enabled = true) }
