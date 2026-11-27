@@ -37,6 +37,8 @@ class SettingsRepository(
 
     val calendar: Flow<CalendarSettings> = settings.map { it.calendar }.distinctUntilChanged()
 
+    val widget: Flow<WidgetSettings> = settings.map { it.widget }.distinctUntilChanged()
+
     val setupStep: Flow<SetupStep> = settings.map { it.setup }.distinctUntilChanged()
 
     suspend fun update(transform: (Settings) -> Settings): Settings = store.updateData { transform(it) }

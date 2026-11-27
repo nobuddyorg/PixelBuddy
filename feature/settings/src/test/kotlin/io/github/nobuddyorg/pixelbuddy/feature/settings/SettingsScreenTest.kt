@@ -3,8 +3,12 @@ package io.github.nobuddyorg.pixelbuddy.feature.settings
 import android.Manifest
 import android.app.Application
 import android.app.WallpaperManager
+import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.ActivityInfo
+import android.content.pm.ApplicationInfo
 import android.os.Process
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,6 +51,9 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.Sky
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.TemperatureUnit
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherPlace
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherSettings
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.WidgetSettings
+import io.github.nobuddyorg.pixelbuddy.core.data.widgets.HomeWidgets
+import io.github.nobuddyorg.pixelbuddy.core.data.widgets.WidgetProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -59,6 +66,7 @@ import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.util.ReflectionHelpers
 import java.io.IOException
 import java.time.Instant
 import java.time.ZoneOffset
@@ -120,6 +128,7 @@ class SettingsScreenTest {
         screenLock: ScreenLock? = null,
         appNotifications: AppNotifications? = null,
         calendarSource: CalendarSource? = null,
+        homeWidgets: HomeWidgets? = null,
     ) = compose.setContent {
         SettingsRoute(
             store = store,
@@ -138,6 +147,7 @@ class SettingsScreenTest {
             screenLock = screenLock,
             appNotifications = appNotifications,
             calendarSource = calendarSource,
+            homeWidgets = homeWidgets,
         )
     }
 
@@ -362,6 +372,85 @@ class SettingsScreenTest {
         compose.onNodeWithText("Double tap on empty space").performClick()
         assertEquals(GestureAction.Nothing, settings.value.gestures.doubleTap)
         compose.onNodeWithText("Lock service".uppercase()).assertDoesNotExist()
+    }
+
+    // Widget slot (#26)
+
+    private val widgetManager = AppWidgetManager.getInstance(ApplicationProvider.getApplicationContext())
+
+    private fun widgetInfo(
+        label: String,
+        configure: ComponentName? = null,
+    ) = AppWidgetProviderInfo().apply {
+        provider = ComponentName("org.example.clock", "org.example.clock.Widget")
+        this.configure = configure
+        minHeight = 200
+        ReflectionHelpers.setField(
+            this,
+            "providerInfo",
+            ActivityInfo().apply {
+                packageName = "org.example.clock"
+                name = "org.example.clock.Widget"
+                nonLocalizedLabel = label
+                applicationInfo =
+                    ApplicationInfo().apply {
+                        packageName = "org.example.clock"
+                        uid = Process.myUid()
+                    }
+            },
+        )
+    }
+
+    @Test
+    fun `a widget is picked, bound and placed in the slot`() {
+        widgetManager.install(widgetInfo("World clock"))
+        shadowOf(widgetManager).setAllowedToBindAppWidgets(true)
+        showRoute(homeWidgets = HomeWidgets(ApplicationProvider.getApplicationContext()))
+        open("Widget")
+
+        compose.onNodeWithText("▶ Add a widget").performClick()
+        compose.onNodeWithText("World clock").performClick()
+
+        assertNotNull(settings.value.widget.id)
+        compose.onNodeWithText("Below the favorites").performClick()
+        assertTrue(settings.value.widget.below)
+        compose.onNodeWithText("▶ Remove the widget").performClick()
+        assertNull(settings.value.widget.id)
+    }
+
+    @Test
+    fun `a widget whose app is gone can be removed`() {
+        settings.value = Settings(widget = WidgetSettings(id = 42))
+        showRoute(homeWidgets = HomeWidgets(ApplicationProvider.getApplicationContext()))
+        open("Widget")
+
+        compose.onNodeWithText("The widget's app is gone. It shows again when the app is back.").assertIsDisplayed()
+        compose.onNodeWithText("▶ Remove the widget").performClick()
+
+        assertNull(settings.value.widget.id)
+    }
+
+    @Test
+    fun `screenshot widget picker`() {
+        showPage(
+            SettingsPage.WidgetPicker,
+            sampleState.copy(
+                widget =
+                    WidgetUi(
+                        providers =
+                            listOf(
+                                WidgetProvider(
+                                    ComponentName("a", "a.W"),
+                                    Process.myUserHandle(),
+                                    "World clock",
+                                    "Clock",
+                                ),
+                                WidgetProvider(ComponentName("b", "b.W"), Process.myUserHandle(), "Note", "Notes"),
+                            ),
+                    ),
+            ),
+        )
+        compose.onRoot().captureRoboImage("SettingsScreen_widget_picker.png")
     }
 
     // Next calendar event (#27)

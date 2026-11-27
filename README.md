@@ -71,6 +71,7 @@ Apps → Choose default apps → Home app.
 | Tap an app's notification dot | Shows its newest notification to open or dismiss (opt-in) |
 | Play/pause, skip below the date | Controls the playing music or podcast (opt-in) |
 | Tap the next event below the date | Opens it in the calendar (opt-in) |
+| A widget with the favorites | Any app's widget, above or below them (Settings → Widget) |
 | Tap the clock / the date / the weather | Alarms / calendar / refresh (or an app you choose) |
 
 The swipes, the double tap and the long press can be changed in Settings → Gestures. Locking the screen needs

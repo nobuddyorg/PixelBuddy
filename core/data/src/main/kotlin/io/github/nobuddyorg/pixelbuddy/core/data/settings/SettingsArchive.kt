@@ -171,6 +171,8 @@ object SettingsArchive {
             iconOverrides = imported.iconOverrides.map { it.copy(image = it.image?.let(renamed::get)) },
             setup = current.setup,
             waitingApps = imported.appKeys,
+            // A widget only exists on the phone it was added on: this phone keeps its own, in the imported place.
+            widget = current.widget.copy(below = imported.widget.below),
         )
     }
 

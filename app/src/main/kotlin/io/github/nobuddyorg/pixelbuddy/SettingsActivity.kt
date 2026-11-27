@@ -56,6 +56,7 @@ class SettingsActivity : ComponentActivity() {
                     screenLock = LockService,
                     appNotifications = NotificationService,
                     calendarSource = container.calendar,
+                    homeWidgets = container.widgets,
                     onRunSetup = {
                         lifecycleScope.launch {
                             // Stored first, then home shows the setup.

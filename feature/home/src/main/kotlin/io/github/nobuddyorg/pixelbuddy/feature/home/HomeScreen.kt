@@ -99,6 +99,9 @@ fun HomeScreen(
     /** Notifications for the dots and previews (#24); empty without the opt-in access. */
     notifications: List<AppNotification> = emptyList(),
     onNotification: (NotificationAction) -> Unit = {},
+    /** The widget in the slot with the favorites (#26), if there is one. */
+    widget: (@Composable () -> Unit)? = null,
+    widgetBelow: Boolean = false,
 ) {
     val title = stringResource(R.string.home_screen_title)
     val openSettingsLabel = stringResource(R.string.home_open_settings)
@@ -221,6 +224,8 @@ fun HomeScreen(
                             swipes = { swipes },
                             entry = { rowId, app -> entry(rowId, app, emptyList(), false) },
                             modifier = Modifier.weight(1f),
+                            widget = widget,
+                            widgetBelow = widgetBelow,
                         )
                     }
                     if (home.apps.isNotEmpty()) {
@@ -245,6 +250,8 @@ private fun AppList(
     swipes: () -> VerticalSwipes,
     entry: @Composable (rowId: String, app: LauncherApp) -> Unit,
     modifier: Modifier = Modifier,
+    widget: (@Composable () -> Unit)? = null,
+    widgetBelow: Boolean = false,
 ) {
     val overscroll = rememberOverscrollSwipes(swipes)
     LazyColumn(
@@ -253,6 +260,7 @@ private fun AppList(
     ) {
         when (view) {
             Rail.FAVORITES -> {
+                if (widget != null && !widgetBelow) item(key = "widget") { widget() }
                 items(home.favorites, key = { "favorite/" + it.key.id }) { app -> entry("favorite/" + app.key.id, app) }
                 // No apps yet means they are still loading; the hint would only flash.
                 if (home.favorites.isEmpty() && home.apps.isNotEmpty()) {
@@ -264,6 +272,7 @@ private fun AppList(
                         )
                     }
                 }
+                if (widget != null && widgetBelow) item(key = "widget") { widget() }
             }
 
             else -> {

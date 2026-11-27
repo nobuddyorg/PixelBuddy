@@ -12,6 +12,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.LauncherIconLoader
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherPlace
+import io.github.nobuddyorg.pixelbuddy.core.data.widgets.HomeWidgets
 import io.github.nobuddyorg.pixelbuddy.core.weather.OpenMeteoClient
 import io.github.nobuddyorg.pixelbuddy.core.weather.PlatformLocationSource
 import io.github.nobuddyorg.pixelbuddy.core.weather.UrlConnectionHttpGet
@@ -72,6 +73,9 @@ class AppContainer(
             cache = WeatherCache(File(context.noBackupFilesDir, "weather.json")),
             location = PlatformLocationSource(context),
         )
+
+    /** The widget slot on home (#26). */
+    val widgets: HomeWidgets = HomeWidgets(context)
 
     /** The phone's calendar for the next event (#27); only with the calendar permission. */
     val calendar: CalendarProviderSource = CalendarProviderSource(context)
