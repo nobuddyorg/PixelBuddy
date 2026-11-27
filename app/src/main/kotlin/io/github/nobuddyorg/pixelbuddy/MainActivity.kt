@@ -56,6 +56,7 @@ class MainActivity : ComponentActivity() {
                             screenLock = LockService,
                             appNotifications = NotificationService,
                             mediaPlayback = container.mediaPlayback,
+                            calendarSource = container.calendar,
                         )
                     }
 

@@ -16,6 +16,13 @@
     <string name="home_notification_open">Open notification</string>
     <string name="home_notification_dismiss">Dismiss notification</string>
     <string name="home_notification_gone">The notification is gone</string>
+    <string name="home_event_today">%1$s %2$s</string>
+    <string name="home_event_tomorrow">Tomorrow %1$s %2$s</string>
+    <string name="home_event_until">Until %1$s %2$s</string>
+    <string name="home_event_all_day">Today: %1$s</string>
+    <string name="home_event_all_day_tomorrow">Tomorrow: %1$s</string>
+    <string name="home_event_untitled">(No title)</string>
+    <string name="home_event_open">Open in calendar</string>
     <string name="home_media_play">Play</string>
     <string name="home_media_pause">Pause</string>
     <string name="home_media_previous">Previous</string>

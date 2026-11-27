@@ -26,6 +26,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppKey
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
+import io.github.nobuddyorg.pixelbuddy.core.data.calendar.CalendarEvent
+import io.github.nobuddyorg.pixelbuddy.core.data.calendar.CalendarInfo
+import io.github.nobuddyorg.pixelbuddy.core.data.calendar.CalendarSource
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReportStore
 import io.github.nobuddyorg.pixelbuddy.core.data.lock.ScreenLock
@@ -33,6 +36,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotification
 import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotifications
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Accent
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.CalendarSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
@@ -45,6 +49,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherPlace
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import org.junit.Rule
@@ -114,6 +119,7 @@ class SettingsScreenTest {
     private fun showRoute(
         screenLock: ScreenLock? = null,
         appNotifications: AppNotifications? = null,
+        calendarSource: CalendarSource? = null,
     ) = compose.setContent {
         SettingsRoute(
             store = store,
@@ -131,7 +137,21 @@ class SettingsScreenTest {
             ioDispatcher = Dispatchers.Unconfined,
             screenLock = screenLock,
             appNotifications = appNotifications,
+            calendarSource = calendarSource,
         )
+    }
+
+    private class FakeCalendar : CalendarSource {
+        override fun hasAccess() = true
+
+        override suspend fun calendars() =
+            listOf(CalendarInfo(1, "Family", "me@example.org", 0), CalendarInfo(2, "Work", "me@example.org", 0))
+
+        override suspend fun events(from: Instant) = emptyList<CalendarEvent>()
+
+        override fun changes() = emptyFlow<Unit>()
+
+        override fun openIntent(event: CalendarEvent) = Intent()
     }
 
     private class FakeNotifications(
@@ -342,6 +362,54 @@ class SettingsScreenTest {
         compose.onNodeWithText("Double tap on empty space").performClick()
         assertEquals(GestureAction.Nothing, settings.value.gestures.doubleTap)
         compose.onNodeWithText("Lock service".uppercase()).assertDoesNotExist()
+    }
+
+    // Next calendar event (#27)
+
+    @Test
+    fun `the next event asks for the calendar and then offers all-day events and calendars`() {
+        shadowOf(
+            ApplicationProvider.getApplicationContext<Application>(),
+        ).grantPermissions(Manifest.permission.READ_CALENDAR)
+        showRoute(calendarSource = FakeCalendar())
+        open("Next event")
+
+        compose.onNodeWithText("Next event under the date").performClick()
+        assertTrue(settings.value.calendar.enabled)
+
+        compose.onNodeWithText("All-day events").performClick()
+        assertTrue(settings.value.calendar.allDay)
+        compose.onNodeWithText("Work").performScrollTo().performClick()
+        assertEquals(setOf(1L), settings.value.calendar.calendars)
+        // Both chosen again is "all", which takes in calendars added later.
+        compose.onNodeWithText("Work").performClick()
+        assertNull(settings.value.calendar.calendars)
+
+        compose.onNodeWithText("Next event under the date").performScrollTo().performClick()
+        assertFalse(settings.value.calendar.enabled)
+    }
+
+    @Test
+    fun `without a calendar the next event isn't offered`() {
+        showRoute()
+
+        compose.onNodeWithText("Next event").assertDoesNotExist()
+    }
+
+    @Test
+    fun `screenshot calendar`() {
+        showPage(
+            SettingsPage.Calendar,
+            sampleState.copy(
+                settings = sampleState.settings.copy(calendar = CalendarSettings(enabled = true, calendars = setOf(1))),
+                calendars =
+                    listOf(
+                        CalendarInfo(1, "Family", "me@example.org", 0),
+                        CalendarInfo(2, "Work", "me@work.example", 0),
+                    ),
+            ),
+        )
+        compose.onRoot().captureRoboImage("SettingsScreen_calendar.png")
     }
 
     // Notifications (#24)

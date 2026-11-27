@@ -9,6 +9,9 @@
     <!-- Only if approximate location is chosen for the weather; asked at that moment. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- Only if the next calendar event is turned on (#27); asked at that moment, read on the phone only. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+
     <!-- Swipe down on home pulls down the notification shade (#10). -->
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
 

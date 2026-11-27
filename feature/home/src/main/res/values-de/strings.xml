@@ -15,6 +15,13 @@
     <string name="home_notification_open">Benachrichtigung öffnen</string>
     <string name="home_notification_dismiss">Benachrichtigung schließen</string>
     <string name="home_notification_gone">Die Benachrichtigung ist nicht mehr da</string>
+    <string name="home_event_today">%1$s %2$s</string>
+    <string name="home_event_tomorrow">Morgen %1$s %2$s</string>
+    <string name="home_event_until">Bis %1$s %2$s</string>
+    <string name="home_event_all_day">Heute: %1$s</string>
+    <string name="home_event_all_day_tomorrow">Morgen: %1$s</string>
+    <string name="home_event_untitled">(Ohne Titel)</string>
+    <string name="home_event_open">Im Kalender öffnen</string>
     <string name="home_media_play">Abspielen</string>
     <string name="home_media_pause">Pausieren</string>
     <string name="home_media_previous">Zurück</string>

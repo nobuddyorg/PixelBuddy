@@ -30,9 +30,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
+import io.github.nobuddyorg.pixelbuddy.core.data.calendar.CalendarInfo
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Accent
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.CalendarSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
@@ -101,6 +103,15 @@ internal fun MainPage(
         stringResource(R.string.settings_apps_summary, state.favorites.size, state.hiddenApps.size),
     )
     Category(SettingsPage.Gestures, R.string.settings_gestures, stringResource(R.string.settings_gestures_summary))
+    if (state.calendars != null) {
+        Category(
+            SettingsPage.Calendar,
+            R.string.settings_calendar,
+            stringResource(
+                if (settings.calendar.enabled) R.string.calendar_summary_on else R.string.calendar_summary_off,
+            ),
+        )
+    }
     if (state.notificationAccessOn != null) {
         Category(
             SettingsPage.Notifications,
@@ -403,6 +414,73 @@ internal fun NotificationsPage(
                 BasicText(stringResource(R.string.notification_access_restricted), style = MutedStyle)
             }
         }
+    }
+}
+
+/**
+ * The next calendar event on home (#27): on/off (asking for the calendar permission when turned on), all-day events,
+ * and which calendars.
+ */
+@Composable
+internal fun CalendarPage(
+    calendar: CalendarSettings,
+    calendars: List<CalendarInfo>,
+    denied: Boolean,
+    update: Update,
+    onAction: (SettingsAction) -> Unit,
+) {
+    Spacer(Modifier.height(16.dp))
+    ToggleRow(
+        title = stringResource(R.string.calendar_next_event),
+        subtitle = stringResource(R.string.calendar_next_event_summary),
+        checked = calendar.enabled,
+        onChange = { on ->
+            if (on) {
+                onAction(SettingsAction.EnableCalendar)
+            } else {
+                update { it.copy(calendar = it.calendar.copy(enabled = false)) }
+            }
+        },
+        on = stringResource(R.string.toggle_on),
+        off = stringResource(R.string.toggle_off),
+    )
+    if (denied) {
+        BasicText(
+            stringResource(R.string.calendar_denied),
+            style = MutedStyle,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        )
+    }
+    if (!calendar.enabled) return
+    ToggleRow(
+        title = stringResource(R.string.calendar_all_day),
+        subtitle = stringResource(R.string.calendar_all_day_summary),
+        checked = calendar.allDay,
+        onChange = { on -> update { it.copy(calendar = it.calendar.copy(allDay = on)) } },
+        on = stringResource(R.string.toggle_on),
+        off = stringResource(R.string.toggle_off),
+    )
+    if (calendars.isEmpty()) return
+    SectionHeader(stringResource(R.string.calendar_calendars))
+    calendars.forEach { info ->
+        val chosen = calendar.calendars
+        val shown = chosen == null || info.id in chosen
+        ToggleRow(
+            title = info.name,
+            subtitle = info.account,
+            checked = shown,
+            onChange = { on ->
+                update { settings ->
+                    val current = settings.calendar.calendars ?: calendars.mapTo(HashSet()) { it.id }
+                    val chosen = if (on) current + info.id else current - info.id
+                    // Every calendar chosen is the same as all, which also takes in calendars added later.
+                    val stored = chosen.takeUnless { it.containsAll(calendars.map(CalendarInfo::id)) }
+                    settings.copy(calendar = settings.calendar.copy(calendars = stored))
+                }
+            },
+            on = stringResource(R.string.toggle_on),
+            off = stringResource(R.string.toggle_off),
+        )
     }
 }
 

@@ -95,6 +95,15 @@
     <string name="gesture_settings">Settings</string>
     <string name="gesture_lock">Lock screen</string>
     <string name="settings_notifications">Notifications &amp; media</string>
+    <string name="settings_calendar">Next event</string>
+    <string name="calendar_summary_on">From your calendar</string>
+    <string name="calendar_summary_off">Off</string>
+    <string name="calendar_next_event">Next event under the date</string>
+    <string name="calendar_next_event_summary">Within 24 hours; tap it to open it. Your calendar stays on the phone.</string>
+    <string name="calendar_denied">Without access to the calendar there is no event to show. You can allow it in Android\'s settings → Apps → PixelBuddy → Permissions.</string>
+    <string name="calendar_all_day">All-day events</string>
+    <string name="calendar_all_day_summary">Birthdays, holidays and other events without a time</string>
+    <string name="calendar_calendars">Calendars</string>
     <string name="notifications_summary_on">On</string>
     <string name="notifications_summary_off">Off: no access to notifications</string>
     <string name="notification_dots">Notification dots</string>

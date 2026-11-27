@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -31,12 +32,16 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.HomeApps
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LaunchResult
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
+import io.github.nobuddyorg.pixelbuddy.core.data.calendar.CalendarEvent
+import io.github.nobuddyorg.pixelbuddy.core.data.calendar.CalendarSource
+import io.github.nobuddyorg.pixelbuddy.core.data.calendar.nextEvent
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.lock.ScreenLock
 import io.github.nobuddyorg.pixelbuddy.core.data.media.MediaPlayback
 import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotification
 import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotifications
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.CalendarSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyles
@@ -45,10 +50,15 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherSettings
 import io.github.nobuddyorg.pixelbuddy.core.weather.WeatherRepository
 import io.github.nobuddyorg.pixelbuddy.core.weather.isFahrenheit
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
+import java.time.Duration
 import java.time.Instant
+import java.time.LocalDateTime
 import java.time.ZoneId
 
 /**
@@ -76,6 +86,8 @@ fun HomeRoute(
     appNotifications: AppNotifications? = null,
     /** The playing media (#25), only read while the controls are turned on. */
     mediaPlayback: MediaPlayback? = null,
+    /** The phone's calendar for the next event (#27), only read while it is turned on. */
+    calendarSource: CalendarSource? = null,
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -95,6 +107,8 @@ fun HomeRoute(
             mediaPlayback?.takeIf { notificationSettings.media }?.nowPlaying() ?: flowOf(null)
         }
     val nowPlaying by mediaSource.collectAsStateWithLifecycle(initialValue = null)
+    val calendarSettings by settings.calendar.collectAsStateWithLifecycle(initialValue = CalendarSettings())
+    val events by rememberCalendarEvents(calendarSource?.takeIf { calendarSettings.enabled })
     val artStyle = iconStyles.default
     val art by produceState<ImageBitmap?>(null, nowPlaying?.title, nowPlaying?.artist, artStyle) {
         val picture = nowPlaying?.art
@@ -191,7 +205,17 @@ fun HomeRoute(
                 appearance = appearance,
                 onClockClick = context::openAlarms,
                 onDateClick = context::openCalendar,
-                media = {
+                below = { now, is24Hour ->
+                    val instant = now.atZone(ZoneId.systemDefault()).toInstant()
+                    if (calendarSource != null) {
+                        nextEvent(events, instant, calendarSettings)?.let { event ->
+                            EventLine(
+                                event = event,
+                                time = EventTime.of(event, instant, ZoneId.systemDefault(), is24Hour),
+                                onClick = { context.startFirstAvailable(calendarSource.openIntent(event)) },
+                            )
+                        }
+                    }
                     nowPlaying?.let { playing ->
                         MediaRow(playing, art, onAction = { action -> mediaPlayback?.control(action) })
                     }
@@ -246,21 +270,23 @@ private fun LiveHomeHeader(
     appearance: Appearance,
     onClockClick: () -> Unit,
     onDateClick: () -> Unit,
-    media: @Composable () -> Unit = {},
+    /** Under the info line: the next event (#27) and the media controls (#25). */
+    below: @Composable (now: LocalDateTime, is24Hour: Boolean) -> Unit = { _, _ -> },
     weather: @Composable (now: Instant) -> Unit,
 ) {
     val now by rememberCurrentTime()
     val system24Hour by rememberIs24Hour()
     val battery by rememberBatteryState()
+    val is24Hour =
+        when (appearance.clockFormat) {
+            ClockFormat.System -> system24Hour
+            ClockFormat.TwelveHour -> false
+            ClockFormat.TwentyFourHour -> true
+        }
     Column {
         HomeHeader(
             now = now,
-            is24Hour =
-                when (appearance.clockFormat) {
-                    ClockFormat.System -> system24Hour
-                    ClockFormat.TwelveHour -> false
-                    ClockFormat.TwentyFourHour -> true
-                },
+            is24Hour = is24Hour,
             battery = battery,
             onClockClick = onClockClick,
             onDateClick = onDateClick,
@@ -269,9 +295,38 @@ private fun LiveHomeHeader(
         ) {
             weather(now.atZone(ZoneId.systemDefault()).toInstant())
         }
-        media()
+        below(now, is24Hour)
     }
 }
+
+/**
+ * The calendar's events from now on, while home is visible: read when it shows, when the calendar changes and every
+ * half hour (so the 24 h window moves along). Empty without a [source].
+ */
+@Composable
+private fun rememberCalendarEvents(source: CalendarSource?): State<List<CalendarEvent>> {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    return produceState(emptyList(), source, lifecycle) {
+        if (source == null) {
+            value = emptyList()
+            return@produceState
+        }
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            merge(source.changes(), every(CALENDAR_REFRESH)).collect { value = source.events(Instant.now()) }
+        }
+    }
+}
+
+/** Emits now and then every [period]. */
+private fun every(period: Duration) =
+    flow {
+        while (true) {
+            emit(Unit)
+            delay(period.toMillis())
+        }
+    }
+
+private val CALENDAR_REFRESH = Duration.ofMinutes(30)
 
 internal fun Context.openAlarms() {
     startFirstAvailable(Intent(AlarmClock.ACTION_SHOW_ALARMS))

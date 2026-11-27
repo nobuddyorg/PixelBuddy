@@ -3,6 +3,7 @@ package io.github.nobuddyorg.pixelbuddy
 import android.content.Context
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherAppsSource
+import io.github.nobuddyorg.pixelbuddy.core.data.calendar.CalendarProviderSource
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReportStore
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.DeviceInfo
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.CustomIconStore
@@ -71,6 +72,9 @@ class AppContainer(
             cache = WeatherCache(File(context.noBackupFilesDir, "weather.json")),
             location = PlatformLocationSource(context),
         )
+
+    /** The phone's calendar for the next event (#27); only with the calendar permission. */
+    val calendar: CalendarProviderSource = CalendarProviderSource(context)
 
     /** The playing media for the controls on home (#25); only with the notification access. */
     val mediaPlayback: MediaSessions = MediaSessions(context)

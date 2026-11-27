@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -26,6 +27,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
+import io.github.nobuddyorg.pixelbuddy.core.data.calendar.CalendarInfo
+import io.github.nobuddyorg.pixelbuddy.core.data.calendar.CalendarSource
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReportStore
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.CustomIconStore
@@ -83,6 +86,8 @@ fun SettingsRoute(
     screenLock: ScreenLock? = null,
     /** The notification access (#24); without it, the notification features aren't offered. */
     appNotifications: AppNotifications? = null,
+    /** The phone's calendars (#27); without it, the next event isn't offered. */
+    calendarSource: CalendarSource? = null,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
@@ -97,6 +102,17 @@ fun SettingsRoute(
     val lockServiceOn by lockFlow.collectAsStateWithLifecycle()
     val accessFlow = remember(appNotifications) { appNotifications?.connected ?: MutableStateFlow(false) }
     val notificationAccessOn by accessFlow.collectAsStateWithLifecycle()
+    var calendarDenied by remember { mutableStateOf(false) }
+    var calendarReload by remember { mutableIntStateOf(0) }
+    val enableCalendar =
+        rememberCalendarAccess(
+            onGranted = {
+                calendarDenied = false
+                onUpdate { it.copy(calendar = it.calendar.copy(enabled = true)) }
+                calendarReload++
+            },
+            onDenied = { calendarDenied = true },
+        )
     var page by rememberSaveable {
         mutableStateOf(
             if (editIconOf !=
@@ -303,6 +319,10 @@ fun SettingsRoute(
         }
     }
 
+    val calendars by produceState(emptyList<CalendarInfo>(), calendarSource, page, calendarReload) {
+        if (calendarSource != null && page == SettingsPage.Calendar) value = calendarSource.calendars()
+    }
+
     val state =
         SettingsState(
             appVersion = appVersion,
@@ -325,6 +345,8 @@ fun SettingsRoute(
             backupMessage = backupMessage,
             lockServiceOn = if (screenLock != null) lockServiceOn else null,
             notificationAccessOn = if (appNotifications != null) notificationAccessOn else null,
+            calendars = if (calendarSource != null) calendars else null,
+            calendarDenied = calendarDenied,
         )
 
     Box(modifier) {
@@ -373,6 +395,10 @@ fun SettingsRoute(
                     SettingsAction.ImportSettings -> {
                         backupMessage = null
                         importer.launchSafely(arrayOf(ZIP_TYPE, "application/octet-stream"))
+                    }
+
+                    SettingsAction.EnableCalendar -> {
+                        enableCalendar()
                     }
 
                     SettingsAction.AllowNotificationAccess -> {

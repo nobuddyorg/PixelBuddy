@@ -95,6 +95,15 @@
     <string name="gesture_settings">Einstellungen</string>
     <string name="gesture_lock">Bildschirm sperren</string>
     <string name="settings_notifications">Benachrichtigungen &amp; Medien</string>
+    <string name="settings_calendar">Nächster Termin</string>
+    <string name="calendar_summary_on">Aus deinem Kalender</string>
+    <string name="calendar_summary_off">Aus</string>
+    <string name="calendar_next_event">Nächster Termin unter dem Datum</string>
+    <string name="calendar_next_event_summary">In den nächsten 24 Stunden; antippen öffnet ihn. Der Kalender bleibt auf dem Handy.</string>
+    <string name="calendar_denied">Ohne Zugriff auf den Kalender gibt es keinen Termin anzuzeigen. Du kannst ihn in den Android-Einstellungen → Apps → PixelBuddy → Berechtigungen erlauben.</string>
+    <string name="calendar_all_day">Ganztägige Termine</string>
+    <string name="calendar_all_day_summary">Geburtstage, Feiertage und andere Termine ohne Uhrzeit</string>
+    <string name="calendar_calendars">Kalender</string>
     <string name="notifications_summary_on">An</string>
     <string name="notifications_summary_off">Aus: kein Zugriff auf Benachrichtigungen</string>
     <string name="notification_dots">Benachrichtigungspunkte</string>
