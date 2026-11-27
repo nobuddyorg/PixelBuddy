@@ -361,6 +361,36 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun `the sky can follow the sun instead of a fixed gradient`() {
+        showRoute()
+        open("Wallpaper & background")
+        compose
+            .onNodeWithText(
+                "From your time zone. Pick a weather place for exact times.",
+            ).assertIsDisplayed()
+
+        compose.onNodeWithText("Follows the sun").performClick()
+
+        assertTrue(settings.value.appearance.skyFollowsSun)
+        compose.onNodeWithText("Night → dawn → day → dusk", substring = true).assertIsDisplayed()
+        // The fixed skies aren't offered while it follows the sun.
+        compose.onNodeWithContentDescription("Forest").assertDoesNotExist()
+        Espresso.pressBack()
+        compose.onNodeWithText("Follows the sun").assertIsDisplayed()
+    }
+
+    @Test
+    fun `with a weather place the sun follows that place`() {
+        settings.value = Settings(weather = WeatherSettings(place = berlin))
+        showRoute()
+        open("Wallpaper & background")
+
+        compose
+            .onNodeWithText("Sunrise and sunset at your weather place")
+            .assertIsDisplayed()
+    }
+
+    @Test
     fun `the sky can become the lock screen wallpaper only`() {
         showRoute()
         open("Wallpaper & background")
@@ -712,6 +742,20 @@ class SettingsScreenTest {
             ),
         )
         compose.onRoot().captureRoboImage("SettingsScreen_gestures_lock.png")
+    }
+
+    @Test
+    fun `screenshot sky following the sun, every phase`() {
+        showPage(
+            SettingsPage.Wallpaper,
+            sampleState.copy(
+                settings =
+                    sampleState.settings.copy(
+                        appearance = sampleState.settings.appearance.copy(skyFollowsSun = true),
+                    ),
+            ),
+        )
+        compose.onRoot().captureRoboImage("SettingsScreen_wallpaper_sun.png")
     }
 
     @Test

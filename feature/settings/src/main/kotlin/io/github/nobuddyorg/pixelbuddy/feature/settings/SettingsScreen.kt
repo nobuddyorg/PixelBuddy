@@ -202,32 +202,62 @@ private fun PageContent(
 ) {
     val update: ((Settings) -> Settings) -> Unit = { onAction(SettingsAction.Update(it)) }
     when (page) {
-        SettingsPage.Main -> MainPage(state, onAction)
+        SettingsPage.Main -> {
+            MainPage(state, onAction)
+        }
 
-        SettingsPage.Appearance -> AppearancePage(state.settings.appearance, update)
+        SettingsPage.Appearance -> {
+            AppearancePage(state.settings.appearance, update)
+        }
 
-        SettingsPage.Clock -> ClockPage(state.settings.appearance, state.systemIs24Hour, update)
+        SettingsPage.Clock -> {
+            ClockPage(state.settings.appearance, state.systemIs24Hour, update)
+        }
 
-        SettingsPage.AppIcons -> AppIconsPage(state.apps, state.settings, onAction)
+        SettingsPage.AppIcons -> {
+            AppIconsPage(state.apps, state.settings, onAction)
+        }
 
-        SettingsPage.Apps -> AppsPage(state.favorites, state.hiddenApps, update)
+        SettingsPage.Apps -> {
+            AppsPage(state.favorites, state.hiddenApps, update)
+        }
 
-        SettingsPage.Gestures -> GesturesPage(state.settings.gestures, state.lockServiceOn, update, onAction)
+        SettingsPage.Gestures -> {
+            GesturesPage(state.settings.gestures, state.lockServiceOn, update, onAction)
+        }
 
-        SettingsPage.Wallpaper -> WallpaperPage(state.settings.appearance, state.wallpaper, update, onAction)
+        SettingsPage.Wallpaper -> {
+            WallpaperPage(
+                appearance = state.settings.appearance,
+                status = state.wallpaper,
+                update = update,
+                onAction = onAction,
+                hasWeatherPlace = state.settings.weather.hasLocation,
+            )
+        }
 
-        SettingsPage.Weather -> WeatherSection(state.weather) { onAction(SettingsAction.Weather(it)) }
+        SettingsPage.Weather -> {
+            WeatherSection(state.weather) { onAction(SettingsAction.Weather(it)) }
+        }
 
-        SettingsPage.Backup -> BackupPage(state.backupMessage, onAction)
+        SettingsPage.Backup -> {
+            BackupPage(state.backupMessage, onAction)
+        }
 
-        SettingsPage.About -> AboutPage(state, onAction)
+        SettingsPage.About -> {
+            AboutPage(state, onAction)
+        }
 
-        SettingsPage.Licenses -> LicensesPage(state.fontLicense)
+        SettingsPage.Licenses -> {
+            LicensesPage(state.fontLicense)
+        }
 
-        SettingsPage.CrashReports -> CrashReportsPage(state.reports, zone, onAction)
+        SettingsPage.CrashReports -> {
+            CrashReportsPage(state.reports, zone, onAction)
+        }
 
         // Shown by SettingsRoute, which holds their state.
-        SettingsPage.Icons, SettingsPage.AppIconEditor, SettingsPage.WeatherPlace, SettingsPage.WeatherTap -> Unit
+        SettingsPage.Icons, SettingsPage.AppIconEditor, SettingsPage.WeatherPlace, SettingsPage.WeatherTap -> {}
     }
 }
 

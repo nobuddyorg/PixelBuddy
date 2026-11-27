@@ -91,6 +91,8 @@ data class Appearance(
     /** Faint CRT scanlines over the sky. */
     val scanlines: Boolean = false,
     val sky: Sky = Sky.Dusk,
+    /** The sky follows the sun instead (#28): night, dawn, day and dusk from local sunrise and sunset. */
+    val skyFollowsSun: Boolean = false,
     /** Dithered bands (pixel look) or a smooth gradient. */
     val dithering: Boolean = true,
 )

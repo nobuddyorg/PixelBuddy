@@ -2,6 +2,7 @@ package io.github.nobuddyorg.pixelbuddy.feature.settings
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +22,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -38,6 +40,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyleSetting
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SizeStep
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Sky
+import io.github.nobuddyorg.pixelbuddy.core.data.sky.SkyPhase
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.DitheredSky
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyColors
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyTheme
@@ -97,7 +100,11 @@ internal fun MainPage(
         stringResource(R.string.settings_apps_summary, state.favorites.size, state.hiddenApps.size),
     )
     Category(SettingsPage.Gestures, R.string.settings_gestures, stringResource(R.string.settings_gestures_summary))
-    Category(SettingsPage.Wallpaper, R.string.settings_wallpaper, stringResource(appearance.sky.label))
+    Category(
+        SettingsPage.Wallpaper,
+        R.string.settings_wallpaper,
+        stringResource(if (appearance.skyFollowsSun) R.string.sky_follows_sun else appearance.sky.label),
+    )
     Category(
         SettingsPage.Weather,
         R.string.weather_title,
@@ -364,29 +371,49 @@ private fun GestureAction.nextGesture(canLock: Boolean): GestureAction {
     return if (next == GestureAction.Lock && !canLock) next.next() else next
 }
 
+/**
+ * Sky, dithering and the wallpaper. The sky is one of the fixed [Sky] gradients or follows the sun (#28), from the
+ * weather's place if [hasWeatherPlace], else from the time zone.
+ */
 @Composable
 internal fun WallpaperPage(
     appearance: Appearance,
     status: WallpaperStatus,
     update: Update,
     onAction: (SettingsAction) -> Unit,
+    hasWeatherPlace: Boolean = false,
 ) {
     SectionHeader(stringResource(R.string.sky_title))
-    SwatchRow(
-        options = Sky.entries,
-        selected = appearance.sky,
-        color = { Color(it.stops.last()) },
-        label = { stringResource(it.label) },
-        onSelect = { sky -> update.appearance { it.copy(sky = sky) } },
-        swatch = { sky ->
-            DitheredSky(
-                colors = sky.stops.map { Color(it) },
-                dithering = appearance.dithering,
-                scanlines = false,
-                modifier = Modifier.size(width = 32.dp, height = 72.dp),
-            )
-        },
+    ToggleRow(
+        title = stringResource(R.string.sky_follows_sun),
+        subtitle =
+            stringResource(
+                if (hasWeatherPlace) R.string.sky_follows_sun_place else R.string.sky_follows_sun_zone,
+            ),
+        checked = appearance.skyFollowsSun,
+        onChange = { on -> update.appearance { it.copy(skyFollowsSun = on) } },
+        on = stringResource(R.string.toggle_on),
+        off = stringResource(R.string.toggle_off),
     )
+    if (appearance.skyFollowsSun) {
+        SkyPhaseStrip(appearance.dithering)
+    } else {
+        SwatchRow(
+            options = Sky.entries,
+            selected = appearance.sky,
+            color = { Color(it.stops.last()) },
+            label = { stringResource(it.label) },
+            onSelect = { sky -> update.appearance { it.copy(sky = sky) } },
+            swatch = { sky ->
+                DitheredSky(
+                    colors = sky.stops.map { Color(it) },
+                    dithering = appearance.dithering,
+                    scanlines = false,
+                    modifier = Modifier.size(width = 32.dp, height = 72.dp),
+                )
+            },
+        )
+    }
     ToggleRow(
         title = stringResource(R.string.dithering),
         subtitle = stringResource(R.string.dithering_summary),
@@ -573,6 +600,27 @@ private val Accent.label: Int
             Accent.Cyan -> R.string.accent_cyan
             Accent.Lavender -> R.string.accent_lavender
         }
+
+/** The day's skies from night to night, as a preview of what following the sun looks like. */
+@Composable
+private fun SkyPhaseStrip(dithering: Boolean) {
+    Column(Modifier.padding(vertical = 8.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.clearAndSetSemantics {},
+        ) {
+            SkyPhase.entries.forEach { phase ->
+                DitheredSky(
+                    colors = phase.stops.map { Color(it) },
+                    dithering = dithering,
+                    scanlines = false,
+                    modifier = Modifier.size(width = 24.dp, height = 72.dp),
+                )
+            }
+        }
+        BasicText(stringResource(R.string.sky_phases), style = MutedStyle, modifier = Modifier.padding(top = 4.dp))
+    }
+}
 
 private val Sky.label: Int
     get() =
