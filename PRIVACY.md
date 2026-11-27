@@ -56,14 +56,17 @@ and face unlock). If you set a gesture to "Lock screen", PixelBuddy explains thi
 
 ### Notification access (optional)
 
-The notification dots (Settings → Notifications & media) need Android's notification access, which lets an app read
-every notification. It is off unless you turn the dots on and then grant the access in Android's settings.
+The notification dots and the media controls (Settings → Notifications & media) need Android's notification access,
+which lets an app read every notification and see which media plays. It is off unless you turn one of them on and
+then grant the access in Android's settings.
 
 - PixelBuddy uses it to show a dot next to apps with notifications and, when you tap the dot, the newest one's title
   and text, which you can open or dismiss.
-- Notifications are held in memory only while they are shown: never stored, logged, put into crash reports or sent
+- With media controls on, home shows the playing track (title, artist, album art) while home is visible and sends
+  play/pause/skip to that player when you tap them.
+- Notifications and track details are held in memory only while they are shown: never stored, logged, put into crash reports or sent
   anywhere.
-- When you turn the dots off, PixelBuddy lets go of the access (it disconnects). You can also revoke it in Android's
+- When you turn both off, PixelBuddy lets go of the access (it disconnects). You can also revoke it in Android's
   settings at any time; then nothing is shown.
 
 Optional features that need more access (calendar) are opt-in, are explained before you enable them, and are

@@ -16,6 +16,10 @@
     <string name="home_notification_open">Open notification</string>
     <string name="home_notification_dismiss">Dismiss notification</string>
     <string name="home_notification_gone">The notification is gone</string>
+    <string name="home_media_play">Play</string>
+    <string name="home_media_pause">Pause</string>
+    <string name="home_media_previous">Previous</string>
+    <string name="home_media_next">Next</string>
     <string name="home_lock_needs_service">To lock the screen, turn on PixelBuddy\'s lock service: Settings → Gestures</string>
     <string name="home_launch_failed">Couldn\'t open %1$s</string>
     <!-- Marker after apps from the work profile. -->

@@ -121,7 +121,7 @@ class CustomIconStore(
         fun isValidName(name: String): Boolean = NAME.matches(name)
 
         /** [source] scaled to fit a transparent [size] × [size] square, centred. */
-        private fun fitted(
+        internal fun fitted(
             source: Bitmap,
             size: Int,
         ): Bitmap {

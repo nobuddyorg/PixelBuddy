@@ -72,6 +72,9 @@ class AppContainer(
             location = PlatformLocationSource(context),
         )
 
+    /** The playing media for the controls on home (#25); only with the notification access. */
+    val mediaPlayback: MediaSessions = MediaSessions(context)
+
     /** Work that should finish even if the screen that started it closes; lives as long as the process. */
     val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 

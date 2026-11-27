@@ -15,6 +15,10 @@
     <string name="home_notification_open">Benachrichtigung öffnen</string>
     <string name="home_notification_dismiss">Benachrichtigung schließen</string>
     <string name="home_notification_gone">Die Benachrichtigung ist nicht mehr da</string>
+    <string name="home_media_play">Abspielen</string>
+    <string name="home_media_pause">Pausieren</string>
+    <string name="home_media_previous">Zurück</string>
+    <string name="home_media_next">Weiter</string>
     <string name="home_lock_needs_service">Zum Sperren den Sperrdienst von PixelBuddy einschalten: Einstellungen → Gesten</string>
     <string name="home_launch_failed">%1$s konnte nicht geöffnet werden</string>
     <string name="home_work_app">Arbeit</string>

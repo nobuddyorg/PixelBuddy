@@ -368,6 +368,18 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun `media controls are opt-in too and need the same access`() {
+        showRoute(appNotifications = FakeNotifications(granted = true))
+        open("Notifications & media")
+
+        compose.onNodeWithText("Media controls").performClick()
+
+        assertTrue(settings.value.notifications.media)
+        assertFalse(settings.value.notifications.dots)
+        compose.onNodeWithText("Granted").assertIsDisplayed()
+    }
+
+    @Test
     fun `without the notification access the page isn't offered`() {
         showRoute()
 
