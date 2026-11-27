@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.calendar.CalendarInfo
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
+import io.github.nobuddyorg.pixelbuddy.core.data.icons.RenderTimings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Accent
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.CalendarSettings
@@ -741,6 +742,25 @@ internal fun AboutPage(
                 },
             onClick = { onAction(SettingsAction.Navigate(SettingsPage.CrashReports)) },
         )
+        IconTimings(state.neonTimings, state.pixelTimings)
+    }
+}
+
+/** Render times of the icons on this phone (#29), so the budget can be checked without tools. */
+@Composable
+private fun IconTimings(
+    neon: RenderTimings.Summary?,
+    pixel: RenderTimings.Summary?,
+) {
+    if (neon == null && pixel == null) return
+    Column(Modifier.padding(vertical = 8.dp).semantics(true) {}) {
+        BasicText(stringResource(R.string.icon_timings), style = BodyStyle)
+        listOfNotNull(
+            neon?.let { R.string.icon_timings_neon to it },
+            pixel?.let { R.string.icon_timings_pixels to it },
+        ).forEach { (text, t) ->
+            BasicText(stringResource(text, t.medianMs, t.p90Ms, t.count), style = MutedStyle)
+        }
     }
 }
 

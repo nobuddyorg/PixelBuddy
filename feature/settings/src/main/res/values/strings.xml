@@ -6,6 +6,9 @@
     <string name="action_back">Back</string>
 
     <string name="crash_reports_title">Crash reports</string>
+    <string name="icon_timings">Icon rendering on this phone</string>
+    <string name="icon_timings_neon">Neon lines: %1$d ms median, 90 %% within %2$d ms (%3$d icons)</string>
+    <string name="icon_timings_pixels">Pixels: %1$d ms median, 90 %% within %2$d ms (%3$d icons)</string>
     <string name="crash_reports_privacy">Reports stay on this phone. Nothing is sent unless you share a report yourself.</string>
     <string name="crash_reports_empty">No crash reports. Nothing has crashed so far.</string>
     <string name="crash_reports_delete_all">Delete all</string>

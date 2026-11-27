@@ -35,6 +35,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.calendar.CalendarInfo
 import io.github.nobuddyorg.pixelbuddy.core.data.calendar.CalendarSource
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReportStore
+import io.github.nobuddyorg.pixelbuddy.core.data.icons.RenderTimings
 import io.github.nobuddyorg.pixelbuddy.core.data.lock.ScreenLock
 import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotification
 import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotifications
@@ -783,6 +784,20 @@ class SettingsScreenTest {
         compose.onNodeWithText("SIL Open Font License 1.1").assertIsDisplayed()
         compose.onNodeWithText("Apache License 2.0").assertIsDisplayed()
         compose.onNodeWithText("SIL OPEN FONT LICENSE Version 1.1", substring = true).performScrollTo()
+    }
+
+    @Test
+    fun `about shows how long icons took to render on this phone`() {
+        showPage(
+            SettingsPage.About,
+            sampleState.copy(
+                neonTimings = RenderTimings.Summary(count = 87, medianMs = 14, p90Ms = 22),
+                pixelTimings = RenderTimings.Summary(count = 3, medianMs = 1, p90Ms = 2),
+            ),
+        )
+        compose.onNodeWithText("Icon rendering on this phone").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Neon lines: 14 ms median, 90 % within 22 ms (87 icons)").assertExists()
+        compose.onNodeWithText("Pixels: 1 ms median, 90 % within 2 ms (3 icons)").assertExists()
     }
 
     // Crash reports

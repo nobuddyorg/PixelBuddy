@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.calendar.CalendarInfo
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
+import io.github.nobuddyorg.pixelbuddy.core.data.icons.RenderTimings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.widgets.WidgetHeights
 import io.github.nobuddyorg.pixelbuddy.core.data.widgets.WidgetProvider
@@ -99,6 +100,9 @@ data class SettingsState(
     val calendarDenied: Boolean = false,
     /** The widget slot (#26); null if widgets aren't offered. */
     val widget: WidgetUi? = null,
+    /** How long neon and pixel icons took to render on this phone (#29); null where none were rendered. */
+    val neonTimings: RenderTimings.Summary? = null,
+    val pixelTimings: RenderTimings.Summary? = null,
 )
 
 /** The widget slot as the settings show it (#26). */

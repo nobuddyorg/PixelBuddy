@@ -18,6 +18,11 @@ colours, and the plate colour of a light glyph, come from the full icon. Smooth 
 screen (48 dp); pixelated ones at the grid size without glow. Imported pictures are traced like icons; album art
 stays pixel art.
 
+Render times on the phone itself (release build, from drawing the app's icon to the finished bitmap) are shown under
+Settings → About: median and 90th percentile per icon, for neon and pixel icons. On the CI emulators,
+`NeonIconsOnDeviceTest` renders every installed app's real icon in the neon styles and logs the times (debug build,
+only a loose regression limit).
+
 Only NumPy and Pillow are used, and only for primitives that are easy to write in Kotlin without OpenCV
 (`primitives.py`): Lab conversion, Gaussian blur, Sobel, connected components, distance transform, k-means.
 
