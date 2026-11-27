@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.LauncherApps
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppShortcut
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconLook
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyles
@@ -28,6 +29,12 @@ interface IconLoader {
 
     /** Changes when the app is updated. */
     fun version(app: LauncherApp): Long
+
+    /** A shortcut's icon (#17), or null if it has none or is gone. */
+    fun loadShortcut(
+        shortcut: AppShortcut,
+        densityDpi: Int,
+    ): Drawable? = null
 }
 
 class LauncherIconLoader(
@@ -43,6 +50,33 @@ class LauncherIconLoader(
             .getActivityList(app.component.packageName, app.user)
             .firstOrNull { it.componentName == app.component }
             ?.getIcon(densityDpi)
+
+    override fun loadShortcut(
+        shortcut: AppShortcut,
+        densityDpi: Int,
+    ): Drawable? =
+        try {
+            val query =
+                LauncherApps
+                    .ShortcutQuery()
+                    .setPackage(shortcut.app.component.packageName)
+                    .setShortcutIds(listOf(shortcut.id))
+                    .setQueryFlags(
+                        LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST or
+                            LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC or
+                            LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED,
+                    )
+            launcherApps
+                .getShortcuts(query, shortcut.app.user)
+                ?.firstOrNull()
+                ?.let { launcherApps.getShortcutIconDrawable(it, densityDpi) }
+        } catch (_: SecurityException) {
+            // No longer the default home app.
+            null
+        } catch (_: IllegalStateException) {
+            // The profile got locked.
+            null
+        }
 
     /**
      * The package's last update time for the main profile. Other profiles' package info isn't visible, so their
@@ -81,6 +115,9 @@ class IconRepository(
 ) {
     /** Drawn sources for [preview], by app, density, size and shape: drawn once per editor session. */
     private val previewSources = ConcurrentHashMap<String, Pair<IconShape, PixelImage>>()
+
+    /** Shortcut icons (#17), only in memory: few, and only while a menu is open. */
+    private val shortcutIcons = ConcurrentHashMap<String, Bitmap>()
 
     /** App id and density → verified base (version, icon fingerprint, density) for this session. */
     private val verified = ConcurrentHashMap<String, String>()
@@ -190,6 +227,27 @@ class IconRepository(
             PixelEngine.render(source, style.copy(shape = shape)).toBitmap()
         }
 
+    /** [shortcut]'s icon pixelated in [style] (#17), or null if it has none. */
+    suspend fun shortcutIcon(
+        shortcut: AppShortcut,
+        style: IconStyle,
+        densityDpi: Int,
+    ): Bitmap? =
+        withContext(dispatcher) {
+            val key = "${shortcut.key}|$style|$densityDpi"
+            shortcutIcons[key] ?: run {
+                val drawable = loader.loadShortcut(shortcut, densityDpi) ?: return@withContext null
+                val shape = IconSourceRenderer.shapeFor(drawable, style.shape)
+                val effective = style.copy(shape = shape)
+                val source = IconSourceRenderer.render(drawable, effective.sourceSize, IconLayer.Full, shape)
+                ensureActive()
+                PixelEngine.render(source, effective).toBitmap().also {
+                    renderCount++
+                    shortcutIcons[key] = it
+                }
+            }
+        }
+
     /** The app's own icon at [sizePx], to compare with the pixelated one. */
     suspend fun original(
         app: LauncherApp,
@@ -237,6 +295,7 @@ class IconRepository(
      */
     fun recheck() {
         verified.clear()
+        shortcutIcons.clear()
         _generation.value++
     }
 

@@ -5,6 +5,7 @@ import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.InsetDrawable
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppShortcut
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconCache
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconLoader
@@ -33,6 +34,14 @@ internal object FakeIcons : IconLoader {
     }
 
     override fun version(app: LauncherApp) = 1L
+
+    override fun loadShortcut(
+        shortcut: AppShortcut,
+        densityDpi: Int,
+    ): Drawable {
+        val color = colors[Math.floorMod(shortcut.label.hashCode(), colors.size)]
+        return AdaptiveIconDrawable(ColorDrawable(Color.WHITE), InsetDrawable(ColorDrawable(color), 0.3f))
+    }
 
     fun repository(cacheDir: File) = IconRepository(this, IconCache(cacheDir), Dispatchers.Unconfined)
 }

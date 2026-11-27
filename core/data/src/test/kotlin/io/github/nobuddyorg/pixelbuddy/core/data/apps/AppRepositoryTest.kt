@@ -51,6 +51,15 @@ class AppRepositoryTest {
 
         override fun isRemoved(key: AppKey) = key in removed
 
+        var shortcuts: AppShortcuts = AppShortcuts.None
+
+        override fun shortcuts(app: LauncherApp) = shortcuts
+
+        override fun startShortcut(
+            shortcut: AppShortcut,
+            sourceBounds: Rect?,
+        ) = record("shortcut ${shortcut.id}")
+
         private fun record(call: String) {
             failure?.let { throw it }
             calls += call
@@ -215,5 +224,44 @@ class AppRepositoryTest {
             assertIs<LaunchResult.Failed>(repository.uninstall(app("Maps")))
         }
         assertTrue(source.calls.isEmpty())
+    }
+
+    @Test
+    fun `shortcuts come from the source and start through it`() =
+        runTest {
+            val repository = repository(StandardTestDispatcher(testScheduler))
+            val shortcut = AppShortcut(app("Signal"), "compose", "New message")
+            source.shortcuts = AppShortcuts.Available(listOf(shortcut))
+
+            assertEquals(AppShortcuts.Available(listOf(shortcut)), repository.shortcuts(shortcut.app))
+            assertEquals(LaunchResult.Launched, repository.launch(shortcut))
+            assertEquals(listOf("shortcut compose"), source.calls)
+        }
+
+    @Test
+    fun `a shortcut that is gone fails without throwing`() {
+        val repository = AppRepository(source, preferences)
+        source.failure = ActivityNotFoundException("gone")
+
+        val result = repository.launch(AppShortcut(app("Signal"), "compose", "New message"))
+
+        assertTrue(result is LaunchResult.Failed)
+    }
+
+    @Test
+    fun `a source without shortcuts offers none and can't start one`() {
+        val plain =
+            object : AppSource by source {
+                override fun shortcuts(app: LauncherApp) = super.shortcuts(app)
+
+                override fun startShortcut(
+                    shortcut: AppShortcut,
+                    sourceBounds: Rect?,
+                ) = super.startShortcut(shortcut, sourceBounds)
+            }
+
+        assertEquals(AppShortcuts.None, plain.shortcuts(app("Signal")))
+        val result = AppRepository(plain, preferences).launch(AppShortcut(app("Signal"), "compose", "New message"))
+        assertTrue(result is LaunchResult.Failed)
     }
 }

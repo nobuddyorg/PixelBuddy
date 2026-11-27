@@ -62,7 +62,7 @@ Apps → Choose default apps → Home app.
 | On home | Does |
 |---|---|
 | Tap an app | Opens it, growing out of its icon |
-| Long-press an app | Favorite, move, edit icon, hide, app info, uninstall |
+| Long-press an app | The app's shortcuts (e.g. "New message"), favorite, move, edit icon, hide, app info, uninstall |
 | Tap or drag the alphabet rail | Shows the apps of a letter |
 | Swipe up / ▲ Search | Search; Enter opens the top match |
 | Swipe down | Notifications |

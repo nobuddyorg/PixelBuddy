@@ -28,6 +28,7 @@
     <string name="home_menu_hide">Hide</string>
     <string name="home_menu_app_info">App info</string>
     <string name="home_menu_uninstall">Uninstall</string>
+    <string name="home_menu_shortcuts_need_home">App shortcuts show here while PixelBuddy is the home app.</string>
     <string name="home_app_hidden">%1$s hidden. Show it again in the settings.</string>
     <string name="home_action_failed">Not possible for %1$s</string>
     <!-- Alphabet rail, for TalkBack. -->

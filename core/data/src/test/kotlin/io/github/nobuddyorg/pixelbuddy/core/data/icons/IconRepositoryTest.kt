@@ -11,6 +11,7 @@ import android.os.Process
 import androidx.core.graphics.createBitmap
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppKey
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppShortcut
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconLook
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyles
@@ -48,6 +49,17 @@ class IconRepositoryTest {
         }
 
         override fun version(app: LauncherApp) = version
+
+        var shortcutDrawable: Drawable? = icon(Color.BLUE)
+        var shortcutLoads = 0
+
+        override fun loadShortcut(
+            shortcut: AppShortcut,
+            densityDpi: Int,
+        ): Drawable? {
+            shortcutLoads++
+            return shortcutDrawable
+        }
     }
 
     private val loader = FakeLoader()
@@ -279,4 +291,30 @@ class IconRepositoryTest {
                 ),
             )
     }
+
+    // Shortcut icons (#17)
+
+    @Test
+    fun `shortcut icons are pixelated like app icons and kept in memory until a recheck`() =
+        runTest {
+            val repository = repository()
+            val shortcut = AppShortcut(app, "compose", "New message")
+
+            val bitmap = repository.shortcutIcon(shortcut, style, densityDpi = 420)!!
+            repository.shortcutIcon(shortcut, style, densityDpi = 420)
+
+            assertEquals(style.grid, bitmap.width)
+            assertEquals(1, loader.shortcutLoads)
+            repository.recheck()
+            repository.shortcutIcon(shortcut, style, densityDpi = 420)
+            assertEquals(2, loader.shortcutLoads)
+        }
+
+    @Test
+    fun `a shortcut without an icon has none`() =
+        runTest {
+            loader.shortcutDrawable = null
+
+            assertNull(repository().shortcutIcon(AppShortcut(app, "compose", "New message"), style, 420))
+        }
 }

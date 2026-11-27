@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppShortcut
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconLook
@@ -40,6 +41,41 @@ fun AppIcon(
     size: Dp = 48.dp,
 ) = AppIcon(app, repository, IconLook(style), modifier, size)
 
+/** A shortcut's icon (#17), pixelated in [style] like its app; empty while loading or if it has none. */
+@Composable
+fun ShortcutIcon(
+    shortcut: AppShortcut,
+    repository: IconRepository,
+    style: IconStyle,
+    modifier: Modifier = Modifier,
+    size: Dp = 24.dp,
+) {
+    val density = LocalDensity.current
+    val densityDpi = LocalConfiguration.current.densityDpi
+    val bitmap by produceState<ImageBitmap?>(null, shortcut, style, densityDpi) {
+        value = repository.shortcutIcon(shortcut, style, densityDpi)?.asImageBitmap()
+    }
+    PixelBitmap(bitmap, with(density) { snappedIconPx(size.toPx(), style.grid).toDp() }, modifier)
+}
+
+@Composable
+private fun PixelBitmap(
+    bitmap: ImageBitmap?,
+    side: Dp,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier.size(side)) {
+        bitmap?.let {
+            Image(
+                bitmap = it,
+                contentDescription = null,
+                filterQuality = FilterQuality.None,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+    }
+}
+
 /** A pixelated app icon as [look] says (the app's own icon, #14, or the style of all). */
 @Composable
 fun AppIcon(
@@ -57,14 +93,5 @@ fun AppIcon(
         value = repository.icon(app, look, densityDpi)?.asImageBitmap()
     }
     val sidePx = snappedIconPx(with(density) { size.toPx() }, style.grid)
-    Box(modifier.size(with(density) { sidePx.toDp() })) {
-        bitmap?.let {
-            Image(
-                bitmap = it,
-                contentDescription = null,
-                filterQuality = FilterQuality.None,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-    }
+    PixelBitmap(bitmap, with(density) { sidePx.toDp() }, modifier)
 }
