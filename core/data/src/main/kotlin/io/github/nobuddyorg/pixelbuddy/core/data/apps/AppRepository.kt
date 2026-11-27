@@ -29,6 +29,8 @@ class AppRepository(
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
     /** Called before every (re)load, e.g. to let the icon cache re-check icons. */
     private val onReload: () -> Unit = {},
+    /** Called with every installed app after each load, e.g. to drop cached icons of removed apps. */
+    private val onLoaded: (List<LauncherApp>) -> Unit = {},
 ) {
     /** Every installed app, hidden ones included; reloads on every package or profile change. */
     private val installed: Flow<List<AppListEntry>> =
@@ -38,7 +40,10 @@ class AppRepository(
             .conflate()
             .map {
                 onReload()
-                AppSorter(locale()).sort(source.loadApps()).also { forgetRemoved(it) }
+                AppSorter(locale()).sort(source.loadApps()).also { entries ->
+                    forgetRemoved(entries)
+                    onLoaded(entries.map { it.app })
+                }
             }.flowOn(dispatcher)
 
     /** Home content. Collect only while home is visible. */

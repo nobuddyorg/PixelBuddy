@@ -116,7 +116,8 @@ jobs:
           if-no-files-found: ignore
 
   # Cold startup with a freshly generated baseline profile, against the system Settings app's cold startup on the
-  # same emulator and .github/startup-budget-ratio (#15); frame timing against .github/frame-budget.json (#55).
+  # same emulator and .github/startup-budget-ratio (#15); frame timing against .github/frame-budget.json (#55);
+  # memory against .github/memory-budget.json (#56).
   startup:
     name: Startup benchmark
     needs: build
@@ -166,6 +167,11 @@ jobs:
       - name: Frame timing
         if: ${{ success() || failure() }}
         run: scripts/check-frames.py baseline-profile/build/outputs/connected_android_test_additional_output build/reference-startup.txt
+
+      # Heap and anonymous memory while home starts and shows every app (#56).
+      - name: Memory
+        if: ${{ success() || failure() }}
+        run: scripts/check-memory.py baseline-profile/build/outputs/connected_android_test_additional_output
 
       - name: Upload profile and results
         if: ${{ !cancelled() }}

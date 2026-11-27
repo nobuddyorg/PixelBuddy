@@ -86,7 +86,31 @@ class IconCache(
             .forEach { it.delete() }
     }
 
+    /**
+     * Removes cached icons of every app but [apps] (key ids), in memory and on disk, so uninstalled apps leave
+     * nothing behind (#56).
+     */
+    fun retainApps(apps: Set<String>) {
+        memory
+            .snapshot()
+            .keys
+            .filter { key -> key.substringBefore('|') !in apps }
+            .forEach(memory::remove)
+        val keep = apps.mapTo(HashSet(), ::hash)
+        directory
+            .listFiles()
+            .orEmpty()
+            .filter { it.isDirectory && it.name !in keep }
+            .forEach { it.deleteRecursively() }
+    }
+
     fun clearMemory() = memory.evictAll()
+
+    /** Android asks for memory back: keep only the most recently used quarter of the icons in memory. */
+    fun trimMemory() = memory.trimToSize(memory.maxSize() / 4)
+
+    /** Bytes of icons in memory, for tests. */
+    internal val memoryBytes: Int get() = memory.size()
 
     /** Number of icons in memory, for tests. */
     internal val memoryCount: Int get() = memory.snapshot().size

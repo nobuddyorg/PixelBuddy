@@ -51,9 +51,14 @@ class AppContainer(
             images = customIcons,
         )
 
-    /** Every app list reload also re-checks icons, so updates and icon themes show up. */
+    /** Every app list reload also re-checks icons, so updates and icon themes show up, and drops removed apps' icons. */
     val appRepository: AppRepository =
-        AppRepository(LauncherAppsSource(context), settings, onReload = iconRepository::recheck)
+        AppRepository(
+            LauncherAppsSource(context),
+            settings,
+            onReload = iconRepository::recheck,
+            onLoaded = iconRepository::retainApps,
+        )
 
     /** Weather (#11): the only network access, and only while weather is on. Cached outside backups. */
     val weatherRepository: WeatherRepository =

@@ -91,4 +91,62 @@ class IconCacheTest {
         cache.clearMemory()
         assertEquals(0, cache.memoryCount)
     }
+
+    // Budgets (#56)
+
+    private fun files() =
+        folder.root
+            .walk()
+            .filter { it.isFile }
+            .toList()
+
+    @Test
+    fun `icons of removed apps are deleted from memory and disk`() {
+        val cache = IconCache(folder.root)
+        listOf("kept", "gone").forEach { cache.put(it, "v1", "style", bitmap(Color.RED)) }
+
+        cache.retainApps(setOf("kept"))
+
+        assertEquals(1, cache.memoryCount)
+        assertEquals(1, files().size)
+        assertNotNull(cache.get("kept", "v1", "style"))
+        assertNull(IconCache(folder.root).get("gone", "v1", "style"))
+    }
+
+    @Test
+    fun `changing the style again and again keeps one style on disk`() {
+        val cache = IconCache(folder.root)
+        repeat(5) { round ->
+            (1..20).forEach { cache.put("app$it", "v1", "style$round", bitmap(Color.RED)) }
+            cache.retainStyles(setOf("style$round"))
+        }
+
+        assertEquals(20, files().size)
+    }
+
+    @Test
+    fun `300 apps stay within the memory budget`() {
+        val icon = Bitmap.createBitmap(48, 48, Bitmap.Config.ARGB_8888)
+        val budget = 300 * icon.allocationByteCount / 2
+        val cache = IconCache(folder.root, memoryBytes = budget)
+
+        (1..300).forEach { cache.put("app$it", "v1", "style", icon) }
+
+        assertTrue(cache.memoryBytes <= budget)
+        // The most recent icons are the ones kept.
+        assertNotNull(cache.get("app300", "v1", "style"))
+    }
+
+    @Test
+    fun `when Android needs memory only a quarter stays`() {
+        val icon = Bitmap.createBitmap(48, 48, Bitmap.Config.ARGB_8888)
+        val cache = IconCache(folder.root, memoryBytes = 40 * icon.allocationByteCount)
+        (1..40).forEach { cache.put("app$it", "v1", "style", icon) }
+
+        cache.trimMemory()
+
+        assertEquals(10, cache.memoryCount)
+        // The files are still there, so icons come back without rendering.
+        assertEquals(40, files().size)
+    }
 }

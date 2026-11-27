@@ -31,6 +31,12 @@ internal fun MacrobenchmarkScope.skipSetup() {
     device.wait(Until.hasObject(By.textContains("SEARCH")), TIMEOUT_MS)
 }
 
+/** Opens the search, which lists every app, and waits for its field. */
+internal fun MacrobenchmarkScope.openSearch() {
+    device.findObject(By.textContains("SEARCH")).click()
+    device.wait(Until.hasObject(By.focused(true)), TIMEOUT_MS)
+}
+
 /** What people do on home: the list of all apps, the rail, the search. */
 internal fun MacrobenchmarkScope.useHome() {
     device.findObject(By.textContains("SEARCH"))?.click()

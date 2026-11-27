@@ -16,6 +16,12 @@ class PixelBuddyApp : Application() {
         CrashHandler.install(container.crashReports, container.deviceInfo)
     }
 
+    /** Home is in the background and Android needs memory: give most decoded icons back (#56). */
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= TRIM_MEMORY_BACKGROUND) container.iconRepository.trimMemory()
+    }
+
     /** Density or icon theme (e.g. Galaxy Themes) may have changed: re-check icons. */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
