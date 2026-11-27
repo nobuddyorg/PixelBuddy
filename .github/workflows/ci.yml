@@ -116,7 +116,7 @@ jobs:
           if-no-files-found: ignore
 
   # Cold startup with a freshly generated baseline profile, against the system Settings app's cold startup on the
-  # same emulator and .github/startup-budget-ratio (#15).
+  # same emulator and .github/startup-budget-ratio (#15); frame timing against .github/frame-budget.json (#55).
   startup:
     name: Startup benchmark
     needs: build
@@ -139,6 +139,9 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Test the benchmark checks
+        run: python3 -m unittest discover -s scripts
+
       - name: Build the app and the benchmark
         run: ./gradlew :app:assembleNonMinifiedRelease :app:assembleBenchmarkRelease :baseline-profile:assemble
 
@@ -158,6 +161,11 @@ jobs:
 
       - name: Startup budget
         run: scripts/check-startup.py baseline-profile/build/outputs/connected_android_test_additional_output build/reference-startup.txt
+
+      # Frame timing of scrolling, the rail, search and the menu (#55), scaled by the runner's speed.
+      - name: Frame timing
+        if: ${{ success() || failure() }}
+        run: scripts/check-frames.py baseline-profile/build/outputs/connected_android_test_additional_output build/reference-startup.txt
 
       - name: Upload profile and results
         if: ${{ !cancelled() }}
