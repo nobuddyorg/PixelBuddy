@@ -893,6 +893,8 @@ internal val IconPreset.label: Int
             IconPreset.Pocket -> R.string.icon_preset_pocket
             IconPreset.Neon -> R.string.icon_preset_neon
             IconPreset.Mono -> R.string.icon_preset_mono
+            IconPreset.NeonLines -> R.string.icon_preset_neon_lines
+            IconPreset.NeonSingle -> R.string.icon_preset_neon_single
         }
 
 private val WallpaperTarget.label: Int

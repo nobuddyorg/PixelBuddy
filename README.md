@@ -16,8 +16,8 @@ HP bar, a dithered navy→purple→orange sky and pixelized app icons.
 
 - **Home:** big pixel clock, date, battery as an HP bar and optional weather; your favorites; an alphabet rail with
   haptic ticks; swipe up to search (accents, word starts and initials match).
-- **Pixel icons:** every app icon pixelated in one of five presets, or your own style made in the live editor;
-  single apps can get their own style, layer or picture.
+- **Pixel icons:** every app icon pixelated in one of five presets or drawn as glowing neon lines, or your own style
+  made in the live editor; single apps can get their own style, layer or picture.
 - **Your look:** accent colours, six sky gradients or a sky that follows the sun (night, dawn, day, dusk), dithering,
   CRT scanlines, clock and text sizes, and the sky as your wallpaper (home and lock screen).
 - **Private by design:** no tracking, no ads, no accounts. The only network access is optional weather.

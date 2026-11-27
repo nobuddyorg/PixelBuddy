@@ -40,6 +40,8 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyleSetting
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.PaletteChoice
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.NeonStyle
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.outline.OutlineColours
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -305,7 +307,7 @@ class IconEditorTest {
         compose.onNodeWithText("Icon of Maps").assertIsDisplayed()
 
         compose.onNodeWithText("Foreground only").performScrollTo().performClick()
-        compose.onNodeWithText("Neon").performScrollTo().performClick()
+        compose.onNodeWithText("Neon").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         compose.onNodeWithText("▶ Apply").performClick()
 
         val override = settings.value.iconOverrideFor(maps.key)!!
@@ -415,6 +417,39 @@ class IconEditorTest {
 
     @Test
     fun `screenshot Mono`() = screenshot(IconPreset.Mono, "mono")
+
+    @Test
+    fun `screenshot neon lines`() = screenshot(IconPreset.NeonLines, "neon_lines")
+
+    @Test
+    fun `screenshot neon, one colour`() = screenshot(IconPreset.NeonSingle, "neon_single")
+
+    @Test
+    fun `neon lines have their own options`() {
+        showEditor()
+        compose.onNodeWithText("Palette").assertExists()
+
+        compose.onNodeWithText("Neon lines").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("Palette").assertDoesNotExist()
+        compose.onNodeWithText("Glow").assertExists()
+        compose.onNodeWithText("Pixels per side").assertDoesNotExist()
+        compose.onNodeWithText("Gradient").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+
+        // pixelated: the grid counts, glow doesn't
+        compose.onNodeWithText("Pixelated").performScrollTo().performClick()
+        compose.onNodeWithText("Glow").assertDoesNotExist()
+        compose.onNodeWithText("32").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+
+        compose.onNodeWithText("▶ Apply").performClick()
+        assertEquals(NeonStyle(OutlineColours.Sweep, pixelated = true), stored.style.neon)
+        assertEquals(32, stored.style.grid)
+
+        // back to pixels keeps the pixel values
+        compose.onNodeWithText("Pixels").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("▶ Apply").performClick()
+        assertNull(stored.style.neon)
+        assertEquals(32, stored.style.grid)
+    }
 
     @Test
     fun `screenshot custom with the discard question`() {

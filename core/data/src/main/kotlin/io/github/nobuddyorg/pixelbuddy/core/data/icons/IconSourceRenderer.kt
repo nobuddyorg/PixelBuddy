@@ -109,6 +109,36 @@ object IconSourceRenderer {
         drawable.bounds = old
     }
 
+    /** The icon has a themed-icon monochrome layer (Android 13+). */
+    fun hasMonochrome(drawable: Drawable): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && (drawable as? AdaptiveIconDrawable)?.monochrome != null
+
+    /**
+     * For neon outlines (#29): the picture to trace and, if different, the one to take the colours from. An adaptive
+     * icon is traced from its monochrome layer (clean shapes, made for one colour) unless [layer] asks for the
+     * foreground, else from its foreground: the background layer is the plate, so it is left out exactly instead of
+     * being guessed. The colours come from the full icon, plate included, so a light glyph on a plate is outlined in
+     * the plate colour. Only an icon with an empty foreground is traced whole.
+     */
+    fun neonSources(
+        drawable: Drawable,
+        size: Int,
+        layer: IconLayer,
+    ): Pair<PixelImage, PixelImage?> {
+        if (!isAdaptive(drawable)) return render(drawable, size) to null
+        val full = render(drawable, size, IconLayer.Full, IconShape.Masked)
+        if (layer != IconLayer.Foreground && hasMonochrome(drawable)) {
+            return render(drawable, size, IconLayer.Monochrome, IconShape.FreeStanding) to full
+        }
+        val foreground = render(drawable, size, IconLayer.Foreground, IconShape.FreeStanding)
+        val painted = foreground.pixels.count { (it ushr 24) >= OPAQUE_ENOUGH }
+        return if (painted >= foreground.pixels.size / MIN_FOREGROUND_SHARE) foreground to full else full to null
+    }
+
+    /** A foreground covering less than 1/[MIN_FOREGROUND_SHARE] of the icon is treated as empty. */
+    private const val MIN_FOREGROUND_SHARE = 200
+    private const val OPAQUE_ENOUGH = 128
+
     /**
      * A cheap fingerprint of how [drawable] looks (16 × 16 render), to notice icon changes without a package update,
      * e.g. from Galaxy Themes.

@@ -6,8 +6,10 @@ import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconLayer
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconShape
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconStyle
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.NeonStyle
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.Palette
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.Palettes
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.outline.OutlineColours
 import kotlinx.serialization.Serializable
 
 /**
@@ -281,6 +283,8 @@ data class CustomIconStyle(
     val outlineColor: Int = IconStyle.DEFAULT_OUTLINE,
     /** On a rounded square plate (masked) or free-standing. */
     val masked: Boolean = true,
+    /** Neon outlines (#29) instead of pixel art; the pixel values above are kept for switching back. */
+    val neon: NeonSetting? = null,
 ) {
     fun toStyle(): IconStyle =
         IconStyle(
@@ -291,6 +295,7 @@ data class CustomIconStyle(
             outline = outline,
             outlineColor = outlineColor or OPAQUE,
             shape = if (masked) IconShape.Masked else IconShape.FreeStanding,
+            neon = neon?.toStyle(),
         )
 
     companion object {
@@ -329,9 +334,40 @@ data class CustomIconStyle(
                 outline = style.outline,
                 outlineColor = style.outlineColor,
                 masked = style.shape == IconShape.Masked,
+                neon = style.neon?.let(NeonSetting::from),
             )
         }
     }
+}
+
+/** The editor's neon outline options (#29). */
+@Serializable
+data class NeonSetting(
+    val colours: NeonColours = NeonColours.Sampled,
+    val glow: Boolean = true,
+    val pixelated: Boolean = false,
+) {
+    fun toStyle(): NeonStyle = NeonStyle(colours.mode, glow, pixelated)
+
+    companion object {
+        fun from(style: NeonStyle): NeonSetting =
+            NeonSetting(NeonColours.entries.first { it.mode == style.colours }, style.glow, style.pixelated)
+    }
+}
+
+/** Where neon strokes get their colours. Stored in the settings: don't rename. */
+@Serializable
+enum class NeonColours(
+    internal val mode: OutlineColours,
+) {
+    /** Taken from the icon along each stroke. */
+    Sampled(OutlineColours.Sampled),
+
+    /** A sweep through the icon's main colours. */
+    Sweep(OutlineColours.Sweep),
+
+    /** The icon's dominant colour. */
+    Single(OutlineColours.Single),
 }
 
 /** The palettes the icon editor offers. */

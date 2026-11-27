@@ -5,7 +5,9 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppKey
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconLayer
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconPreset
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconShape
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.NeonStyle
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.Palette
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.outline.OutlineColours
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -106,6 +108,29 @@ class SettingsSerializerTest {
         IconPreset.entries.forEach { preset ->
             assertEquals(preset.style, CustomIconStyle.from(preset.style).toStyle(), preset.name)
         }
+    }
+
+    @Test
+    fun `neon options survive a round trip, unknown colours fall back`() {
+        val choice =
+            IconChoice(
+                IconStyleSetting.of(IconPreset.NeonLines).edited {
+                    it.copy(neon = NeonSetting(NeonColours.Sweep, glow = false, pixelated = true))
+                },
+            )
+        val decoded = SettingsSerializer.decodeIconChoice(SettingsSerializer.encode(choice))!!
+        assertEquals(choice, decoded)
+        assertEquals(NeonStyle(OutlineColours.Sweep, glow = false, pixelated = true), decoded.style.style.neon)
+
+        val newer = SettingsSerializer.encode(choice).replace("\"Sweep\"", "\"Rainbow\"")
+        assertEquals(
+            NeonColours.Sampled,
+            SettingsSerializer
+                .decodeIconChoice(newer)!!
+                .style.custom!!
+                .neon!!
+                .colours,
+        )
     }
 
     @Test

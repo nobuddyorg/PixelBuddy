@@ -14,10 +14,16 @@ import kotlin.math.sqrt
  * colour mode and size. Deterministic; ported from the prototype in `tools/icon-outline`.
  */
 public object IconOutline {
-    /** Finds the silhouette and the important internal borders of [source] (any size, transparent or opaque). */
+    /**
+     * Finds the silhouette and the important internal borders of [source] (any size, transparent or opaque). The
+     * stroke colours come from [colours] if given: another picture of the same icon, aligned with [source], such as
+     * the full icon when [source] is its monochrome layer. A light glyph on a plate there still gives the plate
+     * colour.
+     */
     public fun trace(
         source: PixelImage,
         params: OutlineParams = OutlineParams(),
+        colours: PixelImage? = null,
     ): Outline {
         val image = WorkImage.of(source, params.workSize)
         val lab = Primitives.lab(image.rgb)
@@ -32,8 +38,27 @@ public object IconOutline {
             labels = Segmentation.segment(image, mask, params)
         }
         val sigma = params.smooth * params.workSize
-        val contours = Contours.trace(labels, image.size).map { Contours.smooth(it, sigma) }
-        return Outline(params, image, mask, labels, plate?.colour, Contours.cleanup(contours, image.size, params))
+        val contours =
+            Contours.cleanup(
+                Contours.trace(labels, image.size).map {
+                    Contours.smooth(it, sigma)
+                },
+                image.size,
+                params,
+            )
+        if (colours == null) return Outline(params, image, mask, labels, plate?.colour, contours)
+        val colourImage = WorkImage.of(colours, params.workSize)
+        val colourLab = Primitives.lab(colourImage.rgb)
+        val colourPlate =
+            Segmentation.plateGlyph(
+                colourImage,
+                colourLab,
+                Segmentation.foreground(colourImage, colourLab),
+            )
+        // sample only where the colour picture has paint, unless that leaves nothing
+        val painted = BooleanArray(mask.size) { mask[it] && colourImage.alpha[it] > 0.5 }
+        val colourMask = if (painted.any { it }) painted else mask
+        return Outline(params, colourImage, colourMask, labels, plate?.colour ?: colourPlate?.colour, contours)
     }
 
     /**

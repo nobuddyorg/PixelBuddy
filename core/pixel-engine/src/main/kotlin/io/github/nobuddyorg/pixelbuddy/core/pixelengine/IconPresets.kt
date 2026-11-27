@@ -1,6 +1,8 @@
 package io.github.nobuddyorg.pixelbuddy.core.pixelengine
 
-/** Built-in looks. Outline styles (neon outlines) are a separate renderer, see #29. */
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.outline.OutlineColours
+
+/** Built-in looks: pixel art, and neon outlines (#29). */
 public enum class IconPreset(
     public val style: IconStyle,
 ) {
@@ -18,6 +20,12 @@ public enum class IconPreset(
 
     /** Shades of the light text colour. */
     Mono(IconStyle(grid = 16, palette = Palette.MonochromeTint(0xFFF2EEFF.toInt(), shades = 4))),
+
+    /** Smooth glowing outlines in the icon's own colours (#29). */
+    NeonLines(IconStyle(neon = NeonStyle())),
+
+    /** Smooth glowing outlines in the icon's dominant colour (#29). */
+    NeonSingle(IconStyle(neon = NeonStyle(OutlineColours.Single))),
     ;
 
     public companion object {

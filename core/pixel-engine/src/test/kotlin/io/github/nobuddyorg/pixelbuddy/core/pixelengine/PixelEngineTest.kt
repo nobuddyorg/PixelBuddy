@@ -182,7 +182,20 @@ class PixelEngineTest {
 
     @Test
     fun `presets cover the planned looks and default to 16-bit`() {
-        assertEquals(listOf("EightBit", "SixteenBit", "Pocket", "Neon", "Mono"), IconPreset.entries.map { it.name })
+        assertEquals(
+            listOf(
+                "EightBit",
+                "SixteenBit",
+                "Pocket",
+                "Neon",
+                "Mono",
+                "NeonLines",
+                "NeonSingle",
+            ),
+            IconPreset.entries.map {
+                it.name
+            },
+        )
         assertEquals(IconPreset.SixteenBit, IconPreset.Default)
         assertTrue(IconPreset.SixteenBit.style.outline)
         assertEquals(4, (IconPreset.Pocket.style.palette as Palette.Fixed).colors.size)

@@ -10,7 +10,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -74,6 +76,50 @@ class IconSourceRendererTest {
         assertEquals(IconSourceRenderer.MONOCHROME_TINT, mono[48, 48])
         assertEquals(0, mono[0, 0])
         assertEquals(blue, fallback[48, 48])
+    }
+
+    @Test
+    fun `neon icons are traced from the monochrome layer with the full icon's colours`() {
+        val (shapes, colours) = IconSourceRenderer.neonSources(adaptive(monochrome = true), 96, IconLayer.Full)
+
+        assertTrue(IconSourceRenderer.hasMonochrome(adaptive(monochrome = true)))
+        assertEquals(IconSourceRenderer.MONOCHROME_TINT, shapes[48, 48])
+        assertEquals(0, shapes[0, 0])
+        assertEquals(red, colours!![0, 0])
+        assertEquals(blue, colours[48, 48])
+    }
+
+    @Test
+    fun `neon icons without a monochrome layer are traced from the foreground`() {
+        val (shapes, colours) = IconSourceRenderer.neonSources(adaptive(), 96, IconLayer.Monochrome)
+
+        assertFalse(IconSourceRenderer.hasMonochrome(adaptive()))
+        assertEquals(0, shapes[0, 0])
+        assertEquals(blue, shapes[48, 48])
+        assertEquals(red, colours!![0, 0])
+    }
+
+    @Test
+    fun `neon icons with an empty foreground are traced whole`() {
+        val plateOnly = AdaptiveIconDrawable(ColorDrawable(red), ColorDrawable(Color.TRANSPARENT))
+        val (shapes, colours) = IconSourceRenderer.neonSources(plateOnly, 96, IconLayer.Full)
+
+        assertEquals(red, shapes[0, 0])
+        assertNull(colours)
+    }
+
+    @Test
+    fun `neon icons can be traced from the foreground, and legacy icons as they are`() {
+        val (shapes, colours) = IconSourceRenderer.neonSources(adaptive(monochrome = true), 96, IconLayer.Foreground)
+        assertEquals(0, shapes[0, 0])
+        assertEquals(blue, shapes[48, 48])
+        assertEquals(red, colours!![0, 0])
+
+        val legacy = InsetDrawable(ColorDrawable(blue), 0.25f)
+        val (image, none) = IconSourceRenderer.neonSources(legacy, 96, IconLayer.Full)
+        assertEquals(IconSourceRenderer.render(legacy, 96), image)
+        assertNull(none)
+        assertFalse(IconSourceRenderer.hasMonochrome(legacy))
     }
 
     @Test

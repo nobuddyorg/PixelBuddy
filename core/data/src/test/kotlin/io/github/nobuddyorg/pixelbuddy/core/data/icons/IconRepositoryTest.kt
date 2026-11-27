@@ -281,6 +281,58 @@ class IconRepositoryTest {
         assertEquals(start + 2, repository.generation.value)
     }
 
+    // Neon outline icons (#29)
+
+    private val neon = IconPreset.NeonLines.style
+
+    @Test
+    fun `smooth neon icons are drawn at home's icon size and cached per size`() =
+        runTest {
+            val repository = repository()
+            val bitmap = repository.icon(app, IconLook(neon), densityDpi = 420)!!
+
+            assertEquals(IconRepository.iconPx(420), bitmap.width)
+            assertEquals(126, IconRepository.iconPx(420))
+            // transparent inside the strokes' padding
+            assertEquals(0, bitmap.getPixel(0, 0))
+            repository.icon(app, IconLook(neon), densityDpi = 420)
+            assertEquals(1, repository.renderCount)
+
+            val small = repository.icon(app, IconLook(neon), densityDpi = 420, sizePx = 64)!!
+            assertEquals(64, small.width)
+            assertEquals(2, repository.renderCount)
+        }
+
+    @Test
+    fun `pixelated neon icons are drawn at the grid size`() =
+        runTest {
+            val style = neon.copy(grid = 16, neon = neon.neon!!.copy(pixelated = true))
+            val bitmap = repository().icon(app, IconLook(style), densityDpi = 420)!!
+
+            assertEquals(16, bitmap.width)
+        }
+
+    @Test
+    fun `neon previews, shortcuts and pictures`() =
+        runTest {
+            val repository = repository()
+            assertEquals(90, repository.preview(app, IconLook(neon), densityDpi = 420, sizePx = 90)!!.width)
+            assertEquals(
+                40,
+                repository
+                    .shortcutIcon(
+                        AppShortcut(app, "compose", "New message"),
+                        neon,
+                        densityDpi = 420,
+                        sizePx = 40,
+                    )!!
+                    .width,
+            )
+            // album art stays pixel art
+            val art = createBitmap(64, 64).apply { eraseColor(Color.GREEN) }
+            assertEquals(neon.grid, repository.pixelate(art, neon).width)
+        }
+
     private companion object {
         fun icon(color: Int): Drawable =
             AdaptiveIconDrawable(

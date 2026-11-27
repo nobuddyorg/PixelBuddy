@@ -21,6 +21,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconLook
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconStyle
+import kotlin.math.roundToInt
 
 /**
  * The largest multiple of [grid] that fits into [targetPx], so every icon pixel is the same whole number of
@@ -31,7 +32,13 @@ fun snappedIconPx(
     grid: Int,
 ): Int = maxOf(1, (targetPx / grid).toInt()) * grid
 
-/** A pixelated app icon in [style], loaded off the main thread and drawn without filtering. */
+/** The side of an icon in [style] at [targetPx]: snapped for pixel art, exact for smooth neon icons (#29). */
+fun iconSidePx(
+    targetPx: Float,
+    style: IconStyle,
+): Int = if (style.smooth) maxOf(1, targetPx.roundToInt()) else snappedIconPx(targetPx, style.grid)
+
+/** An app icon in [style], loaded off the main thread; pixel art is drawn without filtering. */
 @Composable
 fun AppIcon(
     app: LauncherApp,
@@ -52,16 +59,18 @@ fun ShortcutIcon(
 ) {
     val density = LocalDensity.current
     val densityDpi = LocalConfiguration.current.densityDpi
-    val bitmap by produceState<ImageBitmap?>(null, shortcut, style, densityDpi) {
-        value = repository.shortcutIcon(shortcut, style, densityDpi)?.asImageBitmap()
+    val sidePx = iconSidePx(with(density) { size.toPx() }, style)
+    val bitmap by produceState<ImageBitmap?>(null, shortcut, style, densityDpi, sidePx) {
+        value = repository.shortcutIcon(shortcut, style, densityDpi, sidePx)?.asImageBitmap()
     }
-    PixelBitmap(bitmap, with(density) { snappedIconPx(size.toPx(), style.grid).toDp() }, modifier)
+    PixelBitmap(bitmap, with(density) { sidePx.toDp() }, style.smooth, modifier)
 }
 
 @Composable
 private fun PixelBitmap(
     bitmap: ImageBitmap?,
     side: Dp,
+    smooth: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier.size(side)) {
@@ -69,7 +78,7 @@ private fun PixelBitmap(
             Image(
                 bitmap = it,
                 contentDescription = null,
-                filterQuality = FilterQuality.None,
+                filterQuality = if (smooth) FilterQuality.Low else FilterQuality.None,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -89,9 +98,9 @@ fun AppIcon(
     val density = LocalDensity.current
     val densityDpi = LocalConfiguration.current.densityDpi
     val generation by repository.generation.collectAsStateWithLifecycle()
-    val bitmap by produceState<ImageBitmap?>(null, app.key, look, densityDpi, generation) {
-        value = repository.icon(app, look, densityDpi)?.asImageBitmap()
+    val sidePx = iconSidePx(with(density) { size.toPx() }, style)
+    val bitmap by produceState<ImageBitmap?>(null, app.key, look, densityDpi, generation, sidePx) {
+        value = repository.icon(app, look, densityDpi, sidePx)?.asImageBitmap()
     }
-    val sidePx = snappedIconPx(with(density) { size.toPx() }, style.grid)
-    PixelBitmap(bitmap, with(density) { sidePx.toDp() }, modifier)
+    PixelBitmap(bitmap, with(density) { sidePx.toDp() }, style.smooth, modifier)
 }

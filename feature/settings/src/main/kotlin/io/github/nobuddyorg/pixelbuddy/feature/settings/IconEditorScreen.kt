@@ -62,6 +62,8 @@ import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.CustomIconStyle
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconChoice
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconLook
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.NeonColours
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.NeonSetting
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.PaletteChoice
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.DitheredSky
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyColors
@@ -349,61 +351,73 @@ internal fun IconEditorScreen(
 
             SectionHeader(stringResource(R.string.icons_adjust))
             ChoiceRow(
-                label = stringResource(R.string.icons_grid),
-                options = IconStyle.GRIDS,
-                selected = style.grid,
-                text = { "$it" },
-                onSelect = { grid -> edit { it.copy(grid = grid) } },
+                label = stringResource(R.string.icons_kind),
+                options = listOf(false, true),
+                selected = custom.neon != null,
+                text = { stringResource(if (it) R.string.icons_kind_neon else R.string.icons_kind_pixels) },
+                onSelect = { neon -> edit { it.copy(neon = if (neon) it.neon ?: NeonSetting() else null) } },
             )
-            ChoiceRow(
-                label = stringResource(R.string.icons_palette),
-                options = PaletteChoice.entries,
-                selected = custom.palette,
-                text = { stringResource(it.label) },
-                onSelect = { palette -> edit { it.copy(palette = palette) } },
-            )
-            custom.palette.colorRange?.let { range ->
-                val colors = custom.colors.coerceIn(range)
-                PixelSlider(
-                    label = stringResource(R.string.icons_colors),
-                    value = colors,
-                    range = range,
-                    valueText = "$colors",
-                    onChange = { value -> edit { it.copy(colors = value) } },
+            val neon = custom.neon
+            if (neon == null) {
+                ChoiceRow(
+                    label = stringResource(R.string.icons_grid),
+                    options = IconStyle.GRIDS,
+                    selected = style.grid,
+                    text = { "$it" },
+                    onSelect = { grid -> edit { it.copy(grid = grid) } },
                 )
+                ChoiceRow(
+                    label = stringResource(R.string.icons_palette),
+                    options = PaletteChoice.entries,
+                    selected = custom.palette,
+                    text = { stringResource(it.label) },
+                    onSelect = { palette -> edit { it.copy(palette = palette) } },
+                )
+                custom.palette.colorRange?.let { range ->
+                    val colors = custom.colors.coerceIn(range)
+                    PixelSlider(
+                        label = stringResource(R.string.icons_colors),
+                        value = colors,
+                        range = range,
+                        valueText = "$colors",
+                        onChange = { value -> edit { it.copy(colors = value) } },
+                    )
+                }
+                val percent = (style.intensity * 10).roundToInt()
+                PixelSlider(
+                    label = stringResource(R.string.icons_intensity),
+                    value = percent,
+                    range = 0..10,
+                    valueText = "${percent * 10} %",
+                    onChange = { value -> edit { it.copy(intensity = value / 10f) } },
+                )
+                ToggleRow(
+                    title = stringResource(R.string.dithering),
+                    subtitle = stringResource(R.string.icons_dithering_summary),
+                    checked = style.dithering,
+                    onChange = { on -> edit { it.copy(dithering = on) } },
+                    on = stringResource(R.string.toggle_on),
+                    off = stringResource(R.string.toggle_off),
+                )
+                ToggleRow(
+                    title = stringResource(R.string.icons_outline),
+                    subtitle = stringResource(R.string.icons_outline_summary),
+                    checked = style.outline,
+                    onChange = { on -> edit { it.copy(outline = on) } },
+                    on = stringResource(R.string.toggle_on),
+                    off = stringResource(R.string.toggle_off),
+                )
+                ToggleRow(
+                    title = stringResource(R.string.icons_masked),
+                    subtitle = stringResource(R.string.icons_masked_summary),
+                    checked = custom.masked,
+                    onChange = { on -> edit { it.copy(masked = on) } },
+                    on = stringResource(R.string.toggle_on),
+                    off = stringResource(R.string.toggle_off),
+                )
+            } else {
+                NeonControls(neon, style.grid, edit)
             }
-            val percent = (style.intensity * 10).roundToInt()
-            PixelSlider(
-                label = stringResource(R.string.icons_intensity),
-                value = percent,
-                range = 0..10,
-                valueText = "${percent * 10} %",
-                onChange = { value -> edit { it.copy(intensity = value / 10f) } },
-            )
-            ToggleRow(
-                title = stringResource(R.string.dithering),
-                subtitle = stringResource(R.string.icons_dithering_summary),
-                checked = style.dithering,
-                onChange = { on -> edit { it.copy(dithering = on) } },
-                on = stringResource(R.string.toggle_on),
-                off = stringResource(R.string.toggle_off),
-            )
-            ToggleRow(
-                title = stringResource(R.string.icons_outline),
-                subtitle = stringResource(R.string.icons_outline_summary),
-                checked = style.outline,
-                onChange = { on -> edit { it.copy(outline = on) } },
-                on = stringResource(R.string.toggle_on),
-                off = stringResource(R.string.toggle_off),
-            )
-            ToggleRow(
-                title = stringResource(R.string.icons_masked),
-                subtitle = stringResource(R.string.icons_masked_summary),
-                checked = custom.masked,
-                onChange = { on -> edit { it.copy(masked = on) } },
-                on = stringResource(R.string.toggle_on),
-                off = stringResource(R.string.toggle_off),
-            )
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(
@@ -421,6 +435,51 @@ internal fun IconEditorScreen(
         if (forApp?.hasOverride == true) {
             TextButton(stringResource(R.string.icons_reset_global), { onAction(IconEditorAction.ResetToGlobal) })
         }
+    }
+}
+
+/** The neon outline options (#29); the grid only matters when pixelated. */
+@Composable
+private fun NeonControls(
+    neon: NeonSetting,
+    grid: Int,
+    editStyle: ((CustomIconStyle) -> CustomIconStyle) -> Unit,
+) {
+    val edit: ((NeonSetting) -> NeonSetting) -> Unit = { change ->
+        editStyle { it.copy(neon = change(it.neon ?: neon)) }
+    }
+    ChoiceRow(
+        label = stringResource(R.string.icons_neon_colours),
+        options = NeonColours.entries,
+        selected = neon.colours,
+        text = { stringResource(it.label) },
+        onSelect = { colours -> edit { it.copy(colours = colours) } },
+    )
+    ToggleRow(
+        title = stringResource(R.string.icons_neon_pixelated),
+        subtitle = stringResource(R.string.icons_neon_pixelated_summary),
+        checked = neon.pixelated,
+        onChange = { on -> edit { it.copy(pixelated = on) } },
+        on = stringResource(R.string.toggle_on),
+        off = stringResource(R.string.toggle_off),
+    )
+    if (neon.pixelated) {
+        ChoiceRow(
+            label = stringResource(R.string.icons_grid),
+            options = IconStyle.GRIDS,
+            selected = grid,
+            text = { "$it" },
+            onSelect = { size -> editStyle { it.copy(grid = size) } },
+        )
+    } else {
+        ToggleRow(
+            title = stringResource(R.string.icons_neon_glow),
+            subtitle = stringResource(R.string.icons_neon_glow_summary),
+            checked = neon.glow,
+            onChange = { on -> edit { it.copy(glow = on) } },
+            on = stringResource(R.string.toggle_on),
+            off = stringResource(R.string.toggle_off),
+        )
     }
 }
 
@@ -511,20 +570,23 @@ private fun PreviewIcon(
     val style = look.style
     val density = LocalDensity.current
     val densityDpi = LocalConfiguration.current.densityDpi
-    // Whole physical pixels per icon pixel, like on home.
-    val sidePx = maxOf(1, (with(density) { size.toPx() } / style.grid).toInt()) * style.grid
+    // Whole physical pixels per icon pixel like on home; smooth neon icons at the exact size.
+    val targetPx = with(density) { size.toPx() }
+    val sidePx =
+        if (style.smooth) maxOf(1, targetPx.roundToInt()) else maxOf(1, (targetPx / style.grid).toInt()) * style.grid
     val bitmap by produceState<ImageBitmap?>(null, icons, app.key, look, original, densityDpi, sidePx) {
         value =
             icons
-                ?.let { if (original) it.original(app, sidePx, densityDpi) else it.preview(app, look, densityDpi) }
-                ?.asImageBitmap()
+                ?.let {
+                    if (original) it.original(app, sidePx, densityDpi) else it.preview(app, look, densityDpi, sidePx)
+                }?.asImageBitmap()
     }
     Box(Modifier.size(with(density) { sidePx.toDp() })) {
         bitmap?.let {
             Image(
                 bitmap = it,
                 contentDescription = null,
-                filterQuality = if (original) FilterQuality.Low else FilterQuality.None,
+                filterQuality = if (original || style.smooth) FilterQuality.Low else FilterQuality.None,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -542,6 +604,14 @@ private fun DiscardDialog(
     onConfirm = onDiscard,
     onCancel = onKeep,
 )
+
+private val NeonColours.label: Int
+    get() =
+        when (this) {
+            NeonColours.Sampled -> R.string.neon_colours_sampled
+            NeonColours.Sweep -> R.string.neon_colours_sweep
+            NeonColours.Single -> R.string.neon_colours_single
+        }
 
 private val PaletteChoice.label: Int
     get() =
