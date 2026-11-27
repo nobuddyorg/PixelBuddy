@@ -217,13 +217,22 @@ class IconOutlineTest {
         val icons =
             listOf(Synth.logo(192), Synth.circleInSquare(192), Synth.gradientDisc(192), Synth.parallelEdges(192))
         repeat(3) { icons.forEach { IconOutline.render(IconOutline.trace(it), 144) } }
+        // Each icon's fastest of several runs: a busy build machine (other modules' tests run alongside) slows single
+        // runs, not the best one, so the test doesn't fail at random (it once did with the best of 3 batches).
         val perIconMs =
-            (1..3).minOf {
-                val start = System.nanoTime()
-                icons.forEach { IconOutline.render(IconOutline.trace(it), 144) }
-                (System.nanoTime() - start) / 1e6 / icons.size
-            }
+            icons
+                .map { icon ->
+                    (1..RUNS).minOf {
+                        val start = System.nanoTime()
+                        IconOutline.render(IconOutline.trace(icon), 144)
+                        (System.nanoTime() - start) / 1e6
+                    }
+                }.average()
         println("Outline icons: %.1f ms per icon (trace + render at 144 px)".format(perIconMs))
         assertTrue(perIconMs < 150, "took $perIconMs ms per icon")
+    }
+
+    private companion object {
+        const val RUNS = 8
     }
 }
