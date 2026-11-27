@@ -34,6 +34,8 @@ data class Settings(
     val notifications: NotificationSettings = NotificationSettings(),
     /** The next calendar event under the date (#27); off until the user opts in. */
     val calendar: CalendarSettings = CalendarSettings(),
+    /** The one widget on home (#26). */
+    val widget: WidgetSettings = WidgetSettings(),
     /** Where the first-start setup is (#20); [SetupStep.Done] once it was finished or skipped. */
     val setup: SetupStep = SetupStep.HomeApp,
     /**
@@ -163,6 +165,17 @@ enum class SetupStep {
     /** The step before this one, or this one if it is the first. */
     val previous: SetupStep get() = entries[maxOf(ordinal - 1, 0)]
 }
+
+/** The widget slot on home (#26). */
+@Serializable
+data class WidgetSettings(
+    /** Android's id of the widget in the slot; null for none. Only valid on this phone. */
+    val id: Int? = null,
+    /** Below the favorites instead of above them. */
+    val below: Boolean = false,
+    /** Chosen height in dp; null for the widget's own. */
+    val heightDp: Int? = null,
+)
 
 /** The next calendar event on home (#27). */
 @Serializable

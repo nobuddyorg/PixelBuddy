@@ -70,6 +70,12 @@ then grant the access in Android's settings.
 - When you turn both off, PixelBuddy lets go of the access (it disconnects). You can also revoke it in Android's
   settings at any time; then nothing is shown.
 
+### Widget (optional)
+
+You can put one app widget with your favorites (Settings → Widget). The widget is drawn by its own app, which
+decides what it shows and whether it uses the network; PixelBuddy only gives it its place on home and doesn't see
+its content. Android asks you before PixelBuddy may show a widget, unless you allowed it before.
+
 ### Calendar (optional)
 
 The next event under the date (Settings → Next event) reads your phone's calendar. It is off until you turn it on,

@@ -189,4 +189,18 @@ class SettingsArchiveTest {
             // A picture that doesn't decode falls back to the app's icon.
             assertNull(restored.iconOverrideFor(bahn)!!.image)
         }
+
+    @Test
+    fun `a widget stays on its phone, only its place moves along`() {
+        val archive =
+            SettingsArchive.Archive(
+                Settings(widget = WidgetSettings(id = 7, below = true, heightDp = 200)),
+                emptyMap(),
+            )
+        val current = Settings(widget = WidgetSettings(id = 3, heightDp = 120))
+
+        val restored = SettingsArchive.restore(archive, current, CustomIconStore(folder.newFolder()))
+
+        assertEquals(WidgetSettings(id = 3, below = true, heightDp = 120), restored.widget)
+    }
 }

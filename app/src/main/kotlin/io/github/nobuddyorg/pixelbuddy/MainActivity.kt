@@ -57,6 +57,7 @@ class MainActivity : ComponentActivity() {
                             appNotifications = NotificationService,
                             mediaPlayback = container.mediaPlayback,
                             calendarSource = container.calendar,
+                            homeWidgets = container.widgets,
                         )
                     }
 
@@ -72,6 +73,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    // The widget updates only while home is visible.
+    override fun onStart() {
+        super.onStart()
+        appContainer.widgets.startListening()
+    }
+
+    override fun onStop() {
+        appContainer.widgets.stopListening()
+        super.onStop()
     }
 
     override fun onNewIntent(intent: Intent) {

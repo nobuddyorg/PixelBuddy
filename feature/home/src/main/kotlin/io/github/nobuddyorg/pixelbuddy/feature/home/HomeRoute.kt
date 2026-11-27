@@ -48,6 +48,8 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyles
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.NotificationSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherSettings
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.WidgetSettings
+import io.github.nobuddyorg.pixelbuddy.core.data.widgets.HomeWidgets
 import io.github.nobuddyorg.pixelbuddy.core.weather.WeatherRepository
 import io.github.nobuddyorg.pixelbuddy.core.weather.isFahrenheit
 import kotlinx.coroutines.delay
@@ -88,6 +90,8 @@ fun HomeRoute(
     mediaPlayback: MediaPlayback? = null,
     /** The phone's calendar for the next event (#27), only read while it is turned on. */
     calendarSource: CalendarSource? = null,
+    /** The widget slot (#26). */
+    homeWidgets: HomeWidgets? = null,
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -109,6 +113,13 @@ fun HomeRoute(
     val nowPlaying by mediaSource.collectAsStateWithLifecycle(initialValue = null)
     val calendarSettings by settings.calendar.collectAsStateWithLifecycle(initialValue = CalendarSettings())
     val events by rememberCalendarEvents(calendarSource?.takeIf { calendarSettings.enabled })
+    val widgetSettings by settings.widget.collectAsStateWithLifecycle(initialValue = WidgetSettings())
+    val widgetChanges = remember(homeWidgets) { homeWidgets?.changes ?: MutableStateFlow(0) }
+    val widgetGeneration by widgetChanges.collectAsStateWithLifecycle()
+    val widgetId = widgetSettings.id
+    // Hidden while the widget's app is gone (uninstalled, disabled); it comes back when the app does.
+    val widgetHeights =
+        remember(homeWidgets, widgetId, widgetGeneration) { widgetId?.let { homeWidgets?.heights(it) } }
     val artStyle = iconStyles.default
     val art by produceState<ImageBitmap?>(null, nowPlaying?.title, nowPlaying?.artist, artStyle) {
         val picture = nowPlaying?.art
@@ -245,6 +256,13 @@ fun HomeRoute(
             }
         },
         icon = { app -> AppIcon(app, icons, iconStyles.lookFor(app.key)) },
+        widget =
+            if (homeWidgets != null && widgetId != null && widgetHeights != null) {
+                { WidgetSlot(homeWidgets, widgetId, widgetSettings.heightDp ?: widgetHeights.default) }
+            } else {
+                null
+            },
+        widgetBelow = widgetSettings.below,
         notifications = notifications,
         onNotification = { action ->
             when (action) {

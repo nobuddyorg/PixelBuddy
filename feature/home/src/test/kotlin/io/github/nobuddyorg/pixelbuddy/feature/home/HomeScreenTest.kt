@@ -6,8 +6,11 @@ import android.graphics.Rect
 import android.os.Bundle
 import android.os.Process
 import android.os.UserHandle
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -161,6 +164,8 @@ class HomeScreenTest {
         shortcuts: suspend (LauncherApp) -> AppShortcuts = { AppShortcuts.None },
         notifications: List<AppNotification> = emptyList(),
         onNotification: (NotificationAction) -> Unit = {},
+        widget: (@Composable () -> Unit)? = null,
+        widgetBelow: Boolean = false,
     ) = compose.setContent {
         HomeScreen(
             home = HomeApps(favorites, apps),
@@ -185,6 +190,8 @@ class HomeScreenTest {
             shortcutIcon = { shortcut -> ShortcutIcon(shortcut, icons, IconPreset.Default.style) },
             notifications = notifications,
             onNotification = onNotification,
+            widget = widget,
+            widgetBelow = widgetBelow,
         )
     }
 
@@ -890,6 +897,50 @@ class HomeScreenTest {
         compose.onNodeWithText("▲ SUCHEN").performClick()
         compose.onNodeWithContentDescription("Teams, Arbeitsprofil").assertIsDisplayed()
         compose.onRoot().captureRoboImage("HomeScreen_de.png")
+    }
+
+    // Widget slot (#26)
+
+    private fun widgetTop() =
+        compose
+            .onNodeWithText("WIDGET")
+            .fetchSemanticsNode()
+            .boundsInRoot.top
+
+    private fun rowTop(label: String) =
+        compose
+            .onNodeWithContentDescription(label)
+            .fetchSemanticsNode()
+            .boundsInRoot.top
+
+    @Test
+    fun `the widget sits above the favorites, or below them`() {
+        var below by mutableStateOf(false)
+        compose.setContent {
+            HomeScreen(
+                home = HomeApps(favorites, sampleApps),
+                onAppClick = { _, _ -> },
+                onAppAction = {},
+                onOpenSettings = {},
+                widget = { BasicText("WIDGET") },
+                widgetBelow = below,
+            )
+        }
+        assertTrue(widgetTop() < rowTop("Signal"))
+
+        below = true
+        compose.waitForIdle()
+        assertTrue(widgetTop() > rowTop("Maps"))
+    }
+
+    @Test
+    fun `the widget shows only with the favorites`() {
+        show(favorites = favorites, widget = { BasicText("WIDGET") })
+        compose.onNodeWithText("WIDGET").assertIsDisplayed()
+
+        openSearch()
+
+        compose.onNodeWithText("WIDGET").assertDoesNotExist()
     }
 
     // Notification dots (#24)

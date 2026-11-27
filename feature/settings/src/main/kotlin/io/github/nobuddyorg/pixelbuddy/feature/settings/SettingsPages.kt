@@ -43,7 +43,9 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.NotificationSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SizeStep
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Sky
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.WidgetSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.sky.SkyPhase
+import io.github.nobuddyorg.pixelbuddy.core.data.widgets.WidgetProvider
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.DitheredSky
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyColors
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyTheme
@@ -103,6 +105,13 @@ internal fun MainPage(
         stringResource(R.string.settings_apps_summary, state.favorites.size, state.hiddenApps.size),
     )
     Category(SettingsPage.Gestures, R.string.settings_gestures, stringResource(R.string.settings_gestures_summary))
+    if (state.widget != null) {
+        Category(
+            SettingsPage.Widget,
+            R.string.settings_widget,
+            state.widget.label ?: stringResource(R.string.widget_none),
+        )
+    }
     if (state.calendars != null) {
         Category(
             SettingsPage.Calendar,
@@ -414,6 +423,89 @@ internal fun NotificationsPage(
                 BasicText(stringResource(R.string.notification_access_restricted), style = MutedStyle)
             }
         }
+    }
+}
+
+/** The widget slot (#26): which widget, where, how tall; add, change or remove it. */
+@Composable
+internal fun WidgetPage(
+    widget: WidgetSettings,
+    ui: WidgetUi,
+    update: Update,
+    onAction: (SettingsAction) -> Unit,
+) {
+    Column {
+        Spacer(Modifier.height(16.dp))
+        val label = ui.label
+        when {
+            widget.id == null -> {
+                BasicText(stringResource(R.string.widget_explain), style = MutedStyle)
+            }
+
+            label == null -> {
+                BasicText(stringResource(R.string.widget_gone), style = BodyStyle)
+            }
+
+            else -> {
+                BasicText(label, style = BodyStyle)
+            }
+        }
+        ui.message?.let {
+            BasicText(
+                stringResource(it),
+                style = MutedStyle,
+                modifier = Modifier.padding(top = 8.dp).semantics { liveRegion = LiveRegionMode.Polite },
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        TextButton(
+            stringResource(if (widget.id == null) R.string.widget_add else R.string.widget_change),
+            { onAction(SettingsAction.Navigate(SettingsPage.WidgetPicker)) },
+        )
+        if (widget.id == null) return@Column
+        TextButton(stringResource(R.string.widget_remove), { onAction(SettingsAction.RemoveWidget) })
+        if (label == null) return@Column
+        ToggleRow(
+            title = stringResource(R.string.widget_below),
+            subtitle = stringResource(R.string.widget_below_summary),
+            checked = widget.below,
+            onChange = { on -> update { it.copy(widget = it.widget.copy(below = on)) } },
+            on = stringResource(R.string.toggle_on),
+            off = stringResource(R.string.toggle_off),
+        )
+        val heights = ui.heights
+        if (heights != null && heights.resizable) {
+            // Steps of 8 dp: the pixel grid of home.
+            val height = (widget.heightDp ?: heights.default).coerceIn(heights.min, heights.max)
+            PixelSlider(
+                label = stringResource(R.string.widget_height),
+                value = height / HEIGHT_STEP,
+                range = (heights.min + HEIGHT_STEP - 1) / HEIGHT_STEP..heights.max / HEIGHT_STEP,
+                valueText = "${height / HEIGHT_STEP * HEIGHT_STEP} dp",
+                onChange = { steps -> update { it.copy(widget = it.widget.copy(heightDp = steps * HEIGHT_STEP)) } },
+            )
+        }
+    }
+}
+
+private const val HEIGHT_STEP = 8
+
+/** Every widget the apps offer, by app; picking one adds it. */
+@Composable
+internal fun WidgetPickerPage(
+    providers: List<WidgetProvider>,
+    onAction: (SettingsAction) -> Unit,
+) {
+    Spacer(Modifier.height(16.dp))
+    if (providers.isEmpty()) {
+        BasicText(stringResource(R.string.widget_no_providers), style = MutedStyle)
+    }
+    providers.forEach { provider ->
+        ListRow(
+            title = provider.label,
+            subtitle = provider.appLabel,
+            onClick = { onAction(SettingsAction.AddWidget(provider)) },
+        )
     }
 }
 

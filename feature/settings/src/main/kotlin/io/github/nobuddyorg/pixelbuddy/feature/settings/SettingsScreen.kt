@@ -23,6 +23,8 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.calendar.CalendarInfo
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
+import io.github.nobuddyorg.pixelbuddy.core.data.widgets.WidgetHeights
+import io.github.nobuddyorg.pixelbuddy.core.data.widgets.WidgetProvider
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyColors
 import java.time.ZoneId
 
@@ -44,6 +46,8 @@ enum class SettingsPage {
     Gestures,
     Notifications,
     Calendar,
+    Widget,
+    WidgetPicker,
     Wallpaper,
     Weather,
     Backup,
@@ -61,6 +65,7 @@ enum class SettingsPage {
                 WeatherPlace, WeatherTap -> Weather
                 AppIconEditor -> AppIcons
                 Licenses, CrashReports -> About
+                WidgetPicker -> Widget
                 else -> Main
             }
 }
@@ -92,6 +97,19 @@ data class SettingsState(
     val calendars: List<CalendarInfo>? = null,
     /** The user said no to the calendar permission. */
     val calendarDenied: Boolean = false,
+    /** The widget slot (#26); null if widgets aren't offered. */
+    val widget: WidgetUi? = null,
+)
+
+/** The widget slot as the settings show it (#26). */
+data class WidgetUi(
+    /** The widget's name; null if there is none or its app is gone. */
+    val label: String? = null,
+    val heights: WidgetHeights? = null,
+    /** Widgets to choose from, read when the picker opens. */
+    val providers: List<WidgetProvider> = emptyList(),
+    /** Why the last widget couldn't be added, if it couldn't. */
+    val message: Int? = null,
 )
 
 /** Something the user did in the settings. */
@@ -130,6 +148,13 @@ sealed interface SettingsAction {
 
     /** Turns the next calendar event on, asking for the calendar permission first (#27). */
     data object EnableCalendar : SettingsAction
+
+    /** Puts [provider]'s widget into the slot, through Android's bind and setup screens (#26). */
+    data class AddWidget(
+        val provider: WidgetProvider,
+    ) : SettingsAction
+
+    data object RemoveWidget : SettingsAction
 
     /** Opens the editor for one app's own icon. */
     data class EditAppIcon(
@@ -237,6 +262,14 @@ private fun PageContent(
             AppsPage(state.favorites, state.hiddenApps, update)
         }
 
+        SettingsPage.Widget -> {
+            WidgetPage(state.settings.widget, state.widget ?: WidgetUi(), update, onAction)
+        }
+
+        SettingsPage.WidgetPicker -> {
+            WidgetPickerPage(state.widget?.providers.orEmpty(), onAction)
+        }
+
         SettingsPage.Calendar -> {
             CalendarPage(state.settings.calendar, state.calendars.orEmpty(), state.calendarDenied, update, onAction)
         }
@@ -296,6 +329,8 @@ private val SettingsPage.title: Int
             SettingsPage.Gestures -> R.string.settings_gestures
             SettingsPage.Notifications -> R.string.settings_notifications
             SettingsPage.Calendar -> R.string.settings_calendar
+            SettingsPage.Widget -> R.string.settings_widget
+            SettingsPage.WidgetPicker -> R.string.widget_pick
             SettingsPage.Wallpaper -> R.string.settings_wallpaper
             SettingsPage.Weather, SettingsPage.WeatherPlace, SettingsPage.WeatherTap -> R.string.weather_title
             SettingsPage.Backup -> R.string.backup_title

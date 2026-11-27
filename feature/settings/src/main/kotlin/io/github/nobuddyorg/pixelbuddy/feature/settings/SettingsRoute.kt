@@ -1,5 +1,6 @@
 package io.github.nobuddyorg.pixelbuddy.feature.settings
 
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -41,6 +42,8 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsArchive
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.TemperatureUnit
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherPlace
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherSettings
+import io.github.nobuddyorg.pixelbuddy.core.data.widgets.HomeWidgets
+import io.github.nobuddyorg.pixelbuddy.core.data.widgets.WidgetBinding
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyTheme
 import io.github.nobuddyorg.pixelbuddy.core.weather.isFahrenheit
 import kotlinx.coroutines.CoroutineDispatcher
@@ -88,6 +91,8 @@ fun SettingsRoute(
     appNotifications: AppNotifications? = null,
     /** The phone's calendars (#27); without it, the next event isn't offered. */
     calendarSource: CalendarSource? = null,
+    /** The widget slot (#26); without it, widgets aren't offered. */
+    homeWidgets: HomeWidgets? = null,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
@@ -323,6 +328,74 @@ fun SettingsRoute(
         if (calendarSource != null && page == SettingsPage.Calendar) value = calendarSource.calendars()
     }
 
+    // Adding a widget: Android's bind screen if needed, then the widget's own setup, then it goes into the slot.
+    var widgetGeneration by remember { mutableIntStateOf(0) }
+    var widgetMessage by remember { mutableStateOf<Int?>(null) }
+    var pendingWidget by rememberSaveable { mutableStateOf<Int?>(null) }
+    val placeWidget: (Int) -> Unit = { id ->
+        val old = current.widget.id
+        onUpdate { it.copy(widget = it.widget.copy(id = id, heightDp = null)) }
+        if (old != null && old != id) homeWidgets?.remove(old)
+        widgetGeneration++
+        page = SettingsPage.Widget
+    }
+    val dropWidget: (Int, Int) -> Unit = { id, message ->
+        homeWidgets?.remove(id)
+        widgetMessage = message
+        page = SettingsPage.Widget
+    }
+    val configureWidget =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val id = pendingWidget ?: return@rememberLauncherForActivityResult
+            pendingWidget = null
+            if (result.resultCode ==
+                Activity.RESULT_OK
+            ) {
+                placeWidget(id)
+            } else {
+                dropWidget(id, R.string.widget_setup_cancelled)
+            }
+        }
+    val afterBind: (Int) -> Unit = { id ->
+        val setup = homeWidgets?.configureIntent(id)
+        if (setup == null) {
+            placeWidget(id)
+        } else {
+            pendingWidget = id
+            try {
+                configureWidget.launch(setup)
+            } catch (_: ActivityNotFoundException) {
+                pendingWidget = null
+                dropWidget(id, R.string.widget_setup_unavailable)
+            } catch (_: SecurityException) {
+                pendingWidget = null
+                dropWidget(id, R.string.widget_setup_unavailable)
+            }
+        }
+    }
+    val bindWidget =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val id = pendingWidget ?: return@rememberLauncherForActivityResult
+            pendingWidget = null
+            if (result.resultCode == Activity.RESULT_OK) afterBind(id) else dropWidget(id, R.string.widget_not_allowed)
+        }
+    val widgetUi =
+        homeWidgets?.let { widgets ->
+            val id = current.widget.id
+            val providers =
+                remember(widgets, page == SettingsPage.WidgetPicker) {
+                    if (page == SettingsPage.WidgetPicker) widgets.providers() else emptyList()
+                }
+            remember(widgets, id, widgetGeneration, providers, widgetMessage) {
+                WidgetUi(
+                    label = id?.let(widgets::label),
+                    heights = id?.let(widgets::heights),
+                    providers = providers,
+                    message = widgetMessage,
+                )
+            }
+        }
+
     val state =
         SettingsState(
             appVersion = appVersion,
@@ -347,6 +420,7 @@ fun SettingsRoute(
             notificationAccessOn = if (appNotifications != null) notificationAccessOn else null,
             calendars = if (calendarSource != null) calendars else null,
             calendarDenied = calendarDenied,
+            widget = widgetUi,
         )
 
     Box(modifier) {
@@ -395,6 +469,29 @@ fun SettingsRoute(
                     SettingsAction.ImportSettings -> {
                         backupMessage = null
                         importer.launchSafely(arrayOf(ZIP_TYPE, "application/octet-stream"))
+                    }
+
+                    is SettingsAction.AddWidget -> {
+                        widgetMessage = null
+                        homeWidgets?.let { widgets ->
+                            when (val binding = widgets.add(action.provider)) {
+                                is WidgetBinding.Bound -> {
+                                    afterBind(binding.id)
+                                }
+
+                                is WidgetBinding.NeedsPermission -> {
+                                    pendingWidget = binding.id
+                                    bindWidget.launch(binding.intent)
+                                }
+                            }
+                        }
+                    }
+
+                    SettingsAction.RemoveWidget -> {
+                        current.widget.id?.let { homeWidgets?.remove(it) }
+                        onUpdate { it.copy(widget = it.widget.copy(id = null, heightDp = null)) }
+                        widgetMessage = null
+                        widgetGeneration++
                     }
 
                     SettingsAction.EnableCalendar -> {
