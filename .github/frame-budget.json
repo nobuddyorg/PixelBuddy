@@ -1,1 +1,6 @@
-{}
+{
+  "scrollAllApps": 300,
+  "dragRail": 115,
+  "typeSearch": 240,
+  "openAppMenu": 305
+}

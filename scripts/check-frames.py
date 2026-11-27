@@ -4,7 +4,8 @@
 Each test in FrameBenchmark gives frameDurationCpuMs and frameOverrunMs percentiles. The check uses the 90th
 percentile of the CPU time per frame, scaled by the runner's speed: divided by the Settings app's median cold start
 on the same emulator (in seconds), so a slow runner doesn't fail it. .github/frame-budget.json holds the limit per
-test; a test without a limit is only reported.
+test, about twice the first CI measurement (emulator frame times are noisy: few frames per run, software rendering),
+so only a clear regression fails; a test without a limit is only reported.
 
 Usage: scripts/check-frames.py <directory with *-benchmarkData.json> <file from scripts/reference-startup.sh>
 """
