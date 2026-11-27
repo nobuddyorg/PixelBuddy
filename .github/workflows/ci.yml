@@ -115,7 +115,8 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
-  # Cold startup with a freshly generated baseline profile, against .github/startup-budget-ms (#15).
+  # Cold startup with a freshly generated baseline profile, against the system Settings app's cold startup on the
+  # same emulator and .github/startup-budget-ratio (#15).
   startup:
     name: Startup benchmark
     needs: build
@@ -149,13 +150,14 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          # An emulator is no phone; the budget is set from runs on this same emulator.
+          # An emulator is no phone; the budget is a ratio to Settings measured on this same emulator.
           script: |
             ./gradlew :app:generateBaselineProfile -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.suppressErrors=EMULATOR
             ./gradlew :baseline-profile:connectedBenchmarkReleaseAndroidTest -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.suppressErrors=EMULATOR
+            scripts/reference-startup.sh build/reference-startup.txt
 
       - name: Startup budget
-        run: scripts/check-startup.py baseline-profile/build/outputs/connected_android_test_additional_output
+        run: scripts/check-startup.py baseline-profile/build/outputs/connected_android_test_additional_output build/reference-startup.txt
 
       - name: Upload profile and results
         if: ${{ !cancelled() }}
@@ -165,6 +167,7 @@ jobs:
           path: |
             app/src/release/generated/baselineProfiles/
             baseline-profile/build/outputs/connected_android_test_additional_output/**/*.json
+            build/reference-startup.txt
           retention-days: 14
           if-no-files-found: ignore
 

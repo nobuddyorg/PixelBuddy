@@ -1,5 +1,6 @@
 package io.github.nobuddyorg.pixelbuddy.core.pixelengine
 
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
@@ -187,7 +188,10 @@ class PixelEngineTest {
         assertEquals(4, (IconPreset.Pocket.style.palette as Palette.Fixed).colors.size)
     }
 
+    // A timing test: it runs with the unit tests, but not under mutation testing, whose instrumentation makes every
+    // render many times slower (excludedGroups in build.gradle.kts).
     @Test
+    @Tag("performance")
     fun `a 24 x 24 icon renders in well under a millisecond`() {
         val style = IconPreset.SixteenBit.style
         val source = Fixtures.roundIcon(style.sourceSize)

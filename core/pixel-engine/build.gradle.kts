@@ -30,6 +30,8 @@ pitest {
     timestampedReports = false
     // The golden-image test reads files relative to the module directory.
     jvmArgs = listOf("-Dpixelengine.record=false")
+    // Timing tests can't pass under PIT's instrumentation; they run with the unit tests (@Tag("performance")).
+    excludedGroups = setOf("performance")
 }
 
 tasks.test {
