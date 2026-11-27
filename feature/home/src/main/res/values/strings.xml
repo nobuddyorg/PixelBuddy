@@ -3,6 +3,8 @@
     <!-- Announced by TalkBack when the home screen appears. -->
     <string name="home_screen_title">Home screen</string>
     <string name="home_open_settings">Open settings</string>
+    <string name="home_lock_screen">Lock screen</string>
+    <string name="home_lock_needs_service">To lock the screen, turn on PixelBuddy\'s lock service: Settings → Gestures</string>
     <string name="home_launch_failed">Couldn\'t open %1$s</string>
     <!-- Marker after apps from the work profile. -->
     <string name="home_work_app">Work</string>

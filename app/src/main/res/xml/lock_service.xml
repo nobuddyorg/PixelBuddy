@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The lock service (#16) only locks the screen. No accessibilityEventTypes: it gets no events.
+    canRetrieveWindowContent is false: it can't read the screen. Not an accessibility tool (the default), so Android may remind
+    the user that it is on.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:canRetrieveWindowContent="false"
+    android:description="@string/lock_service_description"
+    android:summary="@string/lock_service_summary" />

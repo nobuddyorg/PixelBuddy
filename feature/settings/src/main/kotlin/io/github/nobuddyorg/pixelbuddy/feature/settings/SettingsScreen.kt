@@ -81,6 +81,8 @@ data class SettingsState(
     val apps: List<LauncherApp> = emptyList(),
     /** The outcome of the last export or import, as a message. */
     val backupMessage: Int? = null,
+    /** Whether the lock service is on (#16); null if locking isn't offered at all. */
+    val lockServiceOn: Boolean? = null,
 )
 
 /** Something the user did in the settings. */
@@ -110,6 +112,9 @@ sealed interface SettingsAction {
     data object ExportSettings : SettingsAction
 
     data object ImportSettings : SettingsAction
+
+    /** Opens the system screen to turn the lock service on (#16). */
+    data object TurnOnLockService : SettingsAction
 
     /** Opens the editor for one app's own icon. */
     data class EditAppIcon(
@@ -207,7 +212,7 @@ private fun PageContent(
 
         SettingsPage.Apps -> AppsPage(state.favorites, state.hiddenApps, update)
 
-        SettingsPage.Gestures -> GesturesPage(state.settings.gestures, update)
+        SettingsPage.Gestures -> GesturesPage(state.settings.gestures, state.lockServiceOn, update, onAction)
 
         SettingsPage.Wallpaper -> WallpaperPage(state.settings.appearance, state.wallpaper, update, onAction)
 

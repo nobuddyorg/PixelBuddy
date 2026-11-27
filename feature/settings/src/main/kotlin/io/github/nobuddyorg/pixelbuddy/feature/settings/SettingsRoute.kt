@@ -30,6 +30,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReportStore
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.CustomIconStore
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
+import io.github.nobuddyorg.pixelbuddy.core.data.lock.ScreenLock
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconChoice
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsArchive
@@ -41,6 +42,7 @@ import io.github.nobuddyorg.pixelbuddy.core.weather.isFahrenheit
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -76,6 +78,8 @@ fun SettingsRoute(
     editIconOf: String? = null,
     /** Leaving the editor opened with [editIconOf] ends the settings. */
     onDone: () -> Unit = {},
+    /** Locks the screen (#16); without it, no gesture can be set to lock. */
+    screenLock: ScreenLock? = null,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
@@ -86,6 +90,8 @@ fun SettingsRoute(
     val favorites by favoriteApps.collectAsStateWithLifecycle(initialValue = emptyList())
     val hidden by hiddenApps.collectAsStateWithLifecycle(initialValue = emptyList())
     val allApps by apps.collectAsStateWithLifecycle(initialValue = emptyList())
+    val lockFlow = remember(screenLock) { screenLock?.available ?: MutableStateFlow(false) }
+    val lockServiceOn by lockFlow.collectAsStateWithLifecycle()
     var page by rememberSaveable {
         mutableStateOf(
             if (editIconOf !=
@@ -312,6 +318,7 @@ fun SettingsRoute(
             canRunSetup = onRunSetup != null,
             apps = allApps,
             backupMessage = backupMessage,
+            lockServiceOn = if (screenLock != null) lockServiceOn else null,
         )
 
     Box(modifier) {
@@ -360,6 +367,10 @@ fun SettingsRoute(
                     SettingsAction.ImportSettings -> {
                         backupMessage = null
                         importer.launchSafely(arrayOf(ZIP_TYPE, "application/octet-stream"))
+                    }
+
+                    SettingsAction.TurnOnLockService -> {
+                        screenLock?.let { context.startSafely(it.settingsIntent()) }
                     }
 
                     SettingsAction.RunSetup -> {
@@ -512,10 +523,15 @@ private fun Context.readAsset(path: String): String? =
     }
 
 private fun Context.openWebPage(url: String) {
+    // No browser: nothing to open.
+    startSafely(Intent(Intent.ACTION_VIEW, url.toUri()))
+}
+
+private fun Context.startSafely(intent: Intent) {
     try {
-        startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+        startActivity(intent)
     } catch (_: ActivityNotFoundException) {
-        // No browser: nothing to open.
+        // Nothing can open it.
     }
 }
 

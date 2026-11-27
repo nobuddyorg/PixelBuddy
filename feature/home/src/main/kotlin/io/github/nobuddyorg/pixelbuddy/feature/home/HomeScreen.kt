@@ -38,8 +38,10 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.paneTitle
@@ -69,8 +71,9 @@ internal const val SEARCH = "search"
  * The list shows the favorites; a rail letter swaps in that letter's apps until a tap on empty space, Back or
  * Home ([resetKey] changes). "Search" opens the search with the keyboard. Swipes up and down and a long press on
  * empty space do what [gestures] say; [onOpenNotifications] opens the notification shade and returns false if it
- * can't, then the search opens instead. Tapping an app starts it, a long press opens its menu ([AppMenu]).
- * TalkBack always offers opening the settings.
+ * can't, then the search opens instead. A double tap does nothing unless [gestures] give it an action, so single
+ * taps aren't delayed. [onLock] locks the screen (#16). Tapping an app starts it, a long press opens its menu
+ * ([AppMenu]). TalkBack always offers opening the settings, and locking when a gesture locks.
  */
 @Composable
 fun HomeScreen(
@@ -82,11 +85,13 @@ fun HomeScreen(
     resetKey: Int = 0,
     gestures: Gestures = Gestures(),
     onOpenNotifications: () -> Boolean = { false },
+    onLock: () -> Unit = {},
     header: @Composable () -> Unit = {},
     icon: @Composable (LauncherApp) -> Unit = {},
 ) {
     val title = stringResource(R.string.home_screen_title)
     val openSettingsLabel = stringResource(R.string.home_open_settings)
+    val lockLabel = stringResource(R.string.home_lock_screen)
     val openSettings by rememberUpdatedState(onOpenSettings)
     // Rail.FAVORITES, a section letter or SEARCH; Home (a new resetKey) goes back to the favorites.
     var view by rememberSaveable(resetKey) { mutableStateOf(Rail.FAVORITES) }
@@ -105,6 +110,7 @@ fun HomeScreen(
             GestureAction.Search -> view = SEARCH
             GestureAction.Notifications -> if (!onOpenNotifications()) view = SEARCH
             GestureAction.Settings -> openSettings()
+            GestureAction.Lock -> onLock()
         }
     }
     val swipes by rememberUpdatedState(
@@ -115,6 +121,8 @@ fun HomeScreen(
         ),
     )
     val longPress by rememberUpdatedState { perform(gestures.effectiveLongPress) }
+    val doubleTap by rememberUpdatedState { perform(gestures.doubleTap) }
+    val hasDoubleTap = gestures.doubleTap != GestureAction.Nothing
 
     val entry: SearchEntry = { rowId, app, highlight, top ->
         AppEntry(
@@ -139,14 +147,27 @@ fun HomeScreen(
             modifier
                 .fillMaxSize()
                 .background(PixelBuddyColors.Navy)
-                .pointerInput(Unit) {
-                    detectTapGestures(onTap = { view = Rail.FAVORITES }, onLongPress = { longPress() })
+                .pointerInput(hasDoubleTap) {
+                    detectTapGestures(
+                        onTap = { view = Rail.FAVORITES },
+                        onDoubleTap = if (hasDoubleTap) ({ doubleTap() }) else null,
+                        onLongPress = { longPress() },
+                    )
                 }.verticalSwipes { swipes }
                 .semantics {
                     paneTitle = title
                     onLongClick(label = openSettingsLabel) {
                         openSettings()
                         true
+                    }
+                    if (gestures.usesLock) {
+                        customActions =
+                            listOf(
+                                CustomAccessibilityAction(lockLabel) {
+                                    onLock()
+                                    true
+                                },
+                            )
                     }
                 },
     ) {

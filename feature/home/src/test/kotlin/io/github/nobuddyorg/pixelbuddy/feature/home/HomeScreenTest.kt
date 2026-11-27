@@ -20,6 +20,7 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
@@ -152,6 +153,7 @@ class HomeScreenTest {
         onOpenSettings: () -> Unit = {},
         onSwipeDown: () -> Boolean = { false },
         gestures: Gestures = Gestures(),
+        onLock: () -> Unit = {},
     ) = compose.setContent {
         HomeScreen(
             home = HomeApps(favorites, apps),
@@ -161,6 +163,7 @@ class HomeScreenTest {
             resetKey = resetKey,
             gestures = gestures,
             onOpenNotifications = onSwipeDown,
+            onLock = onLock,
             header = {
                 HomeHeader(
                     LocalDateTime.of(2026, 11, 6, 21, 45),
@@ -257,6 +260,71 @@ class HomeScreenTest {
 
         compose.onRoot().performTouchInput { longClick() }
         assertEquals(1, settingsOpened)
+    }
+
+    @Test
+    fun `a double tap set to lock locks the screen`() {
+        var locked = 0
+        var settingsOpened = 0
+        show(
+            apps = emptyList(),
+            onOpenSettings = { settingsOpened++ },
+            onLock = { locked++ },
+            gestures = Gestures(doubleTap = GestureAction.Lock),
+        )
+
+        compose.onRoot().performTouchInput { doubleClick() }
+
+        assertEquals(1, locked)
+        assertEquals(0, settingsOpened)
+    }
+
+    @Test
+    fun `a swipe can lock the screen too`() {
+        var locked = 0
+        show(apps = emptyList(), onLock = { locked++ }, gestures = Gestures(swipeDown = GestureAction.Lock))
+
+        compose.onRoot().performTouchInput { swipeDown(startY = height * 0.3f, endY = height * 0.7f) }
+
+        assertEquals(1, locked)
+    }
+
+    @Test
+    fun `without a double tap action a double tap does nothing`() {
+        var locked = 0
+        var settingsOpened = 0
+        show(apps = emptyList(), onOpenSettings = { settingsOpened++ }, onLock = { locked++ })
+
+        compose.onRoot().performTouchInput { doubleClick() }
+
+        assertEquals(0, locked)
+        assertEquals(0, settingsOpened)
+        searchField().assertDoesNotExist()
+    }
+
+    @Test
+    fun `accessibility services can lock when a gesture locks`() {
+        var locked = 0
+        show(onLock = { locked++ }, gestures = Gestures(doubleTap = GestureAction.Lock))
+
+        val home = compose.onNode(hasPaneTitle("Home screen"))
+        val lock =
+            home
+                .fetchSemanticsNode()
+                .config[SemanticsActions.CustomActions]
+                .single { it.label == "Lock screen" }
+        compose.runOnIdle { lock.action() }
+
+        assertEquals(1, locked)
+    }
+
+    @Test
+    fun `without a lock gesture there is no lock action`() {
+        show()
+
+        compose
+            .onNode(hasPaneTitle("Home screen"))
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.CustomActions))
     }
 
     @Test

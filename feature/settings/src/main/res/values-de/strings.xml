@@ -44,7 +44,7 @@
     <string name="settings_apps">Favoriten &amp; ausgeblendete Apps</string>
     <string name="settings_apps_summary">Favoriten: %1$d · Ausgeblendet: %2$d</string>
     <string name="settings_gestures">Gesten</string>
-    <string name="settings_gestures_summary">Nach oben und unten wischen, lange drücken</string>
+    <string name="settings_gestures_summary">Nach oben und unten wischen, doppelt tippen, lange drücken</string>
     <string name="settings_wallpaper">Hintergrund</string>
     <string name="settings_about_summary">Version %1$s · Lizenzen · Absturzberichte</string>
 
@@ -93,6 +93,14 @@
     <string name="gesture_search">Suche</string>
     <string name="gesture_notifications">Benachrichtigungen</string>
     <string name="gesture_settings">Einstellungen</string>
+    <string name="gesture_lock">Bildschirm sperren</string>
+    <string name="gesture_double_tap">Doppelt auf freie Fläche tippen</string>
+    <string name="lock_service_title">Sperrdienst</string>
+    <string name="lock_service_on">An: die Geste sperrt den Bildschirm.</string>
+    <string name="lock_service_off">Aus: einschalten, damit die Geste den Bildschirm sperren kann.</string>
+    <string name="lock_service_explanation">Android lässt Apps den Bildschirm nur über einen Bedienungshilfen-Dienst sperren. Der Sperrdienst von PixelBuddy macht nichts anderes: Er bekommt keine Bedienungshilfen-Ereignisse und sieht weder den Bildschirm noch deine Eingaben oder andere Apps. Entsperren per Fingerabdruck und Gesicht funktioniert weiter. Er schaltet sich selbst aus, sobald keine Geste mehr sperrt.</string>
+    <string name="lock_service_turn_on">In den Bedienungshilfen einschalten</string>
+    <string name="lock_service_restricted">Dort Installierte Apps (oder Heruntergeladene Apps) → PixelBuddy-Sperre öffnen. Meldet Android eine eingeschränkte Einstellung: Einstellungen → Apps → PixelBuddy → ⋮ → Eingeschränkte Einstellungen zulassen, dann erneut versuchen.</string>
 
     <string name="sky_title">Himmelsfarben</string>
     <string name="sky_dusk">Abend</string>

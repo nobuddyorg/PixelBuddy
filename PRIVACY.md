@@ -41,8 +41,21 @@ those requests: <https://open-meteo.com/en/terms>.
 | `SET_WALLPAPER` | Lets you set the launcher gradient as wallpaper |
 | `EXPAND_STATUS_BAR` | Swipe down on home opens the notification shade |
 
-Optional features that need more access (notification access, accessibility service, calendar) are opt-in, are
-explained before you enable them, and are documented here when they are added.
+### Lock service (optional accessibility service)
+
+Android lets an app lock the screen only through an accessibility service (Device Admin would turn off fingerprint
+and face unlock). If you set a gesture to "Lock screen", PixelBuddy explains this and you can turn on its
+**PixelBuddy lock** service in Android's accessibility settings. It is off unless you turn it on.
+
+- It does one thing: lock the screen when you use the lock gesture on home.
+- It subscribes to no accessibility events and can't retrieve window content, so it can't see the screen, what
+  you type or other apps.
+- It sends nothing anywhere and stores nothing.
+- It turns itself off as soon as no gesture locks the screen. You can also turn it off in the accessibility
+  settings at any time.
+
+Optional features that need more access (notification access, calendar) are opt-in, are explained before you
+enable them, and are documented here when they are added.
 
 ## Questions
 
