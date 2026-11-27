@@ -14,7 +14,9 @@ class UrlConnectionHttpGetTest {
     private val http =
         UrlConnectionHttpGet(
             connectTimeoutMillis = 2_000,
-            readTimeoutMillis = 300,
+            // Generous: a busy CI machine can take a few hundred ms to answer even locally, and only the slow
+            // response below should time out.
+            readTimeoutMillis = 1_000,
             maxBytes = 1024,
             allowLoopbackHttp = true,
         )
@@ -58,7 +60,7 @@ class UrlConnectionHttpGetTest {
 
     @Test
     fun `slow responses time out`() {
-        assertFailsWith<WeatherError.Timeout> { http.get(serve("/slow", 200, "{}", delayMillis = 1_500)) }
+        assertFailsWith<WeatherError.Timeout> { http.get(serve("/slow", 200, "{}", delayMillis = 3_000)) }
     }
 
     @Test

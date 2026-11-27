@@ -108,6 +108,10 @@
     <string name="sky_dawn">Morgen</string>
     <string name="sky_forest">Wald</string>
     <string name="sky_ocean">Ozean</string>
+    <string name="sky_follows_sun">Folgt der Sonne</string>
+    <string name="sky_follows_sun_place">Sonnenauf- und -untergang am Wetterort</string>
+    <string name="sky_follows_sun_zone">Nach deiner Zeitzone. Für genaue Zeiten einen Wetterort wählen.</string>
+    <string name="sky_phases">Nacht → Morgen → Tag → Abend. Der Himmel wechselt ein paar Mal am Tag, während der Startbildschirm offen ist.</string>
     <string name="sky_mono">Grau</string>
     <string name="dithering">Dithering</string>
     <string name="dithering_summary">Pixelstufen statt eines weichen Verlaufs</string>

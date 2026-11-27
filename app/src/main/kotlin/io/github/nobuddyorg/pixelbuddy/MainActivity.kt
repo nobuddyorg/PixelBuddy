@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
         val homeApp = RoleHomeAppAccess(this)
         val launchableApps = container.appRepository.home.map { home -> home.apps.map { it.app } }
         setContent {
-            StoredAppearanceTheme(container.settings) { appearance ->
+            StoredAppearanceTheme(container.settings, container.weatherRepository.report) { appearance ->
                 val setup by container.settings.setupStep.collectAsStateWithLifecycle(initialValue = null)
                 when (setup) {
                     // Still reading: the theme's plain background shows.

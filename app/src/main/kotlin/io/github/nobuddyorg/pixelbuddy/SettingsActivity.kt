@@ -24,7 +24,7 @@ class SettingsActivity : ComponentActivity() {
         val favoriteApps = home.map { it.favorites }
         setContent {
             // The accent and sky apply here too, as soon as they change.
-            StoredAppearanceTheme(container.settings) {
+            StoredAppearanceTheme(container.settings, container.weatherRepository.report) {
                 SettingsRoute(
                     store = container.crashReports,
                     appVersion = container.deviceInfo.appVersionName,
