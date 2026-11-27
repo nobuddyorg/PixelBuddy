@@ -17,6 +17,7 @@ def script(name):
 
 check_startup = script("check-startup")
 check_frames = script("check-frames")
+check_memory = script("check-memory")
 
 
 class Results:
@@ -103,6 +104,34 @@ class FramesTest(CheckTest):
     def test_a_missing_test_fails(self):
         r = self.results([frames("dragRail", 8.0)])
         self.assertFalse(check_frames.check(r.results, r.reference, {})[0])
+
+
+def memory(heap_kb):
+    return {
+        "name": "homeMemory",
+        "metrics": {
+            "memoryHeapSizeMaxKb": {"median": heap_kb, "minimum": heap_kb, "maximum": heap_kb + 512},
+            "memoryRssAnonMaxKb": {"median": heap_kb * 3, "minimum": heap_kb * 3, "maximum": heap_kb * 3},
+        },
+    }
+
+
+class MemoryTest(CheckTest):
+    def test_without_limits_memory_is_only_reported(self):
+        r = self.results([memory(20 * 1024)])
+        ok, lines = check_memory.check(r.results, {})
+        self.assertTrue(ok)
+        self.assertIn("memoryHeapSizeMaxKb: median 20.0 MB, max 20.5 MB (no limit)", lines[0])
+
+    def test_over_the_limit_fails(self):
+        r = self.results([memory(40 * 1024)])
+        ok, lines = check_memory.check(r.results, {"memoryHeapSizeMaxKb": 32 * 1024})
+        self.assertFalse(ok)
+        self.assertTrue(lines[1].startswith("::error::memoryHeapSizeMaxKb"))
+
+    def test_a_missing_result_fails(self):
+        r = self.results([])
+        self.assertFalse(check_memory.check(r.results, {})[0])
 
 
 if __name__ == "__main__":

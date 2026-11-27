@@ -81,11 +81,6 @@ class FrameBenchmark {
             device.waitForIdle()
         }
 
-    private fun MacrobenchmarkScope.openSearch() {
-        device.findObject(By.textContains("SEARCH")).click()
-        device.wait(Until.hasObject(By.focused(true)), TIMEOUT_MS)
-    }
-
     private companion object {
         const val ITERATIONS = 5
         const val TIMEOUT_MS = 5_000L

@@ -299,6 +299,12 @@ class IconRepository(
         _generation.value++
     }
 
+    /** The apps now installed: icons of all others are deleted from the cache (#56). */
+    fun retainApps(apps: List<LauncherApp>) = cache.retainApps(apps.mapTo(HashSet()) { it.key.id })
+
+    /** Android asks for memory back (home is in the background): most decoded icons go, the files stay. */
+    fun trimMemory() = cache.trimMemory()
+
     /** Configuration changed (density, theme): also drop decoded icons from memory. */
     fun onConfigurationChanged() {
         cache.clearMemory()

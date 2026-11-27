@@ -264,4 +264,23 @@ class AppRepositoryTest {
         val result = AppRepository(plain, preferences).launch(AppShortcut(app("Signal"), "compose", "New message"))
         assertTrue(result is LaunchResult.Failed)
     }
+
+    @Test
+    fun `every load reports the installed apps, hidden ones included`() =
+        runTest {
+            val loaded = mutableListOf<List<String>>()
+            val repository =
+                AppRepository(
+                    source,
+                    preferences,
+                    dispatcher = StandardTestDispatcher(testScheduler),
+                    onLoaded = { apps -> loaded += apps.map { it.label } },
+                )
+            source.apps = listOf(app("Maps"), app("Bank"))
+            preferences.hidden.value = setOf(app("Bank").key)
+
+            repository.home.test { awaitItem() }
+
+            assertEquals(listOf("Bank", "Maps"), loaded.last())
+        }
 }

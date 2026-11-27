@@ -65,6 +65,10 @@ dependencies {
 
     testImplementation(libs.androidx.test.core)
 
+    // Memory leaks (#56): reported in debug builds, and the emulator tests fail on one. Never in release builds.
+    debugImplementation(libs.leakcanary.android)
+    androidTestImplementation(libs.leakcanary.android.instrumentation)
+
     // Emulator smoke tests (#15): ./gradlew :app:connectedDebugAndroidTest
     androidTestImplementation(libs.kotlin.test)
     androidTestImplementation(libs.androidx.test.junit)

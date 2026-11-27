@@ -5,7 +5,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import leakcanary.DetectLeaksAfterTestSuccess
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.test.assertNotNull
@@ -20,6 +22,10 @@ class SmokeTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val device = UiDevice.getInstance(instrumentation)
     private val pkg = instrumentation.targetContext.packageName
+
+    // Fails a test that leaves a leaked activity, view or bitmap behind (#56).
+    @get:Rule
+    val leaks = DetectLeaksAfterTestSuccess()
 
     @Before
     fun becomeHome() {
@@ -64,6 +70,34 @@ class SmokeTest {
         )
 
         assertNotNull(device.wait(Until.findObject(By.text("Appearance & themes")), TIMEOUT_MS), "settings didn't open")
+    }
+
+    @Test
+    fun menusSettingsAndTheIconEditorLeaveNothingBehind() {
+        // The long-press menu of an app.
+        device.findObject(By.textContains("SEARCH")).click()
+        device.wait(Until.findObject(By.focused(true)), TIMEOUT_MS).text = "Sett"
+        device.wait(Until.findObject(By.desc("Settings")), TIMEOUT_MS).longClick()
+        assertNotNull(device.wait(Until.findObject(By.textContains("App info")), TIMEOUT_MS), "the menu didn't open")
+        device.pressBack()
+        device.pressBack()
+        device.pressBack()
+
+        // The settings and the icon editor, opened and closed.
+        device.swipe(
+            device.displayWidth / 2,
+            device.displayHeight * 2 / 3,
+            device.displayWidth / 2,
+            device.displayHeight * 2 / 3,
+            LONG_PRESS_STEPS,
+        )
+        assertNotNull(device.wait(Until.findObject(By.text("App icons")), TIMEOUT_MS), "settings didn't open")
+        device.findObject(By.text("App icons")).click()
+        device.wait(Until.hasObject(By.textContains("Apply")), TIMEOUT_MS)
+        device.pressBack()
+        device.pressBack()
+        device.pressHome()
+        assertTrue(device.wait(Until.hasObject(By.pkg(pkg).depth(0)), TIMEOUT_MS), "Home didn't come back")
     }
 
     private companion object {
