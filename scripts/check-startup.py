@@ -7,50 +7,46 @@ same code measured 382 ms on one runner and 645 ms on another.
 
 Usage: scripts/check-startup.py <directory with *-benchmarkData.json> <file from scripts/reference-startup.sh>
 """
-import json
-import os
 import pathlib
-import statistics
 import sys
 
-root = pathlib.Path(__file__).resolve().parent.parent
-budget = float((root / ".github" / "startup-budget-ratio").read_text().strip())
-results = sorted(pathlib.Path(sys.argv[1]).rglob("*benchmarkData.json"))
-if not results:
-    print(f"::error::No benchmark results in {sys.argv[1]}")
-    sys.exit(1)
+import benchmarks
 
-medians = []
-for path in results:
-    for benchmark in json.loads(path.read_text())["benchmarks"]:
-        if benchmark["name"] != "coldStartup":
-            continue
-        metric = benchmark["metrics"]["timeToInitialDisplayMs"]
-        medians.append(metric["median"])
-        print(f"PixelBuddy cold startup: median {metric['median']:.0f} ms, min {metric['minimum']:.0f} ms, "
-              f"max {metric['maximum']:.0f} ms")
-if not medians:
-    print("::error::No coldStartup result")
-    sys.exit(1)
-median = max(medians)
+ROOT = pathlib.Path(__file__).resolve().parent.parent
 
-reference_times = [int(line) for line in pathlib.Path(sys.argv[2]).read_text().split() if line.strip()]
-if not reference_times:
-    print(f"::error::No reference startup times in {sys.argv[2]}")
-    sys.exit(1)
-reference = statistics.median(reference_times)
-print(f"Settings cold startup: median {reference:.0f} ms, min {min(reference_times)} ms, "
-      f"max {max(reference_times)} ms")
 
-ratio = median / reference
-message = (f"Cold startup on the emulator: PixelBuddy {median:.0f} ms, Settings {reference:.0f} ms, "
-           f"ratio {ratio:.2f} of a {budget:.2f} budget")
-print(message)
-summary = os.environ.get("GITHUB_STEP_SUMMARY")
-if summary:
-    with open(summary, "a") as out:
-        out.write(message + "\n")
-if ratio > budget:
-    print(f"::error::PixelBuddy starts {ratio:.2f}× as long as Settings, over the budget of {budget:.2f} "
-          f"(.github/startup-budget-ratio)")
-    sys.exit(1)
+def check(results_dir, reference_file, budget):
+    """Returns (ok, lines to print)."""
+    startup = benchmarks.load(results_dir).get("coldStartup")
+    if startup is None:
+        return False, [f"::error::No coldStartup result in {results_dir}"]
+    metric = startup["metrics"]["timeToInitialDisplayMs"]
+    median = metric["median"]
+    reference, fastest, slowest = benchmarks.reference_ms(reference_file)
+    ratio = median / reference
+    lines = [
+        f"PixelBuddy cold startup: median {median:.0f} ms, min {metric['minimum']:.0f} ms, "
+        f"max {metric['maximum']:.0f} ms",
+        f"Settings cold startup: median {reference:.0f} ms, min {fastest} ms, max {slowest} ms",
+        f"Cold startup on the emulator: PixelBuddy {median:.0f} ms, Settings {reference:.0f} ms, "
+        f"ratio {ratio:.2f} of a {budget:.2f} budget",
+    ]
+    if ratio > budget:
+        lines.append(
+            f"::error::PixelBuddy starts {ratio:.2f}× as long as Settings, over the budget of {budget:.2f} "
+            f"(.github/startup-budget-ratio)"
+        )
+        return False, lines
+    return True, lines
+
+
+def main():
+    budget = float((ROOT / ".github" / "startup-budget-ratio").read_text().strip())
+    ok, lines = check(sys.argv[1], sys.argv[2], budget)
+    print("\n".join(lines))
+    benchmarks.summary(next((line for line in lines if line.startswith("Cold startup")), lines[-1]))
+    sys.exit(0 if ok else 1)
+
+
+if __name__ == "__main__":
+    main()

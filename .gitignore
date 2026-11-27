@@ -18,3 +18,7 @@ keystore.properties
 
 # OS
 .DS_Store
+
+# Python bytecode (scripts/, tools/)
+__pycache__/
+*.pyc
