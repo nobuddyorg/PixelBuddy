@@ -12,6 +12,7 @@ class PixelBuddyApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        NotificationService.attach(this)
         // Local crash log only; nothing is ever sent (#22).
         CrashHandler.install(container.crashReports, container.deviceInfo)
     }

@@ -29,11 +29,14 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReportStore
 import io.github.nobuddyorg.pixelbuddy.core.data.lock.ScreenLock
+import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotification
+import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotifications
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Accent
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.NotificationSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SizeStep
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Sky
@@ -108,25 +111,41 @@ class SettingsScreenTest {
         settings.value = settings.value.copy(weather = change(settings.value.weather))
     }
 
-    private fun showRoute(screenLock: ScreenLock? = null) =
-        compose.setContent {
-            SettingsRoute(
-                store = store,
-                appVersion = "1.2.3",
-                settings = settings,
-                onUpdate = { change -> settings.value = change(settings.value) },
-                favoriteApps = favorites,
-                hiddenApps = hidden,
-                apps = flowOf(listOf(launcherApp("Clock"), launcherApp("Teams", work = true))),
-                searchPlaces = { name ->
-                    searched += name
-                    searchFailure?.let { throw it }
-                    listOf(berlin, WeatherPlace("Berlin", "New Hampshire", "USA", 44.47, -71.19))
-                },
-                ioDispatcher = Dispatchers.Unconfined,
-                screenLock = screenLock,
-            )
-        }
+    private fun showRoute(
+        screenLock: ScreenLock? = null,
+        appNotifications: AppNotifications? = null,
+    ) = compose.setContent {
+        SettingsRoute(
+            store = store,
+            appVersion = "1.2.3",
+            settings = settings,
+            onUpdate = { change -> settings.value = change(settings.value) },
+            favoriteApps = favorites,
+            hiddenApps = hidden,
+            apps = flowOf(listOf(launcherApp("Clock"), launcherApp("Teams", work = true))),
+            searchPlaces = { name ->
+                searched += name
+                searchFailure?.let { throw it }
+                listOf(berlin, WeatherPlace("Berlin", "New Hampshire", "USA", 44.47, -71.19))
+            },
+            ioDispatcher = Dispatchers.Unconfined,
+            screenLock = screenLock,
+            appNotifications = appNotifications,
+        )
+    }
+
+    private class FakeNotifications(
+        granted: Boolean,
+    ) : AppNotifications {
+        override val connected = MutableStateFlow(granted)
+        override val active = MutableStateFlow(emptyList<AppNotification>())
+
+        override fun open(key: String) = false
+
+        override fun dismiss(key: String) = Unit
+
+        override fun settingsIntent() = Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+    }
 
     private class FakeScreenLock(
         on: Boolean,
@@ -323,6 +342,48 @@ class SettingsScreenTest {
         compose.onNodeWithText("Double tap on empty space").performClick()
         assertEquals(GestureAction.Nothing, settings.value.gestures.doubleTap)
         compose.onNodeWithText("Lock service".uppercase()).assertDoesNotExist()
+    }
+
+    // Notifications (#24)
+
+    @Test
+    fun `notification dots are opt-in and explain the access they need`() {
+        val access = FakeNotifications(granted = false)
+        showRoute(appNotifications = access)
+        open("Notifications & media")
+        compose.onNodeWithText("Notification access".uppercase()).assertDoesNotExist()
+
+        compose.onNodeWithText("Notification dots").performClick()
+
+        assertTrue(settings.value.notifications.dots)
+        compose.onNodeWithText("Not granted: Android asks once you allow it.").assertIsDisplayed()
+        compose.onNodeWithText("▶ Allow notification access").performScrollTo().performClick()
+        assertEquals(
+            android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS,
+            shadowOf(ApplicationProvider.getApplicationContext<Application>()).nextStartedActivity.action,
+        )
+        access.connected.value = true
+        compose.onNodeWithText("Granted").assertIsDisplayed()
+        compose.onNodeWithText("▶ Allow notification access").assertDoesNotExist()
+    }
+
+    @Test
+    fun `without the notification access the page isn't offered`() {
+        showRoute()
+
+        compose.onNodeWithText("Notifications & media").assertDoesNotExist()
+    }
+
+    @Test
+    fun `screenshot notifications`() {
+        showPage(
+            SettingsPage.Notifications,
+            sampleState.copy(
+                settings = sampleState.settings.copy(notifications = NotificationSettings(dots = true)),
+                notificationAccessOn = false,
+            ),
+        )
+        compose.onRoot().captureRoboImage("SettingsScreen_notifications.png")
     }
 
     @Test

@@ -2,6 +2,7 @@
 <resources>
     <string name="settings_label">PixelBuddy-Einstellungen</string>
     <string name="lock_service_label">PixelBuddy-Sperre</string>
+    <string name="notification_service_label">PixelBuddy-Benachrichtigungspunkte und Medien</string>
     <string name="lock_service_summary">Damit die Sperrgeste auf dem PixelBuddy-Startbildschirm den Bildschirm sperrt</string>
     <string name="lock_service_description">PixelBuddy nutzt diesen Dienst nur, um den Bildschirm zu sperren, wenn du auf dem Startbildschirm die Sperrgeste nutzt (in den PixelBuddy-Einstellungen → Gesten). Er bekommt keine Bedienungshilfen-Ereignisse und sieht weder den Bildschirm noch deine Eingaben oder andere Apps. Entsperren per Fingerabdruck und Gesicht funktioniert weiter. Er schaltet sich selbst aus, sobald keine Geste mehr sperrt.</string>
 </resources>

@@ -68,6 +68,7 @@ Apps → Choose default apps → Home app.
 | Swipe down | Notifications |
 | Long-press empty space | Settings |
 | Double-tap empty space | Nothing, or e.g. lock the screen (opt-in) |
+| Tap an app's notification dot | Shows its newest notification to open or dismiss (opt-in) |
 | Tap the clock / the date / the weather | Alarms / calendar / refresh (or an app you choose) |
 
 The swipes, the double tap and the long press can be changed in Settings → Gestures. Locking the screen needs

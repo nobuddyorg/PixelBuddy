@@ -54,6 +54,7 @@ class MainActivity : ComponentActivity() {
                             appearance = appearance,
                             onEditIcon = { app -> openSettings(editIconOf = app.key.id) },
                             screenLock = LockService,
+                            appNotifications = NotificationService,
                         )
                     }
 

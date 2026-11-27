@@ -54,8 +54,20 @@ and face unlock). If you set a gesture to "Lock screen", PixelBuddy explains thi
 - It turns itself off as soon as no gesture locks the screen. You can also turn it off in the accessibility
   settings at any time.
 
-Optional features that need more access (notification access, calendar) are opt-in, are explained before you
-enable them, and are documented here when they are added.
+### Notification access (optional)
+
+The notification dots (Settings → Notifications & media) need Android's notification access, which lets an app read
+every notification. It is off unless you turn the dots on and then grant the access in Android's settings.
+
+- PixelBuddy uses it to show a dot next to apps with notifications and, when you tap the dot, the newest one's title
+  and text, which you can open or dismiss.
+- Notifications are held in memory only while they are shown: never stored, logged, put into crash reports or sent
+  anywhere.
+- When you turn the dots off, PixelBuddy lets go of the access (it disconnects). You can also revoke it in Android's
+  settings at any time; then nothing is shown.
+
+Optional features that need more access (calendar) are opt-in, are explained before you enable them, and are
+documented here when they are added.
 
 ## Questions
 

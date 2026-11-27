@@ -3,6 +3,7 @@
     <string name="app_name" translatable="false">PixelBuddy</string>
     <string name="settings_label">PixelBuddy settings</string>
     <string name="lock_service_label">PixelBuddy lock</string>
+    <string name="notification_service_label">PixelBuddy notification dots and media</string>
     <string name="lock_service_summary">Lets the lock gesture on PixelBuddy\'s home lock the screen</string>
     <string name="lock_service_description">PixelBuddy uses this service only to lock the screen when you use the lock gesture on home (set in PixelBuddy\'s settings → Gestures). It receives no accessibility events and cannot see the screen, what you type or other apps. Fingerprint and face unlock keep working. It turns itself off when no gesture locks the screen.</string>
 </resources>

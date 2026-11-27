@@ -31,6 +31,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReportStore
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.CustomIconStore
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.lock.ScreenLock
+import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotifications
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconChoice
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsArchive
@@ -80,6 +81,8 @@ fun SettingsRoute(
     onDone: () -> Unit = {},
     /** Locks the screen (#16); without it, no gesture can be set to lock. */
     screenLock: ScreenLock? = null,
+    /** The notification access (#24); without it, the notification features aren't offered. */
+    appNotifications: AppNotifications? = null,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     val context = LocalContext.current
@@ -92,6 +95,8 @@ fun SettingsRoute(
     val allApps by apps.collectAsStateWithLifecycle(initialValue = emptyList())
     val lockFlow = remember(screenLock) { screenLock?.available ?: MutableStateFlow(false) }
     val lockServiceOn by lockFlow.collectAsStateWithLifecycle()
+    val accessFlow = remember(appNotifications) { appNotifications?.connected ?: MutableStateFlow(false) }
+    val notificationAccessOn by accessFlow.collectAsStateWithLifecycle()
     var page by rememberSaveable {
         mutableStateOf(
             if (editIconOf !=
@@ -319,6 +324,7 @@ fun SettingsRoute(
             apps = allApps,
             backupMessage = backupMessage,
             lockServiceOn = if (screenLock != null) lockServiceOn else null,
+            notificationAccessOn = if (appNotifications != null) notificationAccessOn else null,
         )
 
     Box(modifier) {
@@ -367,6 +373,10 @@ fun SettingsRoute(
                     SettingsAction.ImportSettings -> {
                         backupMessage = null
                         importer.launchSafely(arrayOf(ZIP_TYPE, "application/octet-stream"))
+                    }
+
+                    SettingsAction.AllowNotificationAccess -> {
+                        appNotifications?.let { context.startSafely(it.settingsIntent()) }
                     }
 
                     SettingsAction.TurnOnLockService -> {
