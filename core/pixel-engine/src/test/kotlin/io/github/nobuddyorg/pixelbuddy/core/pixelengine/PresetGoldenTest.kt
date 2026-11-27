@@ -17,7 +17,7 @@ class PresetGoldenTest {
     @EnumSource(IconPreset::class)
     fun `preset matches its golden image`(preset: IconPreset) {
         listOf("round" to Fixtures::roundIcon, "quadrants" to Fixtures::quadrants).forEach { (name, fixture) ->
-            val output = PixelEngine.render(fixture(preset.style.sourceSize), preset.style)
+            val output = IconRenderer.render(fixture(preset.style.sourceSize), preset.style, sizePx = 144)
             val golden = File("src/test/resources/golden/${preset.name}_$name.png")
 
             if (record) {
