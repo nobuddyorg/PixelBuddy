@@ -78,6 +78,8 @@
     <string name="icon_preset_pocket">Pocket</string>
     <string name="icon_preset_neon">Neon</string>
     <string name="icon_preset_mono">Mono</string>
+    <string name="icon_preset_neon_lines">Neon lines</string>
+    <string name="icon_preset_neon_single">Neon, one colour</string>
 
     <string name="favorites_title">Favorites</string>
     <string name="favorites_empty">No favorites. Long-press an app on home to add one.</string>
@@ -212,6 +214,17 @@
     <string name="icons_outline_summary">A dark 1-pixel edge</string>
     <string name="icons_masked">Rounded square plate</string>
     <string name="icons_masked_summary">Off: only the drawn shape</string>
+    <string name="icons_kind">Drawn as</string>
+    <string name="icons_kind_pixels">Pixels</string>
+    <string name="icons_kind_neon">Neon lines</string>
+    <string name="icons_neon_colours">Line colours</string>
+    <string name="neon_colours_sampled">From the icon</string>
+    <string name="neon_colours_sweep">Gradient</string>
+    <string name="neon_colours_single">One colour</string>
+    <string name="icons_neon_glow">Glow</string>
+    <string name="icons_neon_glow_summary">A soft halo in the line colour</string>
+    <string name="icons_neon_pixelated">Pixelated</string>
+    <string name="icons_neon_pixelated_summary">Crisp pixels instead of smooth lines, no glow</string>
     <string name="icons_apply">Apply</string>
     <string name="icons_reset">Reset</string>
     <string name="icons_discard_title">Discard your changes?</string>

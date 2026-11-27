@@ -11,6 +11,13 @@ same synthetic icons. Differences in the port:
 - `sweep` spreads the colour stops evenly over the icon along the sweep direction, so colours whose centres sit
   close together (a disc on a plate) still blend gradually.
 
+In the app the outlines are the "Neon lines" and "Neon, one colour" presets, and "Drawn as: Neon lines" in the
+icon editor (colours, glow, pixelated). Adaptive icons are traced from their monochrome layer if they have one,
+otherwise from their foreground layer (the background layer is the plate, so it doesn't have to be guessed); the
+colours, and the plate colour of a light glyph, come from the full icon. Smooth outlines are drawn at the size on
+screen (48 dp); pixelated ones at the grid size without glow. Imported pictures are traced like icons; album art
+stays pixel art.
+
 Only NumPy and Pillow are used, and only for primitives that are easy to write in Kotlin without OpenCV
 (`primitives.py`): Lab conversion, Gaussian blur, Sobel, connected components, distance transform, k-means.
 

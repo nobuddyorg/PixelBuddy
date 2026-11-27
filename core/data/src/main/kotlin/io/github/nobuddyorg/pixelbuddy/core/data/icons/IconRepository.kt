@@ -8,9 +8,9 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppShortcut
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconLook
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyles
+import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconRenderer
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconShape
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.IconStyle
-import io.github.nobuddyorg.pixelbuddy.core.pixelengine.PixelEngine
 import io.github.nobuddyorg.pixelbuddy.core.pixelengine.PixelImage
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.math.roundToInt
 
 /** Loads an app's original icon; a seam for tests. */
 interface IconLoader {
@@ -100,8 +101,8 @@ class LauncherIconLoader(
 }
 
 /**
- * Pixelated app icons. Renders the source at 4 × grid, runs the [PixelEngine] and caches the result in memory and
- * on disk. Work runs on [dispatcher] with limited parallelism; the list asks for visible icons first, so they come
+ * Pixelated or neon app icons. Renders the source at [IconStyle.sourceSize], runs the [IconRenderer] and caches the
+ * result in memory and on disk. Work runs on [dispatcher] with limited parallelism; the list asks for visible icons first, so they come
  * first.
  */
 class IconRepository(
@@ -114,7 +115,7 @@ class IconRepository(
     private val images: CustomIconStore? = null,
 ) {
     /** Drawn sources for [preview], by app, density, size and shape: drawn once per editor session. */
-    private val previewSources = ConcurrentHashMap<String, Pair<IconShape, PixelImage>>()
+    private val previewSources = ConcurrentHashMap<String, Source>()
 
     /** Shortcut icons (#17), only in memory: few, and only while a menu is open. */
     private val shortcutIcons = ConcurrentHashMap<String, Bitmap>()
@@ -140,25 +141,30 @@ class IconRepository(
         layer: IconLayer = IconLayer.Full,
     ): Bitmap? = icon(app, IconLook(style, layer), densityDpi)
 
-    /** The pixelated icon of [app] as [look] says; an imported picture that is gone falls back to the app's icon. */
+    /**
+     * The icon of [app] as [look] says; an imported picture that is gone falls back to the app's icon. Smooth neon
+     * icons are drawn at [sizePx], the size on screen (home's 48 dp by default).
+     */
     suspend fun icon(
         app: LauncherApp,
         look: IconLook,
         densityDpi: Int,
-    ): Bitmap? = withContext(dispatcher) { cachedIcon(app, look, densityDpi) }
+        sizePx: Int = iconPx(densityDpi),
+    ): Bitmap? = withContext(dispatcher) { cachedIcon(app, look, densityDpi, sizePx) }
 
     private fun cachedIcon(
         app: LauncherApp,
         look: IconLook,
         densityDpi: Int,
+        sizePx: Int,
     ): Bitmap? {
         val image = look.image
-        if (image != null) imageIcon(app, look.style, image, densityDpi)?.let { return it }
+        if (image != null) imageIcon(app, look.style, image, densityDpi, sizePx)?.let { return it }
         val style = look.style
         val layer = look.layer
         val id = app.key.id
         val session = "$id|$densityDpi"
-        val styleKey = styleKey(IconLook(style, layer))
+        val styleKey = styleKey(IconLook(style, layer), sizePx)
         verified[session]?.let { base -> cache.get(id, base, styleKey)?.let { return it } }
 
         val drawable = loader.load(app, densityDpi) ?: return null
@@ -166,10 +172,7 @@ class IconRepository(
         verified[session] = base
         cache.get(id, base, styleKey)?.let { return it }
 
-        val shape = IconSourceRenderer.shapeFor(drawable, style.shape)
-        val effective = style.copy(shape = shape)
-        val source = IconSourceRenderer.render(drawable, effective.sourceSize, layer, shape)
-        val bitmap = PixelEngine.render(source, effective).toBitmap()
+        val bitmap = Source.of(drawable, style, layer).draw(style, sizePx)
         renderCount++
         cache.put(id, base, styleKey, bitmap)
         return bitmap
@@ -181,12 +184,13 @@ class IconRepository(
         style: IconStyle,
         image: String,
         densityDpi: Int,
+        sizePx: Int,
     ): Bitmap? {
         val base = "image|$image|$densityDpi"
-        val styleKey = styleKey(IconLook(style, image = image))
+        val styleKey = styleKey(IconLook(style, image = image), sizePx)
         cache.get(app.key.id, base, styleKey)?.let { return it }
         val source = images?.load(image, style.sourceSize) ?: return null
-        val bitmap = PixelEngine.render(source, style).toBitmap()
+        val bitmap = Source(style.shape, source).draw(style, sizePx)
         renderCount++
         cache.put(app.key.id, base, styleKey, bitmap)
         return bitmap
@@ -201,30 +205,32 @@ class IconRepository(
         app: LauncherApp,
         style: IconStyle,
         densityDpi: Int,
-    ): Bitmap? = preview(app, IconLook(style), densityDpi)
+        sizePx: Int = iconPx(densityDpi),
+    ): Bitmap? = preview(app, IconLook(style), densityDpi, sizePx)
 
     /** Like [preview] for a whole [look]: another layer of the app's icon or an imported picture. */
     suspend fun preview(
         app: LauncherApp,
         look: IconLook,
         densityDpi: Int,
+        sizePx: Int = iconPx(densityDpi),
     ): Bitmap? =
         withContext(dispatcher) {
             val style = look.style
-            val key = "${app.key.id}|$densityDpi|${style.sourceSize}|${style.shape}|${look.layer}|${look.image}"
-            val (shape, source) =
+            val kind = if (style.neon != null) "neon" else "${style.shape}"
+            val key = "${app.key.id}|$densityDpi|${style.sourceSize}|$kind|${look.layer}|${look.image}"
+            val source =
                 previewSources[key] ?: run {
                     val image = look.image?.let { images?.load(it, style.sourceSize) }
                     if (image != null) {
-                        style.shape to image
+                        Source(style.shape, image)
                     } else {
                         val drawable = loader.load(app, densityDpi) ?: return@withContext null
-                        val shape = IconSourceRenderer.shapeFor(drawable, style.shape)
-                        shape to IconSourceRenderer.render(drawable, style.sourceSize, look.layer, shape)
+                        Source.of(drawable, style, look.layer)
                     }.also { previewSources[key] = it }
                 }
             ensureActive()
-            PixelEngine.render(source, style.copy(shape = shape)).toBitmap()
+            source.draw(style, sizePx)
         }
 
     /** [shortcut]'s icon pixelated in [style] (#17), or null if it has none. */
@@ -232,16 +238,15 @@ class IconRepository(
         shortcut: AppShortcut,
         style: IconStyle,
         densityDpi: Int,
+        sizePx: Int = iconPx(densityDpi) / 2,
     ): Bitmap? =
         withContext(dispatcher) {
-            val key = "${shortcut.key}|$style|$densityDpi"
+            val key = "${shortcut.key}|$style|$densityDpi|$sizePx"
             shortcutIcons[key] ?: run {
                 val drawable = loader.loadShortcut(shortcut, densityDpi) ?: return@withContext null
-                val shape = IconSourceRenderer.shapeFor(drawable, style.shape)
-                val effective = style.copy(shape = shape)
-                val source = IconSourceRenderer.render(drawable, effective.sourceSize, IconLayer.Full, shape)
+                val source = Source.of(drawable, style, IconLayer.Full)
                 ensureActive()
-                PixelEngine.render(source, effective).toBitmap().also {
+                source.draw(style, sizePx).also {
                     renderCount++
                     shortcutIcons[key] = it
                 }
@@ -249,20 +254,24 @@ class IconRepository(
         }
 
     /**
-     * [picture] (e.g. album art, #25) pixelated in [style] as it is, never masked to an
-     * icon shape. Not cached: home asks only when the picture changes.
+     * [picture] (e.g. album art, #25) pixelated in [style] as it is, never masked to an icon shape. Pictures stay
+     * pixel art with a neon style: photos give no useful outlines. Not cached: home asks only when the picture
+     * changes.
      */
     suspend fun pixelate(
         picture: Bitmap,
         style: IconStyle,
     ): Bitmap =
         withContext(dispatcher) {
-            val size = style.sourceSize
+            val pixel = style.copy(neon = null)
+            val size = pixel.sourceSize
             val fitted = CustomIconStore.fitted(picture, size)
             val pixels = IntArray(size * size).also { fitted.getPixels(it, 0, size, 0, 0, size, size) }
             fitted.recycle()
             ensureActive()
-            PixelEngine.render(PixelImage(size, size, pixels), style.copy(shape = IconShape.FreeStanding)).toBitmap()
+            IconRenderer
+                .render(PixelImage(size, size, pixels), pixel.copy(shape = IconShape.FreeStanding), size)
+                .toBitmap()
         }
 
     /** The app's own icon at [sizePx], to compare with the pixelated one. */
@@ -289,22 +298,56 @@ class IconRepository(
         styles: IconStyles,
         densityDpi: Int,
     ) {
+        val sizePx = iconPx(densityDpi)
         val inUse = HashSet<String>()
         for (app in apps) {
             val look = styles.lookFor(app.key)
-            inUse += styleKey(look)
+            inUse += styleKey(look, sizePx)
             // The app's own icon stays too, in case the picture is gone.
-            if (look.image != null) inUse += styleKey(look.copy(image = null))
-            withContext(background) { cachedIcon(app, look, densityDpi) }
+            if (look.image != null) inUse += styleKey(look.copy(image = null), sizePx)
+            withContext(background) { cachedIcon(app, look, densityDpi, sizePx) }
         }
         withContext(background) { cache.retainStyles(inUse) }
     }
 
-    /** The cache key of a look: style and either the layer or the imported picture (#14). */
-    private fun styleKey(look: IconLook) =
-        if (look.image != null) "${look.style}|image|${look.image}" else "${look.style}|${look.layer}"
+    /**
+     * The cache key of a look: style and either the layer or the imported picture (#14); smooth neon icons also
+     * depend on the size.
+     */
+    private fun styleKey(
+        look: IconLook,
+        sizePx: Int,
+    ): String {
+        val key = if (look.image != null) "${look.style}|image|${look.image}" else "${look.style}|${look.layer}"
+        return if (look.style.smooth) "$key|${sizePx}px" else key
+    }
 
-    private fun PixelImage.toBitmap(): Bitmap = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
+    /** A drawn icon, ready for the renderer: [shape] for pixel styles, [colours] for neon ones (#29). */
+    private class Source(
+        val shape: IconShape,
+        val image: PixelImage,
+        val colours: PixelImage? = null,
+    ) {
+        fun draw(
+            style: IconStyle,
+            sizePx: Int,
+        ): Bitmap = IconRenderer.render(image, style.copy(shape = shape), sizePx, colours).toBitmap()
+
+        companion object {
+            fun of(
+                drawable: Drawable,
+                style: IconStyle,
+                layer: IconLayer,
+            ): Source {
+                if (style.neon != null) {
+                    val (shapes, colours) = IconSourceRenderer.neonSources(drawable, style.sourceSize, layer)
+                    return Source(style.shape, shapes, colours)
+                }
+                val shape = IconSourceRenderer.shapeFor(drawable, style.shape)
+                return Source(shape, IconSourceRenderer.render(drawable, style.sourceSize, layer, shape))
+            }
+        }
+    }
 
     /**
      * Apps may have changed (installed, updated, icon theme): re-check fingerprints on the next request. Cheap: an
@@ -327,4 +370,16 @@ class IconRepository(
         cache.clearMemory()
         recheck()
     }
+
+    companion object {
+        /** Icon size on home. */
+        const val ICON_DP: Int = 48
+
+        /** Home's icon size in pixels at [densityDpi]: the size smooth neon icons are drawn at. */
+        fun iconPx(densityDpi: Int): Int = (ICON_DP * densityDpi / BASELINE_DPI).roundToInt()
+
+        private const val BASELINE_DPI = 160f
+    }
 }
+
+private fun PixelImage.toBitmap(): Bitmap = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)

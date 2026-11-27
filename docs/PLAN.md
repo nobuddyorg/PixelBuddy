@@ -16,7 +16,7 @@ is the source of truth for progress; each sub-issue is one small, independently 
 | Languages | English (default) and German |
 | Font | Departure Mono (OFL), mixed case; big clock drawn from custom pixel digit glyphs |
 | Alphabet rail | Niagara-style (★, A–Z, #) with stepped wave/magnification |
-| Default icon preset | 16-bit, pixel-rounded mask, 1 px outline (revisited once outline icons from #29 exist) |
+| Default icon preset | 16-bit, pixel-rounded mask, 1 px outline (outline icons from #29 are presets too; the default is revisited after testing them on the S24) |
 | Lock screen | Wallpaper only (no clock/lock-screen replacement) |
 | Weather | Open-Meteo, no key, no account; city search or approximate location; no background work |
 | Updates | GitHub Releases, Obtainium-friendly; no in-app updater |

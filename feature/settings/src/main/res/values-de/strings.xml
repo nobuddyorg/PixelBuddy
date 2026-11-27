@@ -78,6 +78,8 @@
     <string name="icon_preset_pocket">Pocket</string>
     <string name="icon_preset_neon">Neon</string>
     <string name="icon_preset_mono">Mono</string>
+    <string name="icon_preset_neon_lines">Neonlinien</string>
+    <string name="icon_preset_neon_single">Neon einfarbig</string>
 
     <string name="favorites_title">Favoriten</string>
     <string name="favorites_empty">Keine Favoriten. Halte eine App auf dem Startbildschirm gedrückt, um sie hinzuzufügen.</string>
@@ -211,6 +213,17 @@
     <string name="icons_outline_summary">Ein dunkler Rand von 1 Pixel</string>
     <string name="icons_masked">Abgerundetes Quadrat</string>
     <string name="icons_masked_summary">Aus: nur die gezeichnete Form</string>
+    <string name="icons_kind">Gezeichnet als</string>
+    <string name="icons_kind_pixels">Pixel</string>
+    <string name="icons_kind_neon">Neonlinien</string>
+    <string name="icons_neon_colours">Linienfarben</string>
+    <string name="neon_colours_sampled">Aus dem Symbol</string>
+    <string name="neon_colours_sweep">Verlauf</string>
+    <string name="neon_colours_single">Eine Farbe</string>
+    <string name="icons_neon_glow">Leuchten</string>
+    <string name="icons_neon_glow_summary">Ein weicher Schein in der Linienfarbe</string>
+    <string name="icons_neon_pixelated">Verpixelt</string>
+    <string name="icons_neon_pixelated_summary">Scharfe Pixel statt glatter Linien, ohne Leuchten</string>
     <string name="icons_apply">Übernehmen</string>
     <string name="icons_reset">Zurücksetzen</string>
     <string name="icons_discard_title">Änderungen verwerfen?</string>
