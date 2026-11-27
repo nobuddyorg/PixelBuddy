@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
+import io.github.nobuddyorg.pixelbuddy.core.data.calendar.CalendarInfo
 import io.github.nobuddyorg.pixelbuddy.core.data.crash.CrashReport
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyColors
@@ -42,6 +43,7 @@ enum class SettingsPage {
     Apps,
     Gestures,
     Notifications,
+    Calendar,
     Wallpaper,
     Weather,
     Backup,
@@ -86,6 +88,10 @@ data class SettingsState(
     val lockServiceOn: Boolean? = null,
     /** Whether the notification access is granted and connected (#24); null if not offered. */
     val notificationAccessOn: Boolean? = null,
+    /** The phone's calendars to choose from (#27); null if the next event isn't offered. */
+    val calendars: List<CalendarInfo>? = null,
+    /** The user said no to the calendar permission. */
+    val calendarDenied: Boolean = false,
 )
 
 /** Something the user did in the settings. */
@@ -121,6 +127,9 @@ sealed interface SettingsAction {
 
     /** Opens the system screen to grant the notification access (#24). */
     data object AllowNotificationAccess : SettingsAction
+
+    /** Turns the next calendar event on, asking for the calendar permission first (#27). */
+    data object EnableCalendar : SettingsAction
 
     /** Opens the editor for one app's own icon. */
     data class EditAppIcon(
@@ -228,6 +237,10 @@ private fun PageContent(
             AppsPage(state.favorites, state.hiddenApps, update)
         }
 
+        SettingsPage.Calendar -> {
+            CalendarPage(state.settings.calendar, state.calendars.orEmpty(), state.calendarDenied, update, onAction)
+        }
+
         SettingsPage.Notifications -> {
             NotificationsPage(state.settings.notifications, state.notificationAccessOn, update, onAction)
         }
@@ -282,6 +295,7 @@ private val SettingsPage.title: Int
             SettingsPage.Apps -> R.string.settings_apps
             SettingsPage.Gestures -> R.string.settings_gestures
             SettingsPage.Notifications -> R.string.settings_notifications
+            SettingsPage.Calendar -> R.string.settings_calendar
             SettingsPage.Wallpaper -> R.string.settings_wallpaper
             SettingsPage.Weather, SettingsPage.WeatherPlace, SettingsPage.WeatherTap -> R.string.weather_title
             SettingsPage.Backup -> R.string.backup_title

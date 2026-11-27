@@ -40,6 +40,7 @@ those requests: <https://open-meteo.com/en/terms>.
 | `REQUEST_DELETE_PACKAGES` | Lets you start an uninstall from the long-press menu (Android asks you to confirm) |
 | `SET_WALLPAPER` | Lets you set the launcher gradient as wallpaper |
 | `EXPAND_STATUS_BAR` | Swipe down on home opens the notification shade |
+| `READ_CALENDAR` | Only if you turn on the next calendar event; asked when you turn it on |
 
 ### Lock service (optional accessibility service)
 
@@ -69,8 +70,14 @@ then grant the access in Android's settings.
 - When you turn both off, PixelBuddy lets go of the access (it disconnects). You can also revoke it in Android's
   settings at any time; then nothing is shown.
 
-Optional features that need more access (calendar) are opt-in, are explained before you enable them, and are
-documented here when they are added.
+### Calendar (optional)
+
+The next event under the date (Settings → Next event) reads your phone's calendar. It is off until you turn it on,
+and Android asks you for the calendar permission at that moment.
+
+- PixelBuddy reads the events of the next 24 hours from the calendars you choose, only while home is visible.
+- Nothing is stored, logged or sent; the event's title and time are only on screen.
+- Tapping the event opens it in your calendar app.
 
 ## Questions
 

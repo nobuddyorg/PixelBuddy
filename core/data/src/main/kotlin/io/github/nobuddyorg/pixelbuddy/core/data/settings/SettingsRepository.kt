@@ -35,6 +35,8 @@ class SettingsRepository(
 
     val notifications: Flow<NotificationSettings> = settings.map { it.notifications }.distinctUntilChanged()
 
+    val calendar: Flow<CalendarSettings> = settings.map { it.calendar }.distinctUntilChanged()
+
     val setupStep: Flow<SetupStep> = settings.map { it.setup }.distinctUntilChanged()
 
     suspend fun update(transform: (Settings) -> Settings): Settings = store.updateData { transform(it) }
