@@ -1,1 +1,4 @@
-{}
+{
+  "memoryHeapSizeMaxKb": 14336,
+  "memoryRssAnonMaxKb": 102400
+}

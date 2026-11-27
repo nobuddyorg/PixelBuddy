@@ -2,7 +2,8 @@
 """Reports home's memory (MemoryBenchmark) and fails above the limits in .github/memory-budget.json (#56).
 
 The limits are per metric name, in kB (e.g. "memoryHeapSizeMaxKb"); a metric without a limit is only reported.
-Memory doesn't depend on the runner's speed, so the limits are absolute.
+Memory doesn't depend on the runner's speed, so the limits are absolute: 1.5× the first CI measurement (heap 9.2 MB,
+anonymous RSS 67 MB), which varied by less than 0.3 MB between iterations.
 
 Usage: scripts/check-memory.py <directory with *-benchmarkData.json>
 """
