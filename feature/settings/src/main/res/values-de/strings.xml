@@ -6,6 +6,15 @@
     <string name="action_back">Zurück</string>
 
     <string name="crash_reports_title">Absturzberichte</string>
+    <string name="icon_timings">Zeichendauer der Symbole auf diesem Telefon</string>
+    <plurals name="icon_timings_neon">
+        <item quantity="one">Neonlinien: Median %1$d ms, 90 %% in höchstens %2$d ms (%3$d Symbol)</item>
+        <item quantity="other">Neonlinien: Median %1$d ms, 90 %% in höchstens %2$d ms (%3$d Symbole)</item>
+    </plurals>
+    <plurals name="icon_timings_pixels">
+        <item quantity="one">Pixel: Median %1$d ms, 90 %% in höchstens %2$d ms (%3$d Symbol)</item>
+        <item quantity="other">Pixel: Median %1$d ms, 90 %% in höchstens %2$d ms (%3$d Symbole)</item>
+    </plurals>
     <string name="crash_reports_privacy">Berichte bleiben auf diesem Gerät. Es wird nichts gesendet, außer du teilst einen Bericht selbst.</string>
     <string name="crash_reports_empty">Keine Absturzberichte. Bisher ist nichts abgestürzt.</string>
     <string name="crash_reports_delete_all">Alle löschen</string>
@@ -116,7 +125,7 @@
     <string name="calendar_summary_on">Aus deinem Kalender</string>
     <string name="calendar_summary_off">Aus</string>
     <string name="calendar_next_event">Nächster Termin unter dem Datum</string>
-    <string name="calendar_next_event_summary">In den nächsten 24 Stunden; antippen öffnet ihn. Der Kalender bleibt auf dem Handy.</string>
+    <string name="calendar_next_event_summary">In den nächsten 24 Stunden; antippen öffnet ihn. Der Kalender bleibt auf dem Telefon.</string>
     <string name="calendar_denied">Ohne Zugriff auf den Kalender gibt es keinen Termin anzuzeigen. Du kannst ihn in den Android-Einstellungen → Apps → PixelBuddy → Berechtigungen erlauben.</string>
     <string name="calendar_all_day">Ganztägige Termine</string>
     <string name="calendar_all_day_summary">Geburtstage, Feiertage und andere Termine ohne Uhrzeit</string>

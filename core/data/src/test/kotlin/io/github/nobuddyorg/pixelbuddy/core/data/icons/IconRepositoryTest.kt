@@ -301,6 +301,9 @@ class IconRepositoryTest {
             val small = repository.icon(app, IconLook(neon), densityDpi = 420, sizePx = 64)!!
             assertEquals(64, small.width)
             assertEquals(2, repository.renderCount)
+            // cached icons aren't timed again
+            assertEquals(2, repository.timings.summary(neonStyle = true)!!.count)
+            assertNull(repository.timings.summary(neonStyle = false))
         }
 
     @Test

@@ -128,6 +128,9 @@ class IconRepository(
     /** Increases whenever cached icons may be outdated; icon UIs reload when it changes. */
     val generation: StateFlow<Int> = _generation
 
+    /** How long renders took on this phone (#29), for Settings → About. */
+    val timings: RenderTimings = RenderTimings()
+
     /** Number of icons rendered, for tests and diagnostics. */
     @Volatile
     var renderCount: Int = 0
@@ -172,7 +175,9 @@ class IconRepository(
         verified[session] = base
         cache.get(id, base, styleKey)?.let { return it }
 
+        val start = System.nanoTime()
         val bitmap = Source.of(drawable, style, layer).draw(style, sizePx)
+        timings.record(style.neon != null, System.nanoTime() - start)
         renderCount++
         cache.put(id, base, styleKey, bitmap)
         return bitmap
@@ -189,8 +194,10 @@ class IconRepository(
         val base = "image|$image|$densityDpi"
         val styleKey = styleKey(IconLook(style, image = image), sizePx)
         cache.get(app.key.id, base, styleKey)?.let { return it }
+        val start = System.nanoTime()
         val source = images?.load(image, style.sourceSize) ?: return null
         val bitmap = Source(style.shape, source).draw(style, sizePx)
+        timings.record(style.neon != null, System.nanoTime() - start)
         renderCount++
         cache.put(app.key.id, base, styleKey, bitmap)
         return bitmap

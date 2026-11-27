@@ -417,6 +417,8 @@ fun SettingsRoute(
             apps = allApps,
             backupMessage = backupMessage,
             lockServiceOn = if (screenLock != null) lockServiceOn else null,
+            neonTimings = if (page == SettingsPage.About) icons?.timings?.summary(neonStyle = true) else null,
+            pixelTimings = if (page == SettingsPage.About) icons?.timings?.summary(neonStyle = false) else null,
             notificationAccessOn = if (appNotifications != null) notificationAccessOn else null,
             calendars = if (calendarSource != null) calendars else null,
             calendarDenied = calendarDenied,

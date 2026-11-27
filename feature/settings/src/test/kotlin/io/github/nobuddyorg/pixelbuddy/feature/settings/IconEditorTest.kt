@@ -425,6 +425,15 @@ class IconEditorTest {
     fun `screenshot neon, one colour`() = screenshot(IconPreset.NeonSingle, "neon_single")
 
     @Test
+    @Config(qualifiers = "+de")
+    fun `screenshot neon lines in German`() {
+        settings.value = settings.value.copy(iconStyle = IconStyleSetting.of(IconPreset.NeonLines))
+        showSettings()
+        compose.onNodeWithText("App-Symbole").performClick()
+        compose.onRoot().captureRoboImage("IconEditor_neon_lines_de.png")
+    }
+
+    @Test
     fun `neon lines have their own options`() {
         showEditor()
         compose.onNodeWithText("Palette").assertExists()

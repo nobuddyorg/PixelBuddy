@@ -119,7 +119,7 @@ internal fun ListRow(
     ) {
         Column {
             BasicText(title, style = BodyStyle)
-            if (subtitle.isNotEmpty()) BasicText(subtitle, style = MutedStyle, maxLines = 2)
+            if (subtitle.isNotEmpty()) BasicText(subtitle, style = MutedStyle)
         }
     }
 }
@@ -146,7 +146,7 @@ internal fun ToggleRow(
     ) {
         Column(Modifier.weight(1f)) {
             BasicText(title, style = BodyStyle)
-            if (subtitle.isNotEmpty()) BasicText(subtitle, style = MutedStyle, maxLines = 2)
+            if (subtitle.isNotEmpty()) BasicText(subtitle, style = MutedStyle)
         }
         BasicText(
             if (checked) "[$on]" else "[$off]",
@@ -181,7 +181,7 @@ internal fun OptionRow(
         )
         Column {
             BasicText(title, style = if (selected) BodyStyle.copy(color = PixelBuddyTheme.style.accent) else BodyStyle)
-            if (subtitle.isNotEmpty()) BasicText(subtitle, style = MutedStyle, maxLines = 2)
+            if (subtitle.isNotEmpty()) BasicText(subtitle, style = MutedStyle)
         }
     }
 }

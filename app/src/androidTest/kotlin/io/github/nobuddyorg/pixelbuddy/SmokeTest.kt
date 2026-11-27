@@ -77,7 +77,11 @@ class SmokeTest {
         // The long-press menu of an app.
         device.findObject(By.textContains("SEARCH")).click()
         device.wait(Until.findObject(By.focused(true)), TIMEOUT_MS).text = "Sett"
-        device.wait(Until.findObject(By.desc("Settings")), TIMEOUT_MS).longClick()
+        assertNotNull(device.wait(Until.findObject(By.desc("Settings")), TIMEOUT_MS), "no search result")
+        // The keyboard and the results may still move: press where the result is once the screen is still, not
+        // where it was first found.
+        device.waitForIdle()
+        device.findObject(By.desc("Settings")).longClick()
         assertNotNull(device.wait(Until.findObject(By.textContains("App info")), TIMEOUT_MS), "the menu didn't open")
         device.pressBack()
         device.pressBack()
