@@ -376,6 +376,14 @@ internal fun NotificationsPage(
         on = stringResource(R.string.toggle_on),
         off = stringResource(R.string.toggle_off),
     )
+    ToggleRow(
+        title = stringResource(R.string.media_controls),
+        subtitle = stringResource(R.string.media_controls_summary),
+        checked = notifications.media,
+        onChange = { on -> update { it.copy(notifications = it.notifications.copy(media = on)) } },
+        on = stringResource(R.string.toggle_on),
+        off = stringResource(R.string.toggle_off),
+    )
     if (notifications.needsAccess && accessOn != null) {
         Column {
             SectionHeader(stringResource(R.string.notification_access_title))

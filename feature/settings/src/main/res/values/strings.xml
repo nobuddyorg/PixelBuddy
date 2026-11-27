@@ -99,6 +99,8 @@
     <string name="notifications_summary_off">Off: no access to notifications</string>
     <string name="notification_dots">Notification dots</string>
     <string name="notification_dots_summary">A dot next to apps with notifications; tap it to read the newest, open or dismiss it</string>
+    <string name="media_controls">Media controls</string>
+    <string name="media_controls_summary">What\'s playing, with play/pause and skip, below the date</string>
     <string name="notification_access_title">Notification access</string>
     <string name="notification_access_on">Granted</string>
     <string name="notification_access_off">Not granted: Android asks once you allow it.</string>

@@ -248,6 +248,23 @@ class IconRepository(
             }
         }
 
+    /**
+     * [picture] (e.g. album art, #25) pixelated in [style] as it is, never masked to an
+     * icon shape. Not cached: home asks only when the picture changes.
+     */
+    suspend fun pixelate(
+        picture: Bitmap,
+        style: IconStyle,
+    ): Bitmap =
+        withContext(dispatcher) {
+            val size = style.sourceSize
+            val fitted = CustomIconStore.fitted(picture, size)
+            val pixels = IntArray(size * size).also { fitted.getPixels(it, 0, size, 0, 0, size, size) }
+            fitted.recycle()
+            ensureActive()
+            PixelEngine.render(PixelImage(size, size, pixels), style.copy(shape = IconShape.FreeStanding)).toBitmap()
+        }
+
     /** The app's own icon at [sizePx], to compare with the pixelated one. */
     suspend fun original(
         app: LauncherApp,

@@ -7,12 +7,16 @@ import android.content.Intent
 import android.provider.AlarmClock
 import android.provider.CalendarContract
 import android.widget.Toast
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
@@ -29,6 +33,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.LaunchResult
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.icons.IconRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.lock.ScreenLock
+import io.github.nobuddyorg.pixelbuddy.core.data.media.MediaPlayback
 import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotification
 import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotifications
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
@@ -41,6 +46,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherSettings
 import io.github.nobuddyorg.pixelbuddy.core.weather.WeatherRepository
 import io.github.nobuddyorg.pixelbuddy.core.weather.isFahrenheit
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
@@ -68,6 +74,8 @@ fun HomeRoute(
     screenLock: ScreenLock? = null,
     /** Notifications for the dots (#24), only read while they are turned on. */
     appNotifications: AppNotifications? = null,
+    /** The playing media (#25), only read while the controls are turned on. */
+    mediaPlayback: MediaPlayback? = null,
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -82,6 +90,16 @@ fun HomeRoute(
     val noNotifications = remember { MutableStateFlow(emptyList<AppNotification>()) }
     val notificationSource = appNotifications?.active?.takeIf { notificationSettings.dots } ?: noNotifications
     val notifications by notificationSource.collectAsStateWithLifecycle()
+    val mediaSource =
+        remember(mediaPlayback, notificationSettings.media) {
+            mediaPlayback?.takeIf { notificationSettings.media }?.nowPlaying() ?: flowOf(null)
+        }
+    val nowPlaying by mediaSource.collectAsStateWithLifecycle(initialValue = null)
+    val artStyle = iconStyles.default
+    val art by produceState<ImageBitmap?>(null, nowPlaying?.title, nowPlaying?.artist, artStyle) {
+        val picture = nowPlaying?.art
+        value = picture?.let { icons.pixelate(it, artStyle).asImageBitmap() }
+    }
 
     // Null until the stored settings are read, so no request goes out for the defaults first.
     val storedWeather by settings.weather.collectAsStateWithLifecycle(initialValue = null)
@@ -173,6 +191,11 @@ fun HomeRoute(
                 appearance = appearance,
                 onClockClick = context::openAlarms,
                 onDateClick = context::openCalendar,
+                media = {
+                    nowPlaying?.let { playing ->
+                        MediaRow(playing, art, onAction = { action -> mediaPlayback?.control(action) })
+                    }
+                },
             ) { now ->
                 val current = report
                 if (weather != null && weatherSettings.enabled && current != null) {
@@ -223,26 +246,30 @@ private fun LiveHomeHeader(
     appearance: Appearance,
     onClockClick: () -> Unit,
     onDateClick: () -> Unit,
+    media: @Composable () -> Unit = {},
     weather: @Composable (now: Instant) -> Unit,
 ) {
     val now by rememberCurrentTime()
     val system24Hour by rememberIs24Hour()
     val battery by rememberBatteryState()
-    HomeHeader(
-        now = now,
-        is24Hour =
-            when (appearance.clockFormat) {
-                ClockFormat.System -> system24Hour
-                ClockFormat.TwelveHour -> false
-                ClockFormat.TwentyFourHour -> true
-            },
-        battery = battery,
-        onClockClick = onClockClick,
-        onDateClick = onDateClick,
-        clockHeight = appearance.clockSize.clockHeightDp.dp,
-        clockShadow = appearance.clockShadow,
-    ) {
-        weather(now.atZone(ZoneId.systemDefault()).toInstant())
+    Column {
+        HomeHeader(
+            now = now,
+            is24Hour =
+                when (appearance.clockFormat) {
+                    ClockFormat.System -> system24Hour
+                    ClockFormat.TwelveHour -> false
+                    ClockFormat.TwentyFourHour -> true
+                },
+            battery = battery,
+            onClockClick = onClockClick,
+            onDateClick = onDateClick,
+            clockHeight = appearance.clockSize.clockHeightDp.dp,
+            clockShadow = appearance.clockShadow,
+        ) {
+            weather(now.atZone(ZoneId.systemDefault()).toInstant())
+        }
+        media()
     }
 }
 

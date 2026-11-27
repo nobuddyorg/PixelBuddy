@@ -64,6 +64,8 @@ dependencies {
     baselineProfile(projects.baselineProfile)
 
     testImplementation(libs.androidx.test.core)
+    testImplementation(libs.turbine)
+    testImplementation(libs.kotlinx.coroutines.test)
 
     // Memory leaks (#56): reported in debug builds, and the emulator tests fail on one. Never in release builds.
     debugImplementation(libs.leakcanary.android)

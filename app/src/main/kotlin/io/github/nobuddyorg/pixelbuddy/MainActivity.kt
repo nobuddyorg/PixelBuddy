@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
                             onEditIcon = { app -> openSettings(editIconOf = app.key.id) },
                             screenLock = LockService,
                             appNotifications = NotificationService,
+                            mediaPlayback = container.mediaPlayback,
                         )
                     }
 

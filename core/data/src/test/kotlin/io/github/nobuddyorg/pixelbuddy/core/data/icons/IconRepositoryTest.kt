@@ -317,4 +317,22 @@ class IconRepositoryTest {
 
             assertNull(repository().shortcutIcon(AppShortcut(app, "compose", "New message"), style, 420))
         }
+
+    @Test
+    fun `pictures like album art are pixelated to the style's grid, not cached`() =
+        runTest {
+            val picture = Bitmap.createBitmap(300, 200, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.GREEN) }
+
+            val art = repository().pixelate(picture, style)
+
+            assertEquals(style.grid, art.width)
+            assertEquals(style.grid, art.height)
+            assertEquals(
+                emptyList(),
+                folder.root
+                    .walk()
+                    .filter { it.isFile }
+                    .toList(),
+            )
+        }
 }
