@@ -13,7 +13,7 @@ class PixelEngineTest {
     private fun opaqueColors(image: PixelImage) = image.pixels.filter { Argb.alpha(it) == 255 }.toSet()
 
     @ParameterizedTest
-    @ValueSource(ints = [12, 16, 24, 32])
+    @ValueSource(ints = [12, 16, 24, 32, 64])
     fun `output size equals the grid`(grid: Int) {
         val style = IconStyle(grid = grid)
 

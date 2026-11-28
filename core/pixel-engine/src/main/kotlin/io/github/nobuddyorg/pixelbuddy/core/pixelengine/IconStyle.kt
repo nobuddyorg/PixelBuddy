@@ -50,7 +50,7 @@ public enum class IconShape {
 /**
  * How an icon is pixelated.
  *
- * @property grid output size in pixels: 12, 16, 24 or 32.
+ * @property grid output size in pixels: 12, 16, 24, 32 or 64.
  * @property intensity palette blend: 0 keeps the averaged original colour, 1 uses the nearest palette colour.
  * @property dithering ordered (Bayer) dithering before choosing palette colours.
  * @property outline 1 px outline around the shape in [outlineColor].
@@ -83,7 +83,7 @@ public data class IconStyle(
     val smooth: Boolean get() = neon?.pixelated == false
 
     public companion object {
-        public val GRIDS: List<Int> = listOf(12, 16, 24, 32)
+        public val GRIDS: List<Int> = listOf(12, 16, 24, 32, 64)
         public const val SOURCE_SCALE: Int = 4
         public const val DEFAULT_OUTLINE: Int = 0xFF07081A.toInt()
 
