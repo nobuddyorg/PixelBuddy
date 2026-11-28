@@ -56,6 +56,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsRepository
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WidgetSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.widgets.HomeWidgets
+import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyTheme
 import io.github.nobuddyorg.pixelbuddy.core.weather.WeatherRepository
 import io.github.nobuddyorg.pixelbuddy.core.weather.isFahrenheit
 import kotlinx.coroutines.delay
@@ -213,6 +214,7 @@ fun HomeRoute(
         gestures = gestures,
         onWebSearch = if (gestures.webSearch) context::searchWeb else null,
         railLetterSp = appearance.railSize.sp,
+        favoriteLabels = appearance.favoriteLabels,
         onOpenNotifications = context::expandNotificationShade,
         onLock = {
             if (screenLock?.lock() != true) {
@@ -311,20 +313,23 @@ private fun LiveHomeHeader(
             ClockFormat.TwentyFourHour -> true
         }
     val align = appearance.clockPosition.alignment
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = align) {
-        HomeHeader(
-            now = now,
-            is24Hour = is24Hour,
-            battery = battery,
-            onClockClick = onClockClick,
-            onDateClick = onDateClick,
-            clockHeight = appearance.clockSize.clockHeightDp.dp,
-            clockShadow = appearance.clockShadow,
-            align = align,
-        ) {
-            weather(now.atZone(ZoneId.systemDefault()).toInstant())
+    // The lines under the clock have a size of their own.
+    PixelBuddyTheme(PixelBuddyTheme.style.copy(textScale = appearance.infoSize.scale)) {
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = align) {
+            HomeHeader(
+                now = now,
+                is24Hour = is24Hour,
+                battery = battery,
+                onClockClick = onClockClick,
+                onDateClick = onDateClick,
+                clockHeight = appearance.clockSize.clockHeightDp.dp,
+                clockShadow = appearance.clockShadow,
+                align = align,
+            ) {
+                weather(now.atZone(ZoneId.systemDefault()).toInstant())
+            }
+            below(now, is24Hour)
         }
-        below(now, is24Hour)
     }
 }
 

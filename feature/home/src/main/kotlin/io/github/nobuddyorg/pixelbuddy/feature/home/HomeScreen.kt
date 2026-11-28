@@ -82,6 +82,9 @@ import kotlinx.coroutines.launch
 /** The view with the search field; without a query it lists every app. */
 internal const val SEARCH = "search"
 
+/** Row ids of the favorites start with this. */
+private const val FAVORITE_ROW = "favorite/"
+
 /** Every app, A to Z with section labels; the rail jumps between the sections. */
 internal const val ALL_APPS = "all"
 
@@ -123,6 +126,8 @@ fun HomeScreen(
     onWebSearch: ((String) -> Unit)? = null,
     /** Letter size on the alphabet rail, in sp. */
     railLetterSp: Float = DEFAULT_LETTER_SP,
+    /** Names next to the favorites; without them only the icons show. */
+    favoriteLabels: Boolean = true,
 ) {
     val title = stringResource(R.string.home_screen_title)
     val openSettingsLabel = stringResource(R.string.home_open_settings)
@@ -213,6 +218,7 @@ fun HomeScreen(
         AppEntry(
             app = app,
             home = home,
+            showLabel = favoriteLabels || !rowId.startsWith(FAVORITE_ROW),
             menuOpen = rowId == menuRow,
             icon = icon,
             onAppClick = { app, from ->
@@ -418,7 +424,7 @@ private fun Favorites(
         modifier = modifier.fillMaxWidth().nestedScroll(overscroll),
     ) {
         if (widget != null && !widgetBelow) item(key = "widget") { widget() }
-        items(home.favorites, key = { "favorite/" + it.key.id }) { app -> entry("favorite/" + app.key.id, app) }
+        items(home.favorites, key = { FAVORITE_ROW + it.key.id }) { app -> entry(FAVORITE_ROW + app.key.id, app) }
         // No apps yet means they are still loading; the hint would only flash.
         if (home.favorites.isEmpty() && home.apps.isNotEmpty()) {
             item(key = "favorites-hint") {
@@ -605,9 +611,11 @@ private fun AppEntry(
     previewOpen: Boolean = false,
     onPreview: () -> Unit = {},
     onNotification: (NotificationAction) -> Unit = {},
+    showLabel: Boolean = true,
 ) {
     AppRow(
         app = app,
+        showLabel = showLabel,
         icon = { icon(app) },
         onClick = { from -> onAppClick(app, from) },
         onLongClick = { onMenu(app) },
@@ -650,6 +658,8 @@ private fun AppRow(
     top: Boolean = false,
     /** After the name, e.g. the notification dot (#24). */
     trailing: @Composable () -> Unit = {},
+    /** Without the name only the icon shows; TalkBack still reads the name. */
+    showLabel: Boolean = true,
 ) {
     // Where the icon is, so the app can open out of it.
     var iconBounds by remember { mutableStateOf<IntRect?>(null) }
@@ -686,19 +696,21 @@ private fun AppRow(
         val style = PixelText.body
         val badge = SpanStyle(color = PixelBuddyTheme.style.accent, fontSize = PixelText.small.fontSize)
         val matched = SpanStyle(color = PixelBuddyTheme.style.accent)
-        BasicText(
-            text =
-                buildAnnotatedString {
-                    append(app.label)
-                    highlight.forEach { addStyle(matched, it.first, it.last + 1) }
-                    if (!app.isMainProfile) {
-                        withStyle(badge) { append("  $workLabel") }
-                    }
-                },
-            style = style,
-            maxLines = 1,
-            modifier = Modifier.weight(1f, fill = false),
-        )
+        if (showLabel) {
+            BasicText(
+                text =
+                    buildAnnotatedString {
+                        append(app.label)
+                        highlight.forEach { addStyle(matched, it.first, it.last + 1) }
+                        if (!app.isMainProfile) {
+                            withStyle(badge) { append("  $workLabel") }
+                        }
+                    },
+                style = style,
+                maxLines = 1,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+        }
         trailing()
     }
 }

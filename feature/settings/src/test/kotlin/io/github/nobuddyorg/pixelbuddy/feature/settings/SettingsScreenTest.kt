@@ -294,6 +294,11 @@ class SettingsScreenTest {
 
         compose.onNodeWithText("Alphabet letters on the side").performScrollTo().performClick()
         assertEquals(RailSize.Large, settings.value.appearance.railSize)
+
+        compose.onNodeWithText("Text size under the clock").performScrollTo().performClick()
+        assertEquals(SizeStep.Large, settings.value.appearance.infoSize)
+        compose.onNodeWithText("Names of favorites").performScrollTo().performClick()
+        assertFalse(settings.value.appearance.favoriteLabels)
     }
 
     // Favorites and hidden apps

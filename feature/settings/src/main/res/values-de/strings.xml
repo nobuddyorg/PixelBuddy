@@ -87,6 +87,9 @@
     <string name="size_medium">Mittel</string>
     <string name="size_large">Groß</string>
     <string name="rail_size">Buchstaben am Rand</string>
+    <string name="info_size">Schriftgröße unter der Uhr</string>
+    <string name="favorite_labels">Namen der Favoriten</string>
+    <string name="favorite_labels_summary">Aus: Auf dem Startbildschirm sind nur ihre Symbole zu sehen</string>
     <string name="size_extra_large">Sehr groß</string>
     <string name="preview">Vorschau</string>
 

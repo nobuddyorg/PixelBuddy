@@ -99,6 +99,10 @@ data class Appearance(
     val textSize: SizeStep = SizeStep.Medium,
     /** Size of the app icons on home. */
     val iconSize: IconSize = IconSize.Medium,
+    /** Size of the lines under the clock (date, battery, weather, next event, media), apart from the text size. */
+    val infoSize: SizeStep = SizeStep.Medium,
+    /** Names next to the favorites on home; without them only the icons show. */
+    val favoriteLabels: Boolean = true,
     /** Size of the letters on the alphabet rail, apart from the text size. */
     val railSize: RailSize = RailSize.Medium,
     val accent: Accent = Accent.Orange,

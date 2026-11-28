@@ -1394,6 +1394,26 @@ class HomeScreenTest {
     }
 
     @Test
+    fun `without names the favorites are icons, still named for TalkBack and in the list of all apps`() {
+        compose.setContent {
+            HomeScreen(
+                home = HomeApps(favorites, sampleApps),
+                onAppClick = { _, _ -> },
+                onAppAction = {},
+                onOpenSettings = {},
+                icon = { app -> AppIcon(app, icons, IconPreset.Default.style) },
+                favoriteLabels = false,
+            )
+        }
+        compose.onNodeWithText("Signal").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Signal").assertIsDisplayed()
+        compose.onRoot().captureRoboImage("HomeScreen_favorites_icons_only.png")
+
+        tapRail("S")
+        compose.onNodeWithText("Signal").assertIsDisplayed()
+    }
+
+    @Test
     fun `screenshot extra large rail letters, apart from small text`() {
         compose.setContent {
             PixelBuddyTheme(PixelBuddyStyle(textScale = 0.85f)) {

@@ -252,6 +252,19 @@ internal fun ClockPage(
         onClick = { update.appearance { it.copy(iconSize = it.iconSize.next()) } },
     )
     ListRow(
+        title = stringResource(R.string.info_size),
+        subtitle = stringResource(appearance.infoSize.label),
+        onClick = { update.appearance { it.copy(infoSize = it.infoSize.next()) } },
+    )
+    ToggleRow(
+        title = stringResource(R.string.favorite_labels),
+        subtitle = stringResource(R.string.favorite_labels_summary),
+        checked = appearance.favoriteLabels,
+        onChange = { on -> update.appearance { it.copy(favoriteLabels = on) } },
+        on = stringResource(R.string.toggle_on),
+        off = stringResource(R.string.toggle_off),
+    )
+    ListRow(
         title = stringResource(R.string.rail_size),
         subtitle = stringResource(appearance.railSize.label),
         onClick = { update.appearance { it.copy(railSize = it.railSize.next()) } },
