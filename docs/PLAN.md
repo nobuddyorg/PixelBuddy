@@ -58,7 +58,7 @@ Shared build configuration lives in `build-logic` as convention plugins:
 ## Permissions
 
 `INTERNET` (weather only), `ACCESS_COARSE_LOCATION` (only if chosen for weather), `REQUEST_DELETE_PACKAGES`,
-`SET_WALLPAPER`, `EXPAND_STATUS_BAR`. No services, no background work.
+`SET_WALLPAPER`, `SET_WALLPAPER_HINTS`, `EXPAND_STATUS_BAR`. No services, no background work.
 
 ## Quality
 

@@ -39,6 +39,7 @@ those requests: <https://open-meteo.com/en/terms>.
 | `ACCESS_COARSE_LOCATION` | Only if you choose approximate location for weather; asked when you choose it |
 | `REQUEST_DELETE_PACKAGES` | Lets you start an uninstall from the long-press menu (Android asks you to confirm) |
 | `SET_WALLPAPER` | Lets you set the launcher gradient as wallpaper |
+| `SET_WALLPAPER_HINTS` | Tells Android the wallpaper is exactly the screen's size, so it isn't scaled and blurred |
 | `EXPAND_STATUS_BAR` | Swipe down on home opens the notification shade |
 | `READ_CALENDAR` | Only if you turn on the next calendar event; asked when you turn it on |
 

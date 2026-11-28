@@ -644,7 +644,7 @@ class SettingsScreenTest {
         val wallpapers = shadowOf(WallpaperManager.getInstance(app))
         val lock = assertNotNull(wallpapers.getBitmap(WallpaperManager.FLAG_LOCK))
         assertNotNull(wallpapers.getBitmap(WallpaperManager.FLAG_SYSTEM))
-        // The exact screen size.
+        // The exact screen size. (Robolectric ignores the size hint to Android, so that is checked on the phone.)
         val screen = app.resources.displayMetrics
         assertEquals(screen.widthPixels to screen.heightPixels, lock.width to lock.height)
     }

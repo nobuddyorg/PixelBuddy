@@ -3,6 +3,7 @@ package io.github.nobuddyorg.pixelbuddy.feature.settings
 import android.app.WallpaperManager
 import android.content.Context
 import android.graphics.Point
+import android.graphics.Rect
 import android.os.Build
 import android.view.WindowManager
 import androidx.compose.ui.unit.IntSize
@@ -48,7 +49,16 @@ internal object SkyWallpaper {
                 scanlines = style.scanlines,
             )
         return try {
-            if (manager.setBitmap(bitmap, null, true, target.flags) !=
+            // Only the home app tells Android the wallpaper size it wants. Without it Android keeps a wider size
+            // (for scrolling home screens) and scales the sky up with smoothing, which blurs the dithering. PixelBuddy
+            // doesn't scroll: the screen size, and the whole image visible.
+            try {
+                manager.suggestDesiredDimensions(size.width, size.height)
+            } catch (_: SecurityException) {
+                // Not the home app or no hint permission: the wallpaper is still set, maybe scaled.
+            }
+            val wholeImage = Rect(0, 0, size.width, size.height)
+            if (manager.setBitmap(bitmap, wholeImage, true, target.flags) !=
                 0
             ) {
                 WallpaperStatus.Done
