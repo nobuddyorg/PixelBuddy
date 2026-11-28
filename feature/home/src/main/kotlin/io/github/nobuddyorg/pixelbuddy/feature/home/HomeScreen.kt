@@ -120,6 +120,8 @@ fun HomeScreen(
     /** The widget in the slot with the favorites (#26), if there is one. */
     widget: (@Composable () -> Unit)? = null,
     widgetBelow: Boolean = false,
+    /** Searches the web for a query typed in the search; null leaves that out. */
+    onWebSearch: ((String) -> Unit)? = null,
 ) {
     val title = stringResource(R.string.home_screen_title)
     val openSettingsLabel = stringResource(R.string.home_open_settings)
@@ -263,6 +265,13 @@ fun HomeScreen(
                         },
                         entry = entry,
                         modifier = Modifier.safeDrawingPadding(),
+                        onWebSearch =
+                            onWebSearch?.let { search ->
+                                { query ->
+                                    search(query)
+                                    view = Rail.FAVORITES
+                                }
+                            },
                     )
                 }
             }

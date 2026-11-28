@@ -244,6 +244,11 @@ data class Gestures(
     val longPress: GestureAction = GestureAction.Settings,
     /** Double tap on empty space (#16); off by default, so a single tap isn't delayed. */
     val doubleTap: GestureAction = GestureAction.Nothing,
+    /**
+     * The search offers searching the web for what was typed. Nothing leaves the phone until that line is tapped,
+     * and then the text goes to the phone's web search app, not from PixelBuddy.
+     */
+    val webSearch: Boolean = true,
 ) {
     /** Whether a gesture locks the screen, which needs the lock service. */
     val usesLock: Boolean

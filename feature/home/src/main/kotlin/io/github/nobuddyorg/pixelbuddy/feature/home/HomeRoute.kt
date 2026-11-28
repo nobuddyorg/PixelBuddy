@@ -1,9 +1,11 @@
 package io.github.nobuddyorg.pixelbuddy.feature.home
 
+import android.app.SearchManager
 import android.content.ActivityNotFoundException
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.provider.AlarmClock
 import android.provider.CalendarContract
 import android.widget.Toast
@@ -26,6 +28,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -208,6 +211,7 @@ fun HomeRoute(
         modifier = modifier,
         resetKey = resetKey,
         gestures = gestures,
+        onWebSearch = if (gestures.webSearch) context::searchWeb else null,
         onOpenNotifications = context::expandNotificationShade,
         onLock = {
             if (screenLock?.lock() != true) {
@@ -366,6 +370,17 @@ internal fun Context.openCalendar() {
     startFirstAvailable(
         Intent(Intent.ACTION_VIEW, today.build()),
         Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR),
+    )
+}
+
+/**
+ * Hands [query] to the phone's web search app (ACTION_WEB_SEARCH: a URL opens the site, other text is searched), or
+ * else to the browser.
+ */
+internal fun Context.searchWeb(query: String) {
+    startFirstAvailable(
+        Intent(Intent.ACTION_WEB_SEARCH).putExtra(SearchManager.QUERY, query),
+        Intent(Intent.ACTION_VIEW, ("https://www.google.com/search?q=" + Uri.encode(query)).toUri()),
     )
 }
 

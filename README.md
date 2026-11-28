@@ -78,7 +78,7 @@ Apps → Choose default apps → Home app.
 | Tap an app | Opens it, growing out of its icon |
 | Long-press an app | The app's shortcuts (e.g. "New message"), favorite, move, edit icon, hide, app info, uninstall |
 | Tap or drag the alphabet rail | All apps, at that letter (◄ Back returns) |
-| Swipe up / ▲ Search | Search (opens when you let go); Enter opens the top match |
+| Swipe up / ▲ Search | Search (opens when you let go); Enter opens the top match, or searches the web when no app matches |
 | Swipe down | Notifications |
 | Long-press empty space | Settings |
 | Double-tap empty space | Nothing, or e.g. lock the screen (opt-in) |
@@ -88,7 +88,7 @@ Apps → Choose default apps → Home app.
 | A widget with the favorites | Any app's widget, above or below them (Settings → Widget) |
 | Tap the clock / the date / the weather | Alarms / calendar / refresh (or an app you choose) |
 
-The swipes, the double tap and the long press can be changed in Settings → Gestures. Locking the screen needs
+The swipes, the double tap, the long press and the web search line can be changed in Settings → Gestures. Locking the screen needs
 PixelBuddy's lock service, an accessibility service that does nothing else (see [PRIVACY.md](PRIVACY.md)). Settings → Back up & move exports everything
 to one file for a new phone.
 

@@ -39,6 +39,7 @@
     <string name="home_back">Zurück</string>
     <string name="home_search_hint">Apps suchen</string>
     <string name="home_search_empty">Keine Apps gefunden</string>
+    <string name="home_search_web">Im Web nach „%1$s“ suchen</string>
     <string name="home_favorites_hint">Halte eine App gedrückt, um sie zu den Favoriten hinzuzufügen.</string>
     <string name="home_app_options">App-Optionen</string>
     <string name="home_menu_add_favorite">Zu Favoriten hinzufügen</string>

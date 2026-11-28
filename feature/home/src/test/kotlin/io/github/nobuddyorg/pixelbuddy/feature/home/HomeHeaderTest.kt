@@ -1,6 +1,8 @@
 package io.github.nobuddyorg.pixelbuddy.feature.home
 
 import android.app.Application
+import android.app.SearchManager
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.ContextWrapper
 import android.content.Intent
@@ -93,6 +95,26 @@ class HomeHeaderTest {
         val calendar = shadowOf(app).nextStartedActivity
         assertEquals(Intent.ACTION_VIEW, calendar.action)
         assertEquals("content://com.android.calendar/time", calendar.data.toString().substringBeforeLast('/'))
+    }
+
+    @Test
+    fun `web search goes to the search app, or else to the browser`() {
+        app.searchWeb("pixel art")
+        val search = shadowOf(app).nextStartedActivity
+        assertEquals(Intent.ACTION_WEB_SEARCH, search.action)
+        assertEquals("pixel art", search.getStringExtra(SearchManager.QUERY))
+
+        val noSearchApp =
+            object : ContextWrapper(app) {
+                override fun startActivity(intent: Intent) {
+                    if (intent.action == Intent.ACTION_WEB_SEARCH) throw ActivityNotFoundException()
+                    super.startActivity(intent)
+                }
+            }
+        noSearchApp.searchWeb("pixel & art")
+        val browser = shadowOf(app).nextStartedActivity
+        assertEquals(Intent.ACTION_VIEW, browser.action)
+        assertEquals("https://www.google.com/search?q=pixel%20%26%20art", browser.dataString)
     }
 
     @Test

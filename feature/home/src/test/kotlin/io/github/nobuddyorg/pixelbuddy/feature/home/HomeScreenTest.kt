@@ -168,6 +168,7 @@ class HomeScreenTest {
         onNotification: (NotificationAction) -> Unit = {},
         widget: (@Composable () -> Unit)? = null,
         widgetBelow: Boolean = false,
+        onWebSearch: ((String) -> Unit)? = null,
     ) = compose.setContent {
         HomeScreen(
             home = HomeApps(favorites, apps),
@@ -194,6 +195,7 @@ class HomeScreenTest {
             onNotification = onNotification,
             widget = widget,
             widgetBelow = widgetBelow,
+            onWebSearch = onWebSearch,
         )
     }
 
@@ -606,6 +608,42 @@ class HomeScreenTest {
         searchField().performImeAction()
 
         assertEquals(emptyList(), launched)
+    }
+
+    @Test
+    fun `the search offers the web below the results, and Enter without a matching app uses it`() {
+        val searched = mutableListOf<String>()
+        val launched = mutableListOf<String>()
+        show(onAppClick = { launched += it.label }, onWebSearch = { searched += it })
+        openSearch()
+        // Without a query there is nothing to search for.
+        compose.onNodeWithText("Search the web", substring = true).assertDoesNotExist()
+
+        searchField().performTextInput("sp")
+        compose.onNodeWithText("► Search the web for “sp”").assertExists()
+        // Enter still opens the matching app.
+        searchField().performImeAction()
+        assertEquals(listOf("Spotify"), launched)
+
+        openSearch()
+        searchField().performTextInput("pixel art ")
+        compose.onNodeWithText("No apps found").assertIsDisplayed()
+        searchField().performImeAction()
+        assertEquals(listOf("pixel art"), searched)
+        searchField().assertDoesNotExist()
+
+        openSearch()
+        searchField().performTextInput("weather")
+        compose.onNodeWithText("► Search the web for “weather”").performClick()
+        assertEquals(listOf("pixel art", "weather"), searched)
+        assertEquals(listOf("Spotify"), launched)
+    }
+
+    @Test
+    fun `without web search the search offers only apps`() {
+        showSearch()
+        searchField().performTextInput("xyz")
+        compose.onNodeWithText("Search the web", substring = true).assertDoesNotExist()
     }
 
     @Test

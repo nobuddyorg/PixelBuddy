@@ -397,6 +397,14 @@ internal fun GesturesPage(
             )
         }
     }
+    ToggleRow(
+        title = stringResource(R.string.web_search),
+        subtitle = stringResource(R.string.web_search_summary),
+        checked = gestures.webSearch,
+        onChange = { on -> update.gestures { it.copy(webSearch = on) } },
+        on = stringResource(R.string.toggle_on),
+        off = stringResource(R.string.toggle_off),
+    )
     if (gestures.usesLock && lockServiceOn != null) {
         LockServiceInfo(on = lockServiceOn, onTurnOn = { onAction(SettingsAction.TurnOnLockService) })
     }

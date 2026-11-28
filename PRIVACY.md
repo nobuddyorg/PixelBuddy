@@ -31,6 +31,10 @@ When weather is on, PixelBuddy talks only to [Open-Meteo](https://open-meteo.com
 Nothing else is sent: no device identifiers, no app list, no account. Open-Meteo's own privacy policy applies to
 those requests: <https://open-meteo.com/en/terms>.
 
+**Web search** in the search (Settings → Gestures, on by default) makes no request either: only when you tap
+"Search the web for …" (or press Enter with no matching app) is the text you typed handed to your phone's web
+search app, or else your browser. That app's own privacy policy applies.
+
 ## Permissions
 
 | Permission | Why |

@@ -2,6 +2,7 @@ package io.github.nobuddyorg.pixelbuddy.feature.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,12 +29,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppListEntry
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
@@ -52,7 +55,8 @@ internal typealias SearchEntry = @Composable (
 
 /**
  * Search: a field that takes the keyboard focus right away and the results below it, ranked by [AppSearch].
- * Without a query every app is listed under its section. Enter (Go) launches the top result.
+ * Without a query every app is listed under its section. Enter (Go) launches the top result; with no matching app
+ * it searches the web, if [onWebSearch] is given, which also adds a line for that below the results.
  */
 @Composable
 internal fun SearchPanel(
@@ -60,6 +64,7 @@ internal fun SearchPanel(
     onLaunch: (LauncherApp) -> Unit,
     entry: SearchEntry,
     modifier: Modifier = Modifier,
+    onWebSearch: ((String) -> Unit)? = null,
 ) {
     val state = rememberTextFieldState()
     val query = state.text.toString()
@@ -88,7 +93,13 @@ internal fun SearchPanel(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Go,
                 ),
-            onKeyboardAction = { results?.firstOrNull()?.let { onLaunch(it.item.app) } },
+            onKeyboardAction = {
+                val top = results?.firstOrNull()
+                when {
+                    top != null -> onLaunch(top.item.app)
+                    results != null && onWebSearch != null -> onWebSearch(query.trim())
+                }
+            },
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -149,7 +160,34 @@ internal fun SearchPanel(
                     }
                 }
             }
+            if (results != null && onWebSearch != null) {
+                item(key = "web") { WebSearchRow(query.trim()) { onWebSearch(query.trim()) } }
+            }
         }
+    }
+}
+
+/** "► Search the web for "x"": hands the query to the phone's web search. */
+@Composable
+private fun WebSearchRow(
+    query: String,
+    onClick: () -> Unit,
+) {
+    Box(
+        contentAlignment = Alignment.CenterStart,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clickable(role = Role.Button, onClick = onClick)
+                .padding(horizontal = 8.dp),
+    ) {
+        BasicText(
+            "► " + stringResource(R.string.home_search_web, query),
+            style = PixelText.small.copy(color = PixelBuddyTheme.style.accent),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

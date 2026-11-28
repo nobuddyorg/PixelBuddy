@@ -149,6 +149,8 @@
     <string name="notification_access_allow">Allow notification access</string>
     <string name="notification_access_restricted">If Android says the setting is restricted: Settings → Apps → PixelBuddy → ⋮ → Allow restricted settings, then try again.</string>
     <string name="gesture_double_tap">Double tap on empty space</string>
+    <string name="web_search">Web search</string>
+    <string name="web_search_summary">The search offers searching the web for what you typed. It goes to your web search app only when you tap that.</string>
     <string name="lock_service_title">Lock service</string>
     <string name="lock_service_on">On: the gesture locks the screen.</string>
     <string name="lock_service_off">Off: turn it on so the gesture can lock the screen.</string>

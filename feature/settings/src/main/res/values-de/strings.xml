@@ -149,6 +149,8 @@
     <string name="notification_access_allow">Benachrichtigungszugriff erlauben</string>
     <string name="notification_access_restricted">Meldet Android eine eingeschränkte Einstellung: Einstellungen → Apps → PixelBuddy → ⋮ → Eingeschränkte Einstellungen zulassen, dann erneut versuchen.</string>
     <string name="gesture_double_tap">Doppelt auf freie Fläche tippen</string>
+    <string name="web_search">Websuche</string>
+    <string name="web_search_summary">Die Suche bietet an, im Web nach dem Getippten zu suchen. Es geht erst an deine Such-App, wenn du darauf tippst.</string>
     <string name="lock_service_title">Sperrdienst</string>
     <string name="lock_service_on">An: die Geste sperrt den Bildschirm.</string>
     <string name="lock_service_off">Aus: einschalten, damit die Geste den Bildschirm sperren kann.</string>

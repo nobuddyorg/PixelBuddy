@@ -364,6 +364,17 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun `web search in the search can be switched off`() {
+        showRoute()
+        open("Gestures")
+        assertTrue(settings.value.gestures.webSearch)
+
+        compose.onNodeWithText("Web search").performScrollTo().performClick()
+
+        assertFalse(settings.value.gestures.webSearch)
+    }
+
+    @Test
     fun `with locking available the gestures can lock, and the page explains the lock service`() {
         val lock = FakeScreenLock(on = false)
         showRoute(lock)
