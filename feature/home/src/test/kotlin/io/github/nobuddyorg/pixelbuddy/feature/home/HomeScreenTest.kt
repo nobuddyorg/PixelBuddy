@@ -1305,6 +1305,40 @@ class HomeScreenTest {
     }
 
     @Test
+    fun `the finger can move left of the rail, which bends towards it and keeps selecting`() {
+        show(favorites = favorites)
+
+        compose.onNodeWithContentDescription("Alphabet").performTouchInput {
+            down(Offset(centerX, railY("F")))
+            // Far left of the rail, at M's height.
+            moveTo(Offset(centerX - 200f, railY("M")))
+        }
+        compose.onRoot().captureRoboImage("HomeScreen_rail_bent.png")
+        compose.onNodeWithContentDescription("Alphabet").performTouchInput { up() }
+
+        compose.onNodeWithText("M").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Maps").assertIsDisplayed()
+    }
+
+    @Test
+    fun `screenshot rail only while touched`() {
+        compose.setContent {
+            HomeScreen(
+                home = HomeApps(favorites, sampleApps),
+                onAppClick = { _, _ -> },
+                onAppAction = {},
+                onOpenSettings = {},
+                icon = { app -> AppIcon(app, icons, IconPreset.Default.style) },
+                railOnlyWhileTouched = true,
+            )
+        }
+        compose.onRoot().captureRoboImage("HomeScreen_rail_hidden.png")
+        // Still there for touch: it opens the letter.
+        tapRail("S")
+        compose.onNodeWithText("Signal").assertIsDisplayed()
+    }
+
+    @Test
     fun `screenshot with the user's appearance`() {
         val style =
             PixelBuddyStyle(

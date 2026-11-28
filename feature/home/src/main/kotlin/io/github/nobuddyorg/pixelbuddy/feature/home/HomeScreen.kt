@@ -14,11 +14,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.systemGestures
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -47,6 +51,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -128,6 +133,8 @@ fun HomeScreen(
     railLetterSp: Float = DEFAULT_LETTER_SP,
     /** Names next to the favorites; without them only the icons show. */
     favoriteLabels: Boolean = true,
+    /** The alphabet rail's letters show only while it is touched. */
+    railOnlyWhileTouched: Boolean = false,
 ) {
     val title = stringResource(R.string.home_screen_title)
     val openSettingsLabel = stringResource(R.string.home_open_settings)
@@ -145,6 +152,10 @@ fun HomeScreen(
     val armed by remember { derivedStateOf { pull.value >= threshold } }
     val edge = PixelBuddyTheme.style.accent.copy(alpha = EDGE_ALPHA)
     val searching = view == SEARCH
+    // With gesture navigation, a swipe in from the right edge goes back: the rail stays out of that strip, so a
+    // finger on it can move left freely (#69).
+    val gestureEdge =
+        WindowInsets.systemGestures.asPaddingValues().calculateEndPadding(LocalLayoutDirection.current)
     // Once the search opens, the blocks finish rising from where the pull left them.
     val reveal = remember { Animatable(0f) }
     LaunchedEffect(searching) {
@@ -296,7 +307,7 @@ fun HomeScreen(
                     Modifier.fillMaxWidth().padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 16.dp),
                 ) { header() }
                 Box(Modifier.weight(1f).fillMaxWidth()) {
-                    Column(Modifier.fillMaxSize().padding(end = 40.dp)) {
+                    Column(Modifier.fillMaxSize().padding(end = 40.dp + gestureEdge)) {
                         if (view == ALL_APPS) {
                             AllApps(
                                 home = home,
@@ -340,8 +351,12 @@ fun HomeScreen(
                         entries = railEntries,
                         selected = if (view == ALL_APPS) visibleSection else view,
                         onSelect = showSection,
-                        modifier = Modifier.align(Alignment.CenterEnd).padding(top = 8.dp, bottom = 8.dp, end = 4.dp),
+                        modifier =
+                            Modifier
+                                .align(Alignment.CenterEnd)
+                                .padding(top = 8.dp, bottom = 8.dp, end = 4.dp + gestureEdge),
                         letterSp = railLetterSp,
+                        onlyWhileTouched = railOnlyWhileTouched,
                     )
                 }
             }

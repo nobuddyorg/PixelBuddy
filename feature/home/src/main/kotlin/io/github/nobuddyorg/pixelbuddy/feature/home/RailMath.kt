@@ -1,8 +1,11 @@
 package io.github.nobuddyorg.pixelbuddy.feature.home
 
 import io.github.nobuddyorg.pixelbuddy.core.data.apps.AppSorter
+import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.floor
+import kotlin.math.roundToInt
 
 /** One rail entry: [FAVORITES], `A`–`Z` or [AppSorter.OTHER_SECTION]. */
 internal data class RailEntry(
@@ -59,4 +62,23 @@ internal object Rail {
             abs(distance) < 3f -> 1.25f
             else -> 1f
         }
+
+    /** How many cells above and below the finger the rail bends. */
+    const val BEND_CELLS = 6f
+
+    /**
+     * How far (px, to the left) an entry [distance] cells from the finger moves while the finger is [pull] px left
+     * of the rail: the whole [pull] at the finger, less further away, nothing from [BEND_CELLS] on (a smooth
+     * curve), in whole [step]s like pixels.
+     */
+    fun bend(
+        distance: Float,
+        pull: Float,
+        step: Float,
+    ): Float {
+        if (pull <= 0f || abs(distance) >= BEND_CELLS) return 0f
+        val curve = (1f + cos(PI.toFloat() * distance / BEND_CELLS)) / 2f
+        val px = pull * curve
+        return if (step > 0f) (px / step).roundToInt() * step else px
+    }
 }

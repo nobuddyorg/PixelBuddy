@@ -299,6 +299,8 @@ class SettingsScreenTest {
         assertEquals(SizeStep.Large, settings.value.appearance.infoSize)
         compose.onNodeWithText("Names of favorites").performScrollTo().performClick()
         assertFalse(settings.value.appearance.favoriteLabels)
+        compose.onNodeWithText("Alphabet only while touched").performScrollTo().performClick()
+        assertTrue(settings.value.appearance.railOnlyWhileTouched)
     }
 
     // Favorites and hidden apps

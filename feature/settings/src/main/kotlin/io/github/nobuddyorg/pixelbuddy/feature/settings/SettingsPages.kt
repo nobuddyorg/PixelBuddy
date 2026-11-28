@@ -269,6 +269,14 @@ internal fun ClockPage(
         subtitle = stringResource(appearance.railSize.label),
         onClick = { update.appearance { it.copy(railSize = it.railSize.next()) } },
     )
+    ToggleRow(
+        title = stringResource(R.string.rail_only_while_touched),
+        subtitle = stringResource(R.string.rail_only_while_touched_summary),
+        checked = appearance.railOnlyWhileTouched,
+        onChange = { on -> update.appearance { it.copy(railOnlyWhileTouched = on) } },
+        on = stringResource(R.string.toggle_on),
+        off = stringResource(R.string.toggle_off),
+    )
 }
 
 /** Every app, those with their own icon first; a tap opens the editor for that app. */

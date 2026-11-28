@@ -87,6 +87,8 @@
     <string name="size_medium">Medium</string>
     <string name="size_large">Large</string>
     <string name="rail_size">Alphabet letters on the side</string>
+    <string name="rail_only_while_touched">Alphabet only while touched</string>
+    <string name="rail_only_while_touched_summary">The letters stay hidden until you touch the right edge of home</string>
     <string name="info_size">Text size under the clock</string>
     <string name="favorite_labels">Names of favorites</string>
     <string name="favorite_labels_summary">Off: only their icons show on home</string>

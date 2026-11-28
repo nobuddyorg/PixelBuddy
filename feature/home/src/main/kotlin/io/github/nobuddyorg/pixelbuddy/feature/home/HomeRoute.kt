@@ -219,6 +219,7 @@ fun HomeRoute(
         onWebSearch = if (gestures.webSearch) context::searchWeb else null,
         railLetterSp = appearance.railSize.sp,
         favoriteLabels = appearance.favoriteLabels,
+        railOnlyWhileTouched = appearance.railOnlyWhileTouched,
         onOpenNotifications = context::expandNotificationShade,
         onLock = {
             if (screenLock?.lock() != true) {

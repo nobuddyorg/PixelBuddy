@@ -105,6 +105,8 @@ data class Appearance(
     val favoriteLabels: Boolean = true,
     /** Size of the letters on the alphabet rail, apart from the text size. */
     val railSize: RailSize = RailSize.Medium,
+    /** The alphabet rail's letters show only while it is touched. */
+    val railOnlyWhileTouched: Boolean = false,
     val accent: Accent = Accent.Orange,
     /** Faint CRT scanlines over the sky. */
     val scanlines: Boolean = false,

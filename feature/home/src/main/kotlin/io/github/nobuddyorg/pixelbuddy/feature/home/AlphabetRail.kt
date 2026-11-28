@@ -64,6 +64,8 @@ internal fun AlphabetRail(
     modifier: Modifier = Modifier,
     /** Letter size in sp: a setting of its own, not scaled with the text. */
     letterSp: Float = DEFAULT_LETTER_SP,
+    /** The letters show only while the rail is touched; the rail still answers touches where it is. */
+    onlyWhileTouched: Boolean = false,
 ) {
     val haptics = LocalHapticFeedback.current
     val reducedMotion = rememberReducedMotion()
@@ -71,6 +73,8 @@ internal fun AlphabetRail(
     val select by rememberUpdatedState(onSelect)
     var height by remember { mutableIntStateOf(0) }
     val fingerY = remember { mutableFloatStateOf(0f) }
+    // The finger's x on the rail: negative left of it, where the letters bend towards it.
+    val fingerX = remember { mutableFloatStateOf(0f) }
     var dragging by remember { mutableStateOf(false) }
     var dragKey by remember { mutableStateOf<String?>(null) }
 
@@ -103,8 +107,10 @@ internal fun AlphabetRail(
                         stateDescription = selectedLabel
                         customActions = actions
                     }.pointerInput(Unit) {
-                        fun update(y: Float) {
+                        fun update(position: Offset) {
+                            val y = position.y
                             fingerY.floatValue = y
+                            fingerX.floatValue = position.x
                             val list = currentEntries
                             val index =
                                 Rail.nearestActive(Rail.indexAt(y, size.height.toFloat(), list.size), list)
@@ -121,13 +127,13 @@ internal fun AlphabetRail(
                             down.consume()
                             dragging = true
                             dragKey = null
-                            update(down.position.y)
+                            update(down.position)
                             do {
                                 val event = awaitPointerEvent()
                                 val change = event.changes.firstOrNull { it.id == down.id } ?: break
                                 if (!change.pressed) break
                                 change.consume()
-                                update(change.position.y)
+                                update(change.position)
                             } while (true)
                             dragging = false
                         }
@@ -147,13 +153,18 @@ internal fun AlphabetRail(
                             .fillMaxWidth()
                             .weight(1f)
                             .graphicsLayer {
+                                alpha = if (onlyWhileTouched && !dragging) 0f else 1f
+                                if (!dragging || reducedMotion) return@graphicsLayer
                                 val cell = if (entries.isEmpty()) 1f else height.toFloat() / entries.size
                                 val distance = (fingerY.floatValue / cell) - (index + 0.5f)
-                                val scale = if (dragging) Rail.waveScale(distance, reducedMotion) else 1f
+                                val scale = Rail.waveScale(distance)
                                 scaleX = scale
                                 scaleY = scale
                                 transformOrigin = TransformOrigin(1f, 0.5f)
-                                translationX = -(scale - 1f) * WaveShift.toPx()
+                                // A little bend always; more, up to MaxBend, as the finger moves left of the rail.
+                                val pull = (BaseBend.toPx() - fingerX.floatValue).coerceIn(0f, MaxBend.toPx())
+                                translationX =
+                                    -(scale - 1f) * WaveShift.toPx() - Rail.bend(distance, pull, BendStep.toPx())
                             },
                 ) {
                     // Letters without apps are faded; without their drop shadow, which stays dark and made them look
@@ -165,16 +176,17 @@ internal fun AlphabetRail(
         }
         if (dragging) {
             val key = dragKey
-            if (key != null) SpeechBubble(key, fingerY = { fingerY.floatValue })
+            if (key != null) SpeechBubble(key, fingerY = { fingerY.floatValue }, fingerX = { fingerX.floatValue })
         }
     }
 }
 
-/** A pixel speech bubble left of the rail at the finger's height, pointing at the rail. */
+/** A pixel speech bubble left of the rail (and of the finger) at the finger's height, pointing at the rail. */
 @Composable
 private fun SpeechBubble(
     key: String,
     fingerY: () -> Float,
+    fingerX: () -> Float,
 ) {
     val density = LocalDensity.current
     val side = with(density) { BubbleSize.roundToPx() }
@@ -185,8 +197,10 @@ private fun SpeechBubble(
             Modifier
                 // Wider than the rail: lay out at full size from the rail's top left corner, then move left.
                 .wrapContentSize(Alignment.TopStart, unbounded = true)
-                .offset { IntOffset(-side - gap, (fingerY() - side / 2f).roundToInt()) }
-                .size(BubbleSize)
+                .offset {
+                    val x = minOf(-side - gap, (fingerX() - side - gap).roundToInt())
+                    IntOffset(x, (fingerY() - side / 2f).roundToInt())
+                }.size(BubbleSize)
                 .drawBehind {
                     val step = 4.dp.toPx()
                     drawRect(PixelBuddyColors.Shadow, topLeft = Offset(step, step), size = size)
@@ -215,3 +229,8 @@ private val RailWidth = 40.dp
 private val WaveShift = 16.dp
 private val BubbleSize = 64.dp
 private val BubbleGap = 20.dp
+
+/** The bend at the finger while it is on the rail, and at most as it moves left of it. */
+private val BaseBend = 12.dp
+private val MaxBend = 72.dp
+private val BendStep = 2.dp
