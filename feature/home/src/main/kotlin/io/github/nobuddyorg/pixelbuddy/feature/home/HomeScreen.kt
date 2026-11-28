@@ -472,7 +472,8 @@ private fun Modifier.verticalSwipes(swipes: () -> VerticalSwipes): Modifier =
 
 /**
  * Dragging past the end of the list (up) or its top (down) is a swipe: it follows the finger and acts on release,
- * as does a fling there.
+ * as does a fling there. Only a gesture that starts at the end counts: one that scrolled the list never opens
+ * anything, so scrolling down a long list of favorites doesn't open the search on the way (#69).
  */
 @Composable
 private fun rememberOverscrollSwipes(swipes: () -> VerticalSwipes): NestedScrollConnection {
@@ -484,12 +485,21 @@ private fun rememberOverscrollSwipes(swipes: () -> VerticalSwipes): NestedScroll
             // held finger trembles in both directions; resetting on every turn made the pull snap back.
             private var pulled = 0f
 
+            // Whether this gesture scrolled the list: then it is a scroll, not a swipe.
+            private var scrolled = false
+
             override fun onPostScroll(
                 consumed: Offset,
                 available: Offset,
                 source: NestedScrollSource,
             ): Offset {
-                if (source != NestedScrollSource.UserInput || available.y == 0f) return Offset.Zero
+                if (source != NestedScrollSource.UserInput) return Offset.Zero
+                if (consumed.y != 0f && !scrolled) {
+                    scrolled = true
+                    if (pulled != 0f) current().onRelease()
+                    pulled = 0f
+                }
+                if (scrolled || available.y == 0f) return Offset.Zero
                 pulled += available.y
                 current().onPull(-pulled)
                 return Offset.Zero
@@ -498,11 +508,13 @@ private fun rememberOverscrollSwipes(swipes: () -> VerticalSwipes): NestedScroll
             // Called when the finger lifts, before any fling.
             override suspend fun onPreFling(available: Velocity): Velocity {
                 when {
+                    scrolled -> Unit
                     pulled < -threshold || (pulled < 0f && available.y < -SWIPE_VELOCITY) -> current().onUp()
                     pulled > threshold || (pulled > 0f && available.y > SWIPE_VELOCITY) -> current().onDown()
                     else -> current().onRelease()
                 }
                 pulled = 0f
+                scrolled = false
                 return Velocity.Zero
             }
         }

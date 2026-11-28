@@ -827,6 +827,29 @@ class HomeScreenTest {
     }
 
     @Test
+    fun `scrolling down a long list of favorites doesn't open the search on the way`() {
+        val many = (0 until 40).map { app("App " + ('A' + it / 26) + ('A' + it % 26)) }
+        show(apps = many.map { AppListEntry(it, "A") }, favorites = many)
+
+        // One long swipe up: it scrolls to the end of the list and keeps going, and flicks off.
+        compose.onRoot().performTouchInput {
+            down(Offset(centerX, height * 0.9f))
+            repeat(80) { moveBy(Offset(0f, -60f)) }
+            up()
+        }
+        compose.onNodeWithContentDescription(many.last().label).assertIsDisplayed()
+        searchField().assertDoesNotExist()
+
+        // A new swipe that starts at the end opens it.
+        compose.onRoot().performTouchInput {
+            down(Offset(centerX, height * 0.6f))
+            repeat(10) { moveBy(Offset(0f, -40f)) }
+            up()
+        }
+        searchField().assertIsFocused()
+    }
+
+    @Test
     fun `a held swipe up survives a trembling finger`() {
         show(favorites = favorites)
 
