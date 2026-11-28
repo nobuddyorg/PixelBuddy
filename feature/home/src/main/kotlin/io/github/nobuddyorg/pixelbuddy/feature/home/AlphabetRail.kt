@@ -136,7 +136,7 @@ internal fun AlphabetRail(
                     when {
                         entry.key == selected -> PixelBuddyTheme.style.accent
                         entry.active -> PixelBuddyColors.Text
-                        else -> PixelBuddyColors.Text.copy(alpha = 0.3f)
+                        else -> PixelBuddyColors.Text.copy(alpha = 0.4f)
                     }
                 Box(
                     contentAlignment = Alignment.Center,
@@ -154,7 +154,10 @@ internal fun AlphabetRail(
                                 translationX = -(scale - 1f) * WaveShift.toPx()
                             },
                 ) {
-                    BasicText(entry.key, style = PixelText.style(12f, color).copy(textAlign = TextAlign.Center))
+                    // Letters without apps are faded; without their drop shadow, which stays dark and made them look
+                    // like dark smudges instead of faded letters.
+                    val style = PixelText.style(12f, color).copy(textAlign = TextAlign.Center)
+                    BasicText(entry.key, style = if (entry.active) style else style.copy(shadow = null))
                 }
             }
         }
