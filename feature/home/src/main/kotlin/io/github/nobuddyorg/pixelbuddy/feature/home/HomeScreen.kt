@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
@@ -136,6 +137,22 @@ fun HomeScreen(
     // Pulled far enough: letting go opens the search.
     val armed by remember { derivedStateOf { pull.value >= threshold } }
     val edge = PixelBuddyTheme.style.accent.copy(alpha = EDGE_ALPHA)
+    val searching = view == SEARCH
+    // Once the search opens, the blocks finish rising from where the pull left them.
+    val reveal = remember { Animatable(0f) }
+    LaunchedEffect(searching) {
+        if (searching) {
+            reveal.snapTo(if (reducedMotion) 1f else pullProgress(pull.value, threshold))
+            pull.snapTo(0f)
+            reveal.animateTo(1f, tween(((1f - reveal.value) * REVEAL_MILLIS).toInt(), easing = LinearEasing))
+        } else {
+            reveal.snapTo(0f)
+        }
+    }
+    // How far the search covers home, 0 to 1. The larger of both, so the hand-over from the pull doesn't flicker.
+    val cover = { maxOf(pullProgress(pull.value, threshold), if (searching) reveal.value else 0f) }
+    // Home stays until it has faded out under the search.
+    val homeShown by remember(searching) { derivedStateOf { !searching || reveal.value < 1f } }
     // The row whose menu is open; an app can have two rows (favorite and in the list).
     var menuRow by rememberSaveable(resetKey) { mutableStateOf<String?>(null) }
     // The row whose notification preview is open.
@@ -248,101 +265,100 @@ fun HomeScreen(
                 },
     ) {
         DitheredSky(Modifier.fillMaxSize())
-        if (view == SEARCH) {
-            // Only the search is on screen then, for TalkBack too. Once per opening the blocks finish rising from
-            // where the pull left them, then the panel glides in.
-            val reveal = remember { Animatable(if (reducedMotion) 1f else pullProgress(pull.value, threshold)) }
-            LaunchedEffect(Unit) {
-                pull.snapTo(0f)
-                reveal.animateTo(1f, tween(((1f - reveal.value) * REVEAL_MILLIS).toInt(), easing = LinearEasing))
-            }
-            Box(Modifier.fillMaxSize().pixelDissolve({ reveal.value }, SearchScrim, edge)) {
-                SearchPanel(
-                    apps = home.apps,
-                    onLaunch = { app ->
-                        // Enter in the search: no icon was tapped.
-                        onAppClick(app, null)
-                        view = Rail.FAVORITES
-                    },
-                    entry = entry,
-                    modifier =
-                        Modifier.safeDrawingPadding().graphicsLayer {
-                            val shown = ((reveal.value - PANEL_FROM) / (1f - PANEL_FROM)).coerceIn(0f, 1f)
-                            alpha = shown
-                            translationY = (1f - shown) * PanelRise.toPx()
-                        },
-                    onWebSearch =
-                        onWebSearch?.let { search ->
-                            { query ->
-                                search(query)
-                                view = Rail.FAVORITES
-                            }
-                        },
-                )
-            }
-            return@Box
-        }
-        // While an upward swipe pulls, the search's backdrop rises behind home in blocks with the distance; read
-        // while drawing only, so a pull doesn't recompose home.
-        Box(Modifier.fillMaxSize().pixelDissolve({ pullProgress(pull.value, threshold) }, SearchScrim, edge))
-        Column(
-            Modifier.fillMaxSize().safeDrawingPadding().graphicsLayer {
-                // Home lifts and fades a little as the search is pulled in.
-                val progress = pullProgress(pull.value, threshold)
-                translationY = -progress * HomeLift.toPx()
-                alpha = 1f - progress * HOME_FADE
-            },
-        ) {
-            // Full width, so the header can sit left, centred or right.
-            Box(Modifier.fillMaxWidth().padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 16.dp)) { header() }
-            Box(Modifier.weight(1f).fillMaxWidth()) {
-                Column(Modifier.fillMaxSize().padding(end = 40.dp)) {
-                    if (view == ALL_APPS) {
-                        AllApps(
-                            home = home,
-                            state = allApps,
-                            entry = { rowId, app -> entry(rowId, app, emptyList(), false) },
-                            modifier = Modifier.weight(1f),
-                        )
-                    } else {
-                        Favorites(
-                            home = home,
-                            swipes = { swipes },
-                            entry = { rowId, app -> entry(rowId, app, emptyList(), false) },
-                            modifier = Modifier.weight(1f),
-                            widget = widget,
-                            widgetBelow = widgetBelow,
-                        )
+        // The search's backdrop rises behind home in blocks and home fades out, following the pull and then the rise.
+        // Read while drawing only, so a pull doesn't recompose home.
+        Box(Modifier.fillMaxSize().pixelDissolve(cover, SearchScrim, edge))
+        if (homeShown) {
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding()
+                    .graphicsLayer {
+                        val covered = cover()
+                        translationY = -covered * HomeLift.toPx()
+                        alpha = (1f - covered / PANEL_FROM).coerceAtLeast(0f)
                     }
-                    if (home.apps.isNotEmpty()) {
-                        Row(Modifier.fillMaxWidth()) {
-                            if (view == ALL_APPS) {
+                    // Fading out under the search: only the search is there for TalkBack.
+                    .then(if (searching) Modifier.clearAndSetSemantics {} else Modifier),
+            ) {
+                // Full width, so the header can sit left, centred or right.
+                Box(
+                    Modifier.fillMaxWidth().padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 16.dp),
+                ) { header() }
+                Box(Modifier.weight(1f).fillMaxWidth()) {
+                    Column(Modifier.fillMaxSize().padding(end = 40.dp)) {
+                        if (view == ALL_APPS) {
+                            AllApps(
+                                home = home,
+                                state = allApps,
+                                entry = { rowId, app -> entry(rowId, app, emptyList(), false) },
+                                modifier = Modifier.weight(1f),
+                            )
+                        } else {
+                            Favorites(
+                                home = home,
+                                swipes = { swipes },
+                                entry = { rowId, app -> entry(rowId, app, emptyList(), false) },
+                                modifier = Modifier.weight(1f),
+                                widget = widget,
+                                widgetBelow = widgetBelow,
+                            )
+                        }
+                        if (home.apps.isNotEmpty()) {
+                            Row(Modifier.fillMaxWidth()) {
+                                if (view == ALL_APPS) {
+                                    BottomButton(
+                                        "◄ " + stringResource(R.string.home_back).uppercase(),
+                                        Modifier.weight(1f),
+                                    ) { view = Rail.FAVORITES }
+                                }
                                 BottomButton(
-                                    "◄ " + stringResource(R.string.home_back).uppercase(),
-                                    Modifier.weight(1f),
-                                ) { view = Rail.FAVORITES }
+                                    "▲ " +
+                                        stringResource(
+                                            if (armed) R.string.home_search_release else R.string.home_search,
+                                        ).uppercase(),
+                                    Modifier.weight(1f).graphicsLayer {
+                                        // The button rises with an upward swipe that pulls the search in.
+                                        translationY = -pull.value / 2
+                                    },
+                                    color = if (armed) PixelBuddyTheme.style.accent else PixelBuddyColors.Text,
+                                ) { view = SEARCH }
                             }
-                            BottomButton(
-                                "▲ " +
-                                    stringResource(
-                                        if (armed) R.string.home_search_release else R.string.home_search,
-                                    ).uppercase(),
-                                Modifier.weight(1f).graphicsLayer {
-                                    // The button rises with an upward swipe that pulls the search in.
-                                    translationY = -pull.value / 2
-                                },
-                                color = if (armed) PixelBuddyTheme.style.accent else PixelBuddyColors.Text,
-                            ) { view = SEARCH }
                         }
                     }
+                    AlphabetRail(
+                        entries = railEntries,
+                        selected = if (view == ALL_APPS) visibleSection else view,
+                        onSelect = showSection,
+                        modifier = Modifier.align(Alignment.CenterEnd).padding(top = 8.dp, bottom = 8.dp, end = 4.dp),
+                    )
                 }
-                AlphabetRail(
-                    entries = railEntries,
-                    selected = if (view == ALL_APPS) visibleSection else view,
-                    onSelect = showSection,
-                    modifier = Modifier.align(Alignment.CenterEnd).padding(top = 8.dp, bottom = 8.dp, end = 4.dp),
-                )
             }
+        }
+        if (searching) {
+            SearchPanel(
+                apps = home.apps,
+                onLaunch = { app ->
+                    // Enter in the search: no icon was tapped.
+                    onAppClick(app, null)
+                    view = Rail.FAVORITES
+                },
+                entry = entry,
+                modifier =
+                    Modifier.safeDrawingPadding().graphicsLayer {
+                        // The panel glides and fades in over the end of the rise.
+                        val shown = ((cover() - PANEL_FROM) / (1f - PANEL_FROM)).coerceIn(0f, 1f)
+                        alpha = shown
+                        translationY = (1f - shown) * PanelRise.toPx()
+                    },
+                onWebSearch =
+                    onWebSearch?.let { search ->
+                        { query ->
+                            search(query)
+                            view = Rail.FAVORITES
+                        }
+                    },
+            )
         }
     }
 }
@@ -546,12 +562,14 @@ private const val PULL_SPAN = 3f
 /** The blocks rise over the whole screen in this long; from a pull, only the rest of the way. */
 private const val REVEAL_MILLIS = 280
 
-/** The panel glides in over the last part of the rise, from [PanelRise] below. */
-private const val PANEL_FROM = 0.6f
+/**
+ * Home has faded out by this much of the rise; the panel then glides and fades in over the rest, from [PanelRise]
+ * below, so the two never show through each other.
+ */
+private const val PANEL_FROM = 0.7f
 private val PanelRise = 24.dp
 private val HomeLift = 24.dp
 private const val EDGE_ALPHA = 0.7f
-private const val HOME_FADE = 0.4f
 private val SearchScrim = PixelBuddyColors.Navy.copy(alpha = 0.82f)
 
 /** An app row with its menu while [menuOpen]; [onMenu] gets the app to open the menu, null to close it. */

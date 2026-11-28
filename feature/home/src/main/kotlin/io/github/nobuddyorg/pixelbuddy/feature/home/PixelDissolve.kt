@@ -50,8 +50,8 @@ internal object PixelDissolve {
 }
 
 /**
- * Draws [PixelDissolve] at [progress] behind the content in [color], each column's top block lit in [edge]. Full rows
- * are one rectangle each, so a frame draws a few hundred rectangles at most.
+ * Draws [PixelDissolve] at [progress] behind the content in [color], each column's top block lit in [edge]; both fade
+ * in as they rise. Full rows are one rectangle each, so a frame draws a few hundred rectangles at most.
  */
 internal fun Modifier.pixelDissolve(
     progress: () -> Float,
@@ -66,23 +66,29 @@ internal fun Modifier.pixelDissolve(
             drawRect(color)
             return@drawBehind
         }
+        val fade = FADE_FROM + (1f - FADE_FROM) * p
+        val fill = color.copy(alpha = color.alpha * fade)
+        val lit = edge.copy(alpha = edge.alpha * fade)
         val side = block.toPx()
         val columns = ceil(size.width / side).toInt()
         val rows = ceil(size.height / side).toInt()
         val solid = PixelDissolve.solidRows(rows, p)
         if (solid > 0) {
             val top = size.height - solid * side
-            drawRect(color, topLeft = Offset(0f, top), size = Size(size.width, size.height - top))
+            drawRect(fill, topLeft = Offset(0f, top), size = Size(size.width, size.height - top))
         }
         val cell = Size(side, side)
         for (row in solid until PixelDissolve.touchedRows(rows, p)) {
             val y = size.height - (row + 1) * side
             for (column in 0 until columns) {
                 if (!PixelDissolve.covers(column, row, rows, p)) continue
-                val lit = !PixelDissolve.covers(column, row + 1, rows, p)
-                drawRect(if (lit) edge else color, topLeft = Offset(column * side, y), size = cell)
+                val top = !PixelDissolve.covers(column, row + 1, rows, p)
+                drawRect(if (top) lit else fill, topLeft = Offset(column * side, y), size = cell)
             }
         }
     }
 
 private val BlockSize = 12.dp
+
+/** The blocks start this opaque and reach full opacity when they cover everything. */
+private const val FADE_FROM = 0.3f

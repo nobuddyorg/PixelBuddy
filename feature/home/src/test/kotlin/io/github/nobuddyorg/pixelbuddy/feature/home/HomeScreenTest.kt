@@ -808,6 +808,22 @@ class HomeScreenTest {
         compose.onRoot().captureRoboImage("HomeScreen_pulling.png")
         compose.onRoot().performTouchInput { up() }
         searchField().assertIsFocused()
+        compose.onNodeWithText("▲ LET GO").assertDoesNotExist()
+    }
+
+    @Test
+    fun `opening the search fades home out while the blocks rise and the search fades in`() {
+        show(favorites = favorites)
+
+        compose.mainClock.autoAdvance = false
+        searchButton().performClick()
+        compose.mainClock.advanceTimeBy(200)
+        compose.onRoot().captureRoboImage("HomeScreen_opening_search.png")
+        compose.mainClock.autoAdvance = true
+
+        searchField().assertIsFocused()
+        // Faded out, home is gone: only the search is there, for TalkBack too.
+        searchButton().assertDoesNotExist()
     }
 
     @Test
