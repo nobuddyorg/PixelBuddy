@@ -293,6 +293,7 @@ class IconRepositoryTest {
 
             assertEquals(IconRepository.iconPx(420), bitmap.width)
             assertEquals(126, IconRepository.iconPx(420))
+            assertEquals(95, IconRepository.iconPx(420, iconDp = 36))
             // transparent inside the strokes' padding
             assertEquals(0, bitmap.getPixel(0, 0))
             repository.icon(app, IconLook(neon), densityDpi = 420)

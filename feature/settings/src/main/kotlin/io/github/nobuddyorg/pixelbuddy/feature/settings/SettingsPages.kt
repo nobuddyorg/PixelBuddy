@@ -38,13 +38,17 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.Accent
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.CalendarSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockPosition
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconSize
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyleSetting
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.NotificationSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SizeStep
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Sky
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.SkySteps
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.WallpaperSync
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WidgetSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.sky.SkyPhase
 import io.github.nobuddyorg.pixelbuddy.core.data.widgets.WidgetProvider
@@ -216,6 +220,21 @@ internal fun ClockPage(
         on = stringResource(R.string.toggle_on),
         off = stringResource(R.string.toggle_off),
     )
+    ChoiceRow(
+        label = stringResource(R.string.clock_position),
+        options = ClockPosition.entries,
+        selected = appearance.clockPosition,
+        text = {
+            stringResource(
+                when (it) {
+                    ClockPosition.Start -> R.string.clock_position_left
+                    ClockPosition.Center -> R.string.clock_position_center
+                    ClockPosition.End -> R.string.clock_position_right
+                },
+            )
+        },
+        onSelect = { position -> update.appearance { it.copy(clockPosition = position) } },
+    )
     ListRow(
         title = stringResource(R.string.clock_size),
         subtitle = stringResource(appearance.clockSize.label),
@@ -225,6 +244,11 @@ internal fun ClockPage(
         title = stringResource(R.string.text_size),
         subtitle = stringResource(appearance.textSize.label) + " · " + stringResource(R.string.text_size_summary),
         onClick = { update.appearance { it.copy(textSize = it.textSize.next()) } },
+    )
+    ListRow(
+        title = stringResource(R.string.icon_size),
+        subtitle = stringResource(appearance.iconSize.label),
+        onClick = { update.appearance { it.copy(iconSize = it.iconSize.next()) } },
     )
 }
 
@@ -373,6 +397,14 @@ internal fun GesturesPage(
             )
         }
     }
+    ToggleRow(
+        title = stringResource(R.string.web_search),
+        subtitle = stringResource(R.string.web_search_summary),
+        checked = gestures.webSearch,
+        onChange = { on -> update.gestures { it.copy(webSearch = on) } },
+        on = stringResource(R.string.toggle_on),
+        off = stringResource(R.string.toggle_off),
+    )
     if (gestures.usesLock && lockServiceOn != null) {
         LockServiceInfo(on = lockServiceOn, onTurnOn = { onAction(SettingsAction.TurnOnLockService) })
     }
@@ -632,7 +664,22 @@ internal fun WallpaperPage(
         off = stringResource(R.string.toggle_off),
     )
     if (appearance.skyFollowsSun) {
-        SkyPhaseStrip(appearance.dithering)
+        SkyPhaseStrip(appearance)
+        ChoiceRow(
+            label = stringResource(R.string.sky_steps),
+            options = SkySteps.entries,
+            selected = appearance.skySteps,
+            text = { stringResource(if (it == SkySteps.Four) R.string.sky_steps_four else R.string.sky_steps_eight) },
+            onSelect = { steps -> update.appearance { it.copy(skySteps = steps) } },
+        )
+        ToggleRow(
+            title = stringResource(R.string.sky_dark_nights),
+            subtitle = stringResource(R.string.sky_dark_nights_summary),
+            checked = appearance.darkNights,
+            onChange = { on -> update.appearance { it.copy(darkNights = on) } },
+            on = stringResource(R.string.toggle_on),
+            off = stringResource(R.string.toggle_off),
+        )
     } else {
         SwatchRow(
             options = Sky.entries,
@@ -675,6 +722,14 @@ internal fun WallpaperPage(
             }
         }
     }
+    ChoiceRow(
+        label = stringResource(R.string.wallpaper_sync),
+        options = WallpaperSync.entries,
+        selected = appearance.wallpaperSync,
+        text = { stringResource(it.label) },
+        onSelect = { sync -> update.appearance { it.copy(wallpaperSync = sync) } },
+    )
+    BasicText(stringResource(R.string.wallpaper_sync_summary), style = MutedStyle)
     val message =
         when (status) {
             WallpaperStatus.Idle -> null
@@ -856,18 +911,18 @@ private val Accent.label: Int
             Accent.Lavender -> R.string.accent_lavender
         }
 
-/** The day's skies from night to night, as a preview of what following the sun looks like. */
+/** The day's skies from night to night, as a preview of what following the sun looks like with these settings. */
 @Composable
-private fun SkyPhaseStrip(dithering: Boolean) {
+private fun SkyPhaseStrip(appearance: Appearance) {
     Column(Modifier.padding(vertical = 8.dp)) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.clearAndSetSemantics {},
         ) {
-            SkyPhase.entries.forEach { phase ->
+            SkyPhase.day(fourSteps = appearance.skySteps == SkySteps.Four).forEach { phase ->
                 DitheredSky(
-                    colors = phase.stops.map { Color(it) },
-                    dithering = dithering,
+                    colors = phase.stops(appearance.darkNights).map { Color(it) },
+                    dithering = appearance.dithering,
                     scanlines = false,
                     modifier = Modifier.size(width = 24.dp, height = 72.dp),
                 )
@@ -888,9 +943,18 @@ private val Sky.label: Int
             Sky.Mono -> R.string.sky_mono
         }
 
+private val IconSize.label: Int
+    get() =
+        when (this) {
+            IconSize.Small -> R.string.size_small
+            IconSize.Medium -> R.string.size_medium
+            IconSize.Large -> R.string.size_large
+        }
+
 private val SizeStep.label: Int
     get() =
         when (this) {
+            SizeStep.ExtraSmall -> R.string.size_extra_small
             SizeStep.Small -> R.string.size_small
             SizeStep.Medium -> R.string.size_medium
             SizeStep.Large -> R.string.size_large
@@ -904,6 +968,15 @@ private val GestureAction.label: Int
             GestureAction.Notifications -> R.string.gesture_notifications
             GestureAction.Settings -> R.string.gesture_settings
             GestureAction.Lock -> R.string.gesture_lock
+        }
+
+private val WallpaperSync.label: Int
+    get() =
+        when (this) {
+            WallpaperSync.Off -> R.string.wallpaper_sync_off
+            WallpaperSync.Home -> R.string.wallpaper_home
+            WallpaperSync.Lock -> R.string.wallpaper_lock
+            WallpaperSync.Both -> R.string.wallpaper_both
         }
 
 internal val IconPreset.label: Int

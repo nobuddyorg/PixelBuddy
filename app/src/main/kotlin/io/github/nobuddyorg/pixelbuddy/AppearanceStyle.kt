@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsRepository
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.SkySteps
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.sky.GeoPoint
 import io.github.nobuddyorg.pixelbuddy.core.data.sky.SkyLocation
@@ -37,7 +38,7 @@ internal fun Appearance.toStyle(phase: SkyPhase? = null): PixelBuddyStyle =
     PixelBuddyStyle(
         accent = Color(accent.argb),
         scanlines = scanlines,
-        sky = (phase?.stops ?: sky.stops.toList()).map { Color(it) },
+        sky = (phase?.stops(darkNights) ?: sky.stops.toList()).map { Color(it) },
         dithering = dithering,
         textScale = textSize.scale,
     )
@@ -63,7 +64,7 @@ internal fun StoredAppearanceTheme(
         if (current.skyFollowsSun) {
             val weather by settings.weather.collectAsStateWithLifecycle(initialValue = WeatherSettings())
             val report by weatherReport.collectAsStateWithLifecycle()
-            rememberSkyPhase(weatherPlace(weather, report))
+            rememberSkyPhase(weatherPlace(weather, report), fourSteps = current.skySteps == SkySteps.Four)
         } else {
             null
         }
@@ -85,18 +86,21 @@ internal fun weatherPlace(
  * background work, no animation.
  */
 @Composable
-private fun rememberSkyPhase(weatherPlace: GeoPoint?): SkyPhase {
+private fun rememberSkyPhase(
+    weatherPlace: GeoPoint?,
+    fourSteps: Boolean,
+): SkyPhase {
     val zone = ZoneId.systemDefault()
     val place = remember(weatherPlace, zone) { SkyLocation.resolve(weatherPlace, zone, Instant.now()) }
-    var phase by remember(place) { mutableStateOf(SkyPhase.at(Instant.now(), place)) }
+    var phase by remember(place, fourSteps) { mutableStateOf(SkyPhase.at(Instant.now(), place, fourSteps)) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(place, lifecycle) {
+    LaunchedEffect(place, fourSteps, lifecycle) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while (true) {
                 val now = Instant.now()
-                phase = SkyPhase.at(now, place)
+                phase = SkyPhase.at(now, place, fourSteps)
                 // At most an hour, so a changed clock or time zone is caught too.
-                val next = SkyPhase.nextChange(now, place) ?: now.plus(MAX_WAIT)
+                val next = SkyPhase.nextChange(now, place, fourSteps) ?: now.plus(MAX_WAIT)
                 delay(Duration.between(now, next).coerceIn(MIN_WAIT, MAX_WAIT).toMillis())
             }
         }

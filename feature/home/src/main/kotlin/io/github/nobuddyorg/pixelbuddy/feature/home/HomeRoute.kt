@@ -1,13 +1,16 @@
 package io.github.nobuddyorg.pixelbuddy.feature.home
 
+import android.app.SearchManager
 import android.content.ActivityNotFoundException
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.provider.AlarmClock
 import android.provider.CalendarContract
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -15,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -24,6 +28,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,6 +48,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotifications
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.CalendarSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockPosition
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyles
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.NotificationSettings
@@ -205,6 +211,7 @@ fun HomeRoute(
         modifier = modifier,
         resetKey = resetKey,
         gestures = gestures,
+        onWebSearch = if (gestures.webSearch) context::searchWeb else null,
         onOpenNotifications = context::expandNotificationShade,
         onLock = {
             if (screenLock?.lock() != true) {
@@ -224,6 +231,7 @@ fun HomeRoute(
                                 event = event,
                                 time = EventTime.of(event, instant, ZoneId.systemDefault(), is24Hour),
                                 onClick = { context.startFirstAvailable(calendarSource.openIntent(event)) },
+                                align = appearance.clockPosition.alignment,
                             )
                         }
                     }
@@ -255,7 +263,7 @@ fun HomeRoute(
                 }
             }
         },
-        icon = { app -> AppIcon(app, icons, iconStyles.lookFor(app.key)) },
+        icon = { app -> AppIcon(app, icons, iconStyles.lookFor(app.key), size = appearance.iconSize.dp.dp) },
         widget =
             if (homeWidgets != null && widgetId != null && widgetHeights != null) {
                 { WidgetSlot(homeWidgets, widgetId, widgetSettings.heightDp ?: widgetHeights.default) }
@@ -301,7 +309,8 @@ private fun LiveHomeHeader(
             ClockFormat.TwelveHour -> false
             ClockFormat.TwentyFourHour -> true
         }
-    Column {
+    val align = appearance.clockPosition.alignment
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = align) {
         HomeHeader(
             now = now,
             is24Hour = is24Hour,
@@ -310,6 +319,7 @@ private fun LiveHomeHeader(
             onDateClick = onDateClick,
             clockHeight = appearance.clockSize.clockHeightDp.dp,
             clockShadow = appearance.clockShadow,
+            align = align,
         ) {
             weather(now.atZone(ZoneId.systemDefault()).toInstant())
         }
@@ -347,7 +357,11 @@ private fun every(period: Duration) =
 private val CALENDAR_REFRESH = Duration.ofMinutes(30)
 
 internal fun Context.openAlarms() {
-    startFirstAvailable(Intent(AlarmClock.ACTION_SHOW_ALARMS))
+    val alarms = Intent(AlarmClock.ACTION_SHOW_ALARMS)
+    // Some clock apps guard the alarms page (Samsung's may need a permission PixelBuddy doesn't have): then the
+    // clock app itself opens.
+    val clockApp = alarms.resolveActivity(packageManager)?.packageName?.let(packageManager::getLaunchIntentForPackage)
+    startFirstAvailable(*listOfNotNull(alarms, clockApp).toTypedArray())
 }
 
 internal fun Context.openCalendar() {
@@ -359,6 +373,17 @@ internal fun Context.openCalendar() {
     )
 }
 
+/**
+ * Hands [query] to the phone's web search app (ACTION_WEB_SEARCH: a URL opens the site, other text is searched), or
+ * else to the browser.
+ */
+internal fun Context.searchWeb(query: String) {
+    startFirstAvailable(
+        Intent(Intent.ACTION_WEB_SEARCH).putExtra(SearchManager.QUERY, query),
+        Intent(Intent.ACTION_VIEW, ("https://www.google.com/search?q=" + Uri.encode(query)).toUri()),
+    )
+}
+
 private fun Context.startFirstAvailable(vararg intents: Intent) {
     for (intent in intents) {
         try {
@@ -367,6 +392,17 @@ private fun Context.startFirstAvailable(vararg intents: Intent) {
             return
         } catch (_: ActivityNotFoundException) {
             // Try the next one; with no clock or calendar app, nothing happens.
+        } catch (_: SecurityException) {
+            // The app guards this page with a permission: try the next one.
         }
     }
 }
+
+/** The clock's place as a layout alignment. */
+internal val ClockPosition.alignment: Alignment.Horizontal
+    get() =
+        when (this) {
+            ClockPosition.Start -> Alignment.Start
+            ClockPosition.Center -> Alignment.CenterHorizontally
+            ClockPosition.End -> Alignment.End
+        }

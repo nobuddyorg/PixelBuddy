@@ -3,11 +3,14 @@ package io.github.nobuddyorg.pixelbuddy.feature.settings
 import android.app.WallpaperManager
 import android.content.Context
 import android.graphics.Point
+import android.graphics.Rect
 import android.os.Build
 import android.view.WindowManager
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.IntSize
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.PixelBuddyStyle
 import io.github.nobuddyorg.pixelbuddy.core.designsystem.SkyImage
+import java.io.File
 import java.io.IOException
 import kotlin.math.max
 import kotlin.math.min
@@ -48,7 +51,16 @@ internal object SkyWallpaper {
                 scanlines = style.scanlines,
             )
         return try {
-            if (manager.setBitmap(bitmap, null, true, target.flags) !=
+            // Only the home app tells Android the wallpaper size it wants. Without it Android keeps a wider size
+            // (for scrolling home screens) and scales the sky up with smoothing, which blurs the dithering. PixelBuddy
+            // doesn't scroll: the screen size, and the whole image visible.
+            try {
+                manager.suggestDesiredDimensions(size.width, size.height)
+            } catch (_: SecurityException) {
+                // Not the home app or no hint permission: the wallpaper is still set, maybe scaled.
+            }
+            val wholeImage = Rect(0, 0, size.width, size.height)
+            if (manager.setBitmap(bitmap, wholeImage, true, target.flags) !=
                 0
             ) {
                 WallpaperStatus.Done
@@ -63,6 +75,33 @@ internal object SkyWallpaper {
             bitmap.recycle()
         }
     }
+
+    /**
+     * Sets the sky for [target] unless exactly this wallpaper was set last, which a small file in the app's
+     * no-backup storage remembers, so restarts and recompositions don't set it again. True if it was set now.
+     */
+    fun syncIfChanged(
+        context: Context,
+        style: PixelBuddyStyle,
+        target: WallpaperTarget,
+    ): Boolean {
+        val size = context.screenSize()
+        val key =
+            listOf(
+                target.name,
+                style.sky.joinToString(",") { Integer.toHexString(it.toArgb()) },
+                style.dithering,
+                style.scanlines,
+                "${size.width}x${size.height}",
+            ).joinToString("|")
+        val last = File(context.noBackupFilesDir, LAST_SYNCED)
+        if (last.isFile && last.readText() == key) return false
+        val status = set(context, style, target)
+        if (status == WallpaperStatus.Done) last.writeText(key)
+        return status == WallpaperStatus.Done
+    }
+
+    private const val LAST_SYNCED = "wallpaper-synced"
 
     /** The whole screen in pixels, system bars included, as portrait (width ≤ height). */
     internal fun Context.screenSize(): IntSize {

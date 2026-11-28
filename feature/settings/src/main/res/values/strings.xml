@@ -74,9 +74,15 @@
     <string name="clock_format_12">12 h</string>
     <string name="clock_format_24">24 h</string>
     <string name="clock_shadow">Clock shadow</string>
+    <string name="clock_position">Clock position</string>
+    <string name="clock_position_left">Left</string>
+    <string name="clock_position_center">Centre</string>
+    <string name="clock_position_right">Right</string>
     <string name="clock_size">Clock size</string>
     <string name="text_size">Text size on home</string>
     <string name="text_size_summary">On top of the phone\'s font size</string>
+    <string name="size_extra_small">Extra small</string>
+    <string name="icon_size">Icon size on home</string>
     <string name="size_small">Small</string>
     <string name="size_medium">Medium</string>
     <string name="size_large">Large</string>
@@ -143,6 +149,8 @@
     <string name="notification_access_allow">Allow notification access</string>
     <string name="notification_access_restricted">If Android says the setting is restricted: Settings → Apps → PixelBuddy → ⋮ → Allow restricted settings, then try again.</string>
     <string name="gesture_double_tap">Double tap on empty space</string>
+    <string name="web_search">Web search</string>
+    <string name="web_search_summary">The search offers searching the web for what you typed. It goes to your web search app only when you tap that.</string>
     <string name="lock_service_title">Lock service</string>
     <string name="lock_service_on">On: the gesture locks the screen.</string>
     <string name="lock_service_off">Off: turn it on so the gesture can lock the screen.</string>
@@ -161,6 +169,11 @@
     <string name="sky_follows_sun_place">Sunrise and sunset at your weather place</string>
     <string name="sky_follows_sun_zone">From your time zone. Pick a weather place for exact times.</string>
     <string name="sky_phases">Night → dawn → day → dusk. The sky changes a few times a day while home is open.</string>
+    <string name="sky_steps">Changes per day</string>
+    <string name="sky_steps_four">4</string>
+    <string name="sky_steps_eight">8, with blends</string>
+    <string name="sky_dark_nights">Dark nights</string>
+    <string name="sky_dark_nights_summary">An almost black sky at night</string>
     <string name="dithering">Dithering</string>
     <string name="dithering_summary">Pixel bands instead of a smooth gradient</string>
     <string name="wallpaper_set">Set as wallpaper</string>
@@ -172,6 +185,9 @@
     <string name="wallpaper_done">Wallpaper set</string>
     <string name="wallpaper_failed">Couldn\'t set the wallpaper</string>
     <string name="wallpaper_not_allowed">This phone doesn\'t allow changing the wallpaper</string>
+    <string name="wallpaper_sync">Keep in sync</string>
+    <string name="wallpaper_sync_off">Off</string>
+    <string name="wallpaper_sync_summary">Sets the sky as wallpaper again whenever it changes, including a sky that follows the sun (updated when you return to home).</string>
 
     <string name="source_code">Source code</string>
     <string name="source_code_link" translatable="false">github.com/nobuddyorg/PixelBuddy</string>

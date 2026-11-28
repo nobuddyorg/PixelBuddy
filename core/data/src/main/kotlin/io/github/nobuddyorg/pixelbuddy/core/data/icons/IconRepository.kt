@@ -304,8 +304,9 @@ class IconRepository(
         apps: List<LauncherApp>,
         styles: IconStyles,
         densityDpi: Int,
+        iconDp: Int = ICON_DP,
     ) {
-        val sizePx = iconPx(densityDpi)
+        val sizePx = iconPx(densityDpi, iconDp)
         val inUse = HashSet<String>()
         for (app in apps) {
             val look = styles.lookFor(app.key)
@@ -379,11 +380,14 @@ class IconRepository(
     }
 
     companion object {
-        /** Icon size on home. */
+        /** Default icon size on home. */
         const val ICON_DP: Int = 48
 
-        /** Home's icon size in pixels at [densityDpi]: the size smooth neon icons are drawn at. */
-        fun iconPx(densityDpi: Int): Int = (ICON_DP * densityDpi / BASELINE_DPI).roundToInt()
+        /** Home's icon size ([iconDp]) in pixels at [densityDpi]: the size smooth neon icons are drawn at. */
+        fun iconPx(
+            densityDpi: Int,
+            iconDp: Int = ICON_DP,
+        ): Int = (iconDp * densityDpi / BASELINE_DPI).roundToInt()
 
         private const val BASELINE_DPI = 160f
     }

@@ -21,6 +21,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.TouchInjectionScope
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.click
@@ -63,6 +64,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotification
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockPosition
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsRepository
@@ -166,6 +168,7 @@ class HomeScreenTest {
         onNotification: (NotificationAction) -> Unit = {},
         widget: (@Composable () -> Unit)? = null,
         widgetBelow: Boolean = false,
+        onWebSearch: ((String) -> Unit)? = null,
     ) = compose.setContent {
         HomeScreen(
             home = HomeApps(favorites, apps),
@@ -192,6 +195,7 @@ class HomeScreenTest {
             onNotification = onNotification,
             widget = widget,
             widgetBelow = widgetBelow,
+            onWebSearch = onWebSearch,
         )
     }
 
@@ -225,7 +229,7 @@ class HomeScreenTest {
                 .mapNotNull { it.config.getOrNull(SemanticsProperties.ContentDescription)?.single() }
         val expected = sampleApps.map { it.app }.map { if (it.isMainProfile) it.label else "${it.label}, work profile" }
         // The header (clock, battery) has descriptions too; compare only the app rows.
-        assertEquals(expected, labels.filter { it in expected })
+        assertInOrder(expected, labels.filter { it in expected })
     }
 
     @Test
@@ -607,6 +611,42 @@ class HomeScreenTest {
     }
 
     @Test
+    fun `the search offers the web below the results, and Enter without a matching app uses it`() {
+        val searched = mutableListOf<String>()
+        val launched = mutableListOf<String>()
+        show(onAppClick = { launched += it.label }, onWebSearch = { searched += it })
+        openSearch()
+        // Without a query there is nothing to search for.
+        compose.onNodeWithText("Search the web", substring = true).assertDoesNotExist()
+
+        searchField().performTextInput("sp")
+        compose.onNodeWithText("► Search the web for “sp”").assertExists()
+        // Enter still opens the matching app.
+        searchField().performImeAction()
+        assertEquals(listOf("Spotify"), launched)
+
+        openSearch()
+        searchField().performTextInput("pixel art ")
+        compose.onNodeWithText("No apps found").assertIsDisplayed()
+        searchField().performImeAction()
+        assertEquals(listOf("pixel art"), searched)
+        searchField().assertDoesNotExist()
+
+        openSearch()
+        searchField().performTextInput("weather")
+        compose.onNodeWithText("► Search the web for “weather”").performClick()
+        assertEquals(listOf("pixel art", "weather"), searched)
+        assertEquals(listOf("Spotify"), launched)
+    }
+
+    @Test
+    fun `without web search the search offers only apps`() {
+        showSearch()
+        searchField().performTextInput("xyz")
+        compose.onNodeWithText("Search the web", substring = true).assertDoesNotExist()
+    }
+
+    @Test
     fun `tapping a result launches it`() {
         val launched = mutableListOf<String>()
         show(onAppClick = { launched += it.label })
@@ -618,16 +658,55 @@ class HomeScreenTest {
         assertEquals(listOf("Telefon"), launched)
     }
 
+    private val allLabels get() = sampleApps.map { it.app.label }
+
+    private fun railState(letter: String) =
+        compose
+            .onNodeWithContentDescription("Alphabet")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, letter))
+
+    private fun backButton() = compose.onNodeWithText("◄ BACK")
+
+    /** The rows on screen are a run of [all] in its order; the list may be longer than the screen. */
+    private fun assertInOrder(
+        all: List<String>,
+        shown: List<String>,
+    ) {
+        assertTrue(shown.size >= 5, "only $shown on screen")
+        val start = all.indexOf(shown.first())
+        assertEquals(all.subList(start, start + shown.size), shown)
+    }
+
     @Test
-    fun `tapping a rail letter shows that letter's apps until a tap elsewhere`() {
+    fun `a rail letter shows every app at that letter until Back or a tap elsewhere`() {
         show(favorites = favorites)
 
         tapRail("S")
 
-        assertEquals(listOf("Signal", "Spotify"), appRowLabels())
+        assertInOrder(allLabels, appRowLabels())
         compose.onNode(hasText("S") and isHeading()).assertIsDisplayed()
-        compose.onRoot().performTouchInput { click(Offset(width / 2f, height - 300f)) }
+        railState("S")
+        backButton().performClick()
         assertEquals(favorites.map { it.label }, appRowLabels())
+        backButton().assertDoesNotExist()
+
+        tapRail("S")
+        compose.onRoot().performTouchInput { click(Offset(width / 2f, height * 0.15f)) }
+        assertEquals(favorites.map { it.label }, appRowLabels())
+    }
+
+    @Test
+    fun `swipes in the list of all apps scroll it and never open the search`() {
+        show(favorites = favorites)
+        tapRail("A")
+
+        compose.onRoot().performTouchInput { swipeUp(startY = height * 0.7f, endY = height * 0.2f) }
+        compose.onRoot().performTouchInput { swipeDown(startY = height * 0.3f, endY = height * 0.8f) }
+
+        searchField().assertDoesNotExist()
+        // Still the list of all apps.
+        backButton().assertIsDisplayed()
+        compose.onNode(hasText("A") and isHeading()).assertExists()
     }
 
     @Test
@@ -637,24 +716,26 @@ class HomeScreenTest {
         // No app starts with R; S is the nearest letter with apps.
         tapRail("R")
 
-        assertEquals(listOf("Signal", "Spotify"), appRowLabels())
+        railState("S")
+        compose.onNode(hasText("S") and isHeading()).assertIsDisplayed()
     }
 
     @Test
-    fun `dragging along the rail follows the finger and lifting keeps the group`() {
+    fun `dragging along the rail follows the finger and lifting keeps the letter`() {
         show(favorites = favorites)
 
         compose.onNodeWithContentDescription("Alphabet").performTouchInput {
             down(Offset(centerX, railY("A")))
             moveTo(Offset(centerX, railY("F")))
         }
-        assertEquals(listOf("Firefox"), appRowLabels())
+        railState("F")
         compose.onNodeWithContentDescription("Alphabet").performTouchInput {
             moveTo(Offset(centerX, railY("T")))
             up()
         }
 
-        assertEquals(listOf("Teams", "Telefon"), appRowLabels())
+        railState("T")
+        assertInOrder(allLabels, appRowLabels())
     }
 
     @Test
@@ -662,7 +743,7 @@ class HomeScreenTest {
         show(favorites = favorites)
 
         tapRail("M")
-        assertEquals(listOf("Maps"), appRowLabels())
+        assertInOrder(allLabels, appRowLabels())
         Espresso.pressBack()
         assertEquals(favorites.map { it.label }, appRowLabels())
 
@@ -693,8 +774,99 @@ class HomeScreenTest {
             actions,
         )
         compose.runOnIdle { custom.first { it.label == "Apps with P" }.action() }
-        assertEquals(listOf("Proton Mail"), appRowLabels())
-        rail.assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "P"))
+        compose.onNode(hasText("P") and isHeading()).assertIsDisplayed()
+        railState("P")
+    }
+
+    @Test
+    fun `a swipe up held on the list only opens the search when the finger lifts`() {
+        show(favorites = favorites)
+
+        compose.onRoot().performTouchInput {
+            down(Offset(centerX, height * 0.6f))
+            repeat(10) { moveBy(Offset(0f, -40f)) }
+        }
+        compose.mainClock.advanceTimeBy(2_000)
+        searchField().assertDoesNotExist()
+
+        compose.onRoot().performTouchInput { up() }
+        searchField().assertIsFocused()
+    }
+
+    @Test
+    fun `a held pull raises the backdrop in blocks and asks to let go`() {
+        show(favorites = favorites)
+        searchButton().assertIsDisplayed()
+
+        compose.onRoot().performTouchInput {
+            down(Offset(centerX, height * 0.6f))
+            repeat(10) { moveBy(Offset(0f, -40f)) }
+        }
+        compose.mainClock.advanceTimeBy(500)
+
+        compose.onNodeWithText("▲ LET GO").assertExists()
+        compose.onRoot().captureRoboImage("HomeScreen_pulling.png")
+        compose.onRoot().performTouchInput { up() }
+        searchField().assertIsFocused()
+        compose.onNodeWithText("▲ LET GO").assertDoesNotExist()
+    }
+
+    @Test
+    fun `opening the search fades home out while the blocks rise and the search fades in`() {
+        show(favorites = favorites)
+
+        compose.mainClock.autoAdvance = false
+        searchButton().performClick()
+        compose.mainClock.advanceTimeBy(200)
+        compose.onRoot().captureRoboImage("HomeScreen_opening_search.png")
+        compose.mainClock.autoAdvance = true
+
+        searchField().assertIsFocused()
+        // Faded out, home is gone: only the search is there, for TalkBack too.
+        searchButton().assertDoesNotExist()
+    }
+
+    @Test
+    fun `a held swipe up survives a trembling finger`() {
+        show(favorites = favorites)
+
+        compose.onRoot().performTouchInput {
+            down(Offset(centerX, height * 0.6f))
+            repeat(10) { moveBy(Offset(0f, -40f)) }
+            // Holding still: the finger trembles a little, also downwards.
+            repeat(5) {
+                moveBy(Offset(0f, 2f))
+                moveBy(Offset(0f, -1f))
+            }
+            up()
+        }
+
+        searchField().assertIsFocused()
+    }
+
+    @Test
+    fun `a swipe up held on the header only opens the search when the finger lifts`() {
+        show(favorites = favorites)
+
+        compose.onRoot().performTouchInput {
+            down(Offset(centerX, height * 0.25f))
+            repeat(10) { moveBy(Offset(0f, -25f)) }
+        }
+        compose.mainClock.advanceTimeBy(2_000)
+        searchField().assertDoesNotExist()
+
+        compose.onRoot().performTouchInput { up() }
+        searchField().assertIsFocused()
+    }
+
+    @Test
+    fun `a short swipe up springs back without opening the search`() {
+        show(favorites = favorites)
+
+        compose.onRoot().performTouchInput { swipeUp(startY = height * 0.2f, endY = height * 0.2f - 20f) }
+
+        searchField().assertDoesNotExist()
+        searchButton().assertIsDisplayed()
     }
 
     @Test
@@ -1127,6 +1299,75 @@ class HomeScreenTest {
             }
         }
         compose.onRoot().captureRoboImage("HomeScreen_appearance.png")
+    }
+
+    private fun showWithClock(position: ClockPosition) =
+        compose.setContent {
+            HomeScreen(
+                home = HomeApps(favorites, sampleApps),
+                onAppClick = { _, _ -> },
+                onAppAction = {},
+                onOpenSettings = {},
+                header = {
+                    HomeHeader(
+                        LocalDateTime.of(2026, 11, 6, 21, 45),
+                        true,
+                        BatteryState(58, charging = false),
+                        {},
+                        {},
+                        align = position.alignment,
+                    )
+                },
+                icon = { app -> AppIcon(app, icons, IconPreset.Default.style) },
+            )
+        }
+
+    @Test
+    fun `the clock can sit in the middle`() {
+        showWithClock(ClockPosition.Center)
+        val screen = compose.onRoot().fetchSemanticsNode().boundsInRoot
+        val clock = compose.onNodeWithContentDescription("21:45").fetchSemanticsNode().boundsInRoot
+        assertTrue(kotlin.math.abs(clock.center.x - screen.center.x) < 8f, "clock at ${clock.center.x}")
+        compose.onRoot().captureRoboImage("HomeScreen_clock_center.png")
+    }
+
+    @Test
+    fun `the clock can sit on the right`() {
+        showWithClock(ClockPosition.End)
+        val screen = compose.onRoot().fetchSemanticsNode().boundsInRoot
+        val clock = compose.onNodeWithContentDescription("21:45").fetchSemanticsNode().boundsInRoot
+        // Right edge, inside the 32 dp padding.
+        assertTrue(screen.right - clock.right < 40 * compose.density.density, "clock ends at ${clock.right}")
+        // Away from the left edge (32 dp padding when on the left).
+        assertTrue(clock.left > 64 * compose.density.density, "clock starts at ${clock.left}")
+    }
+
+    @Test
+    fun `screenshot compact, with small icons and extra small text`() {
+        compose.setContent {
+            PixelBuddyTheme(PixelBuddyStyle(textScale = 0.7f)) {
+                HomeScreen(
+                    home = HomeApps(favorites, sampleApps),
+                    onAppClick = { _, _ -> },
+                    onAppAction = {},
+                    onOpenSettings = {},
+                    header = {
+                        HomeHeader(
+                            LocalDateTime.of(2026, 11, 6, 21, 45),
+                            true,
+                            BatteryState(58, charging = false),
+                            {},
+                            {},
+                            clockHeight = 48.dp,
+                        )
+                    },
+                    icon = { app -> AppIcon(app, icons, IconPreset.Default.style, size = 36.dp) },
+                )
+            }
+        }
+        // Rows still give every app a 48 dp touch target.
+        compose.onAllNodesWithContentDescription("Maps")[0].assertHeightIsAtLeast(48.dp)
+        compose.onRoot().captureRoboImage("HomeScreen_compact.png")
     }
 
     @Test

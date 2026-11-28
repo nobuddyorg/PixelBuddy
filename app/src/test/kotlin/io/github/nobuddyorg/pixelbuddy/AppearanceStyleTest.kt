@@ -49,6 +49,14 @@ class AppearanceStyleTest {
     }
 
     @Test
+    fun `dark nights darken the night sky that follows the sun`() {
+        val dark = Appearance(skyFollowsSun = true, darkNights = true).toStyle(SkyPhase.Night)
+        assertEquals(SkyPhase.Night.stops(darkNight = true).map { Color(it) }, dark.sky)
+        val day = Appearance(skyFollowsSun = true, darkNights = true).toStyle(SkyPhase.Day)
+        assertEquals(SkyPhase.Day.stops.map { Color(it) }, day.sky)
+    }
+
+    @Test
     fun `the sun follows the weather's city, or its last approximate location`() {
         val berlin = WeatherPlace("Berlin", latitude = 52.52, longitude = 13.41)
         val report = WeatherReport(10.0, 0, true, Coordinates(48.1, 11.6), Instant.EPOCH)

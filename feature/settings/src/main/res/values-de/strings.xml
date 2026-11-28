@@ -74,9 +74,15 @@
     <string name="clock_format_12">12 h</string>
     <string name="clock_format_24">24 h</string>
     <string name="clock_shadow">Schatten der Uhr</string>
+    <string name="clock_position">Position der Uhr</string>
+    <string name="clock_position_left">Links</string>
+    <string name="clock_position_center">Mitte</string>
+    <string name="clock_position_right">Rechts</string>
     <string name="clock_size">Größe der Uhr</string>
     <string name="text_size">Textgröße auf dem Startbildschirm</string>
     <string name="text_size_summary">Zusätzlich zur Schriftgröße des Telefons</string>
+    <string name="size_extra_small">Sehr klein</string>
+    <string name="icon_size">Symbolgröße auf dem Startbildschirm</string>
     <string name="size_small">Klein</string>
     <string name="size_medium">Mittel</string>
     <string name="size_large">Groß</string>
@@ -143,6 +149,8 @@
     <string name="notification_access_allow">Benachrichtigungszugriff erlauben</string>
     <string name="notification_access_restricted">Meldet Android eine eingeschränkte Einstellung: Einstellungen → Apps → PixelBuddy → ⋮ → Eingeschränkte Einstellungen zulassen, dann erneut versuchen.</string>
     <string name="gesture_double_tap">Doppelt auf freie Fläche tippen</string>
+    <string name="web_search">Websuche</string>
+    <string name="web_search_summary">Die Suche bietet an, im Web nach dem Getippten zu suchen. Es geht erst an deine Such-App, wenn du darauf tippst.</string>
     <string name="lock_service_title">Sperrdienst</string>
     <string name="lock_service_on">An: die Geste sperrt den Bildschirm.</string>
     <string name="lock_service_off">Aus: einschalten, damit die Geste den Bildschirm sperren kann.</string>
@@ -160,6 +168,11 @@
     <string name="sky_follows_sun_place">Sonnenauf- und -untergang am Wetterort</string>
     <string name="sky_follows_sun_zone">Nach deiner Zeitzone. Für genaue Zeiten einen Wetterort wählen.</string>
     <string name="sky_phases">Nacht → Morgen → Tag → Abend. Der Himmel wechselt ein paar Mal am Tag, während der Startbildschirm offen ist.</string>
+    <string name="sky_steps">Wechsel pro Tag</string>
+    <string name="sky_steps_four">4</string>
+    <string name="sky_steps_eight">8, mit Übergängen</string>
+    <string name="sky_dark_nights">Dunkle Nächte</string>
+    <string name="sky_dark_nights_summary">Ein fast schwarzer Himmel in der Nacht</string>
     <string name="sky_mono">Grau</string>
     <string name="dithering">Dithering</string>
     <string name="dithering_summary">Pixelstufen statt eines weichen Verlaufs</string>
@@ -172,6 +185,9 @@
     <string name="wallpaper_done">Hintergrundbild festgelegt</string>
     <string name="wallpaper_failed">Hintergrundbild konnte nicht festgelegt werden</string>
     <string name="wallpaper_not_allowed">Dieses Telefon erlaubt keine Änderung des Hintergrundbilds</string>
+    <string name="wallpaper_sync">Automatisch abgleichen</string>
+    <string name="wallpaper_sync_off">Aus</string>
+    <string name="wallpaper_sync_summary">Setzt den Himmel bei jeder Änderung neu als Hintergrundbild, auch einen Himmel, der dem Sonnenstand folgt (beim Zurückkehren zum Startbildschirm).</string>
 
     <string name="source_code">Quellcode</string>
     <string name="licenses">Lizenzen</string>

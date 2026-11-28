@@ -55,13 +55,15 @@ internal sealed interface EventTime {
     }
 }
 
-/** The next calendar event under the date, e.g. "▶ 14:00 Dentist"; tapping it opens the event. */
+/** The next calendar event under the date, e.g. "► 14:00 Dentist"; tapping it opens the event. */
 @Composable
 internal fun EventLine(
     event: CalendarEvent,
     time: EventTime,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Where the line sits, like the clock above it. */
+    align: Alignment.Horizontal = Alignment.Start,
 ) {
     val title = event.title.ifBlank { stringResource(R.string.home_event_untitled) }
     val text =
@@ -86,7 +88,12 @@ internal fun EventLine(
             }
         }
     Box(
-        contentAlignment = Alignment.CenterStart,
+        contentAlignment =
+            when (align) {
+                Alignment.CenterHorizontally -> Alignment.Center
+                Alignment.End -> Alignment.CenterEnd
+                else -> Alignment.CenterStart
+            },
         modifier =
             modifier
                 .fillMaxWidth()
@@ -98,7 +105,7 @@ internal fun EventLine(
                 ),
     ) {
         BasicText(
-            "▶ $text",
+            "► $text",
             style = PixelText.small.copy(color = PixelBuddyColors.Text),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

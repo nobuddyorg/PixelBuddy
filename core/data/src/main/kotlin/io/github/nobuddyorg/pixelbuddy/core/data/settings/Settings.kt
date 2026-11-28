@@ -92,21 +92,43 @@ data class Appearance(
     val clockFormat: ClockFormat = ClockFormat.System,
     /** 1-pixel drop shadow under the clock. */
     val clockShadow: Boolean = true,
+    /** Where the clock and the lines under it sit: left, centred or right. */
+    val clockPosition: ClockPosition = ClockPosition.Start,
     val clockSize: SizeStep = SizeStep.Medium,
     /** Size of the text on home (app names, info line), on top of the system font size. */
     val textSize: SizeStep = SizeStep.Medium,
+    /** Size of the app icons on home. */
+    val iconSize: IconSize = IconSize.Medium,
     val accent: Accent = Accent.Orange,
     /** Faint CRT scanlines over the sky. */
     val scanlines: Boolean = false,
     val sky: Sky = Sky.Dusk,
     /** The sky follows the sun instead (#28): night, dawn, day and dusk from local sunrise and sunset. */
     val skyFollowsSun: Boolean = false,
+    /** While it follows the sun: four changes a day (night, dawn, day, dusk) or eight, with blends between. */
+    val skySteps: SkySteps = SkySteps.Eight,
+    /** While it follows the sun: an almost black night. */
+    val darkNights: Boolean = false,
     /** Dithered bands (pixel look) or a smooth gradient. */
     val dithering: Boolean = true,
+    /** Sets the sky as wallpaper again whenever it changes; off until chosen. */
+    val wallpaperSync: WallpaperSync = WallpaperSync.Off,
 )
+
+/** How often a sky that follows the sun changes a day. Stored in the settings: don't rename. */
+@Serializable
+enum class SkySteps { Four, Eight }
+
+/** Where the sky is kept as wallpaper. Stored in the settings: don't rename. */
+@Serializable
+enum class WallpaperSync { Off, Home, Lock, Both }
 
 @Serializable
 enum class ClockFormat { System, TwelveHour, TwentyFourHour }
+
+/** Where the clock sits on home. Stored in the settings: don't rename. */
+@Serializable
+enum class ClockPosition { Start, Center, End }
 
 @Serializable
 enum class SizeStep(
@@ -115,9 +137,20 @@ enum class SizeStep(
     /** Height of the big clock in dp. */
     val clockHeightDp: Int,
 ) {
+    ExtraSmall(0.7f, 48),
     Small(0.85f, 56),
     Medium(1f, 72),
     Large(1.2f, 96),
+}
+
+/** Size of the app icons on home. Stored in the settings: don't rename. */
+@Serializable
+enum class IconSize(
+    val dp: Int,
+) {
+    Small(36),
+    Medium(48),
+    Large(56),
 }
 
 /** Accent colours: section letters, highlights, buttons. All readable on the dark sky. */
@@ -211,6 +244,11 @@ data class Gestures(
     val longPress: GestureAction = GestureAction.Settings,
     /** Double tap on empty space (#16); off by default, so a single tap isn't delayed. */
     val doubleTap: GestureAction = GestureAction.Nothing,
+    /**
+     * The search offers searching the web for what was typed. Nothing leaves the phone until that line is tapped,
+     * and then the text goes to the phone's web search app, not from PixelBuddy.
+     */
+    val webSearch: Boolean = true,
 ) {
     /** Whether a gesture locks the screen, which needs the lock service. */
     val usesLock: Boolean

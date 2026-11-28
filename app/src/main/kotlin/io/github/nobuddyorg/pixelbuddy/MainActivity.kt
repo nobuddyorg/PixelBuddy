@@ -13,6 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SetupStep
 import io.github.nobuddyorg.pixelbuddy.feature.home.HomeRoute
+import io.github.nobuddyorg.pixelbuddy.feature.settings.KeepWallpaperInSync
 import io.github.nobuddyorg.pixelbuddy.feature.settings.SetupRoute
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -44,6 +45,7 @@ class MainActivity : ComponentActivity() {
                     null -> {}
 
                     SetupStep.Done -> {
+                        KeepWallpaperInSync(appearance.wallpaperSync)
                         HomeRoute(
                             repository = container.appRepository,
                             settings = container.settings,

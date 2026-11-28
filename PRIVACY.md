@@ -31,6 +31,10 @@ When weather is on, PixelBuddy talks only to [Open-Meteo](https://open-meteo.com
 Nothing else is sent: no device identifiers, no app list, no account. Open-Meteo's own privacy policy applies to
 those requests: <https://open-meteo.com/en/terms>.
 
+**Web search** in the search (Settings → Gestures, on by default) makes no request either: only when you tap
+"Search the web for …" (or press Enter with no matching app) is the text you typed handed to your phone's web
+search app, or else your browser. That app's own privacy policy applies.
+
 ## Permissions
 
 | Permission | Why |
@@ -39,6 +43,7 @@ those requests: <https://open-meteo.com/en/terms>.
 | `ACCESS_COARSE_LOCATION` | Only if you choose approximate location for weather; asked when you choose it |
 | `REQUEST_DELETE_PACKAGES` | Lets you start an uninstall from the long-press menu (Android asks you to confirm) |
 | `SET_WALLPAPER` | Lets you set the launcher gradient as wallpaper |
+| `SET_WALLPAPER_HINTS` | Tells Android the wallpaper is exactly the screen's size, so it isn't scaled and blurred |
 | `EXPAND_STATUS_BAR` | Swipe down on home opens the notification shade |
 | `READ_CALENDAR` | Only if you turn on the next calendar event; asked when you turn it on |
 

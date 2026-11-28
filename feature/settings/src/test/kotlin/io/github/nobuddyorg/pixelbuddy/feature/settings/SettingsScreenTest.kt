@@ -13,6 +13,7 @@ import android.os.Process
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasSetTextAction
@@ -23,6 +24,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso
@@ -43,13 +45,17 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.Accent
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.CalendarSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockPosition
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconSize
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.NotificationSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SizeStep
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Sky
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.SkySteps
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.TemperatureUnit
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.WallpaperSync
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherPlace
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WidgetSettings
@@ -217,7 +223,7 @@ class SettingsScreenTest {
 
         open("About")
         open("Licences")
-        compose.onNodeWithText("▶ Back").performClick()
+        compose.onNodeWithText("◄ Back").performClick()
         compose.onNodeWithText("Source code").assertIsDisplayed()
     }
 
@@ -271,11 +277,19 @@ class SettingsScreenTest {
         compose.onNodeWithText("Clock shadow").performClick()
         assertFalse(settings.value.appearance.clockShadow)
 
+        compose.onNodeWithText("Centre").performScrollTo().performClick()
+        assertEquals(ClockPosition.Center, settings.value.appearance.clockPosition)
+
         compose.onNodeWithText("Clock size").performClick()
         assertEquals(SizeStep.Large, settings.value.appearance.clockSize)
         compose.onNodeWithText("Text size on home").performScrollTo().performClick()
         compose.onNodeWithText("Text size on home").performClick()
-        assertEquals(SizeStep.Small, settings.value.appearance.textSize)
+        // Medium → Large → Extra small: the steps go round.
+        assertEquals(SizeStep.ExtraSmall, settings.value.appearance.textSize)
+
+        compose.onNodeWithText("Icon size on home").performScrollTo().performClick()
+        compose.onNodeWithText("Icon size on home").performClick()
+        assertEquals(IconSize.Small, settings.value.appearance.iconSize)
     }
 
     // Favorites and hidden apps
@@ -350,6 +364,17 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun `web search in the search can be switched off`() {
+        showRoute()
+        open("Gestures")
+        assertTrue(settings.value.gestures.webSearch)
+
+        compose.onNodeWithText("Web search").performScrollTo().performClick()
+
+        assertFalse(settings.value.gestures.webSearch)
+    }
+
+    @Test
     fun `with locking available the gestures can lock, and the page explains the lock service`() {
         val lock = FakeScreenLock(on = false)
         showRoute(lock)
@@ -359,7 +384,7 @@ class SettingsScreenTest {
         repeat(4) { compose.onNodeWithText("Double tap on empty space").performClick() }
         assertEquals(GestureAction.Lock, settings.value.gestures.doubleTap)
         compose.onNodeWithText("Off: turn it on so the gesture can lock the screen.").assertIsDisplayed()
-        compose.onNodeWithText("▶ Turn on in accessibility settings").performScrollTo().performClick()
+        compose.onNodeWithText("► Turn on in accessibility settings").performScrollTo().performClick()
         assertEquals(
             android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS,
             shadowOf(ApplicationProvider.getApplicationContext<Application>()).nextStartedActivity.action,
@@ -367,7 +392,7 @@ class SettingsScreenTest {
 
         lock.available.value = true
         compose.onNodeWithText("On: the gesture locks the screen.").assertIsDisplayed()
-        compose.onNodeWithText("▶ Turn on in accessibility settings").assertDoesNotExist()
+        compose.onNodeWithText("► Turn on in accessibility settings").assertDoesNotExist()
 
         // Past "Lock" the cycle starts over, and nothing locks any more.
         compose.onNodeWithText("Double tap on empty space").performClick()
@@ -409,13 +434,13 @@ class SettingsScreenTest {
         showRoute(homeWidgets = HomeWidgets(ApplicationProvider.getApplicationContext()))
         open("Widget")
 
-        compose.onNodeWithText("▶ Add a widget").performClick()
+        compose.onNodeWithText("► Add a widget").performClick()
         compose.onNodeWithText("World clock").performClick()
 
         assertNotNull(settings.value.widget.id)
         compose.onNodeWithText("Below the favorites").performClick()
         assertTrue(settings.value.widget.below)
-        compose.onNodeWithText("▶ Remove the widget").performClick()
+        compose.onNodeWithText("► Remove the widget").performClick()
         assertNull(settings.value.widget.id)
     }
 
@@ -426,7 +451,7 @@ class SettingsScreenTest {
         open("Widget")
 
         compose.onNodeWithText("The widget's app is gone. It shows again when the app is back.").assertIsDisplayed()
-        compose.onNodeWithText("▶ Remove the widget").performClick()
+        compose.onNodeWithText("► Remove the widget").performClick()
 
         assertNull(settings.value.widget.id)
     }
@@ -515,14 +540,14 @@ class SettingsScreenTest {
 
         assertTrue(settings.value.notifications.dots)
         compose.onNodeWithText("Not granted: Android asks once you allow it.").assertIsDisplayed()
-        compose.onNodeWithText("▶ Allow notification access").performScrollTo().performClick()
+        compose.onNodeWithText("► Allow notification access").performScrollTo().performClick()
         assertEquals(
             android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS,
             shadowOf(ApplicationProvider.getApplicationContext<Application>()).nextStartedActivity.action,
         )
         access.connected.value = true
         compose.onNodeWithText("Granted").assertIsDisplayed()
-        compose.onNodeWithText("▶ Allow notification access").assertDoesNotExist()
+        compose.onNodeWithText("► Allow notification access").assertDoesNotExist()
     }
 
     @Test
@@ -626,7 +651,7 @@ class SettingsScreenTest {
         showRoute()
         open("Wallpaper & background")
 
-        compose.onNodeWithText("▶ Lock screen").performScrollTo().performClick()
+        compose.onNodeWithText("► Lock screen").performScrollTo().performClick()
 
         compose.onNodeWithText("Wallpaper set").assertIsDisplayed()
         val wallpapers = shadowOf(WallpaperManager.getInstance(app))
@@ -635,16 +660,42 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun `a sky that follows the sun can change four times a day and have dark nights`() {
+        settings.value = settings.value.copy(appearance = settings.value.appearance.copy(skyFollowsSun = true))
+        showRoute()
+        open("Wallpaper & background")
+
+        compose.onNodeWithText("Changes per day").performScrollTo()
+        compose.onNodeWithText("4").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("Dark nights").performScrollTo().performClick()
+
+        assertEquals(SkySteps.Four, settings.value.appearance.skySteps)
+        assertTrue(settings.value.appearance.darkNights)
+    }
+
+    @Test
+    fun `the wallpaper can be kept in sync with the sky`() {
+        showRoute()
+        open("Wallpaper & background")
+        assertEquals(WallpaperSync.Off, settings.value.appearance.wallpaperSync)
+
+        compose.onNodeWithText("Keep in sync").performScrollTo()
+        compose.onAllNodesWithText("Both")[0].performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+
+        assertEquals(WallpaperSync.Both, settings.value.appearance.wallpaperSync)
+    }
+
+    @Test
     fun `the sky can become the wallpaper of both screens`() {
         showRoute()
         open("Wallpaper & background")
 
-        compose.onNodeWithText("▶ Both").performScrollTo().performClick()
+        compose.onNodeWithText("► Both").performScrollTo().performClick()
 
         val wallpapers = shadowOf(WallpaperManager.getInstance(app))
         val lock = assertNotNull(wallpapers.getBitmap(WallpaperManager.FLAG_LOCK))
         assertNotNull(wallpapers.getBitmap(WallpaperManager.FLAG_SYSTEM))
-        // The exact screen size.
+        // The exact screen size. (Robolectric ignores the size hint to Android, so that is checked on the phone.)
         val screen = app.resources.displayMetrics
         assertEquals(screen.widthPixels to screen.heightPixels, lock.width to lock.height)
     }
@@ -655,7 +706,7 @@ class SettingsScreenTest {
         showRoute()
         open("Wallpaper & background")
 
-        compose.onNodeWithText("▶ Home screen").performScrollTo().performClick()
+        compose.onNodeWithText("► Home screen").performScrollTo().performClick()
 
         compose.onNodeWithText("This phone doesn't allow changing the wallpaper").assertIsDisplayed()
     }
@@ -829,7 +880,7 @@ class SettingsScreenTest {
         compose.onNodeWithText("Crash report").assertIsDisplayed()
         compose.onNodeWithText(reportText("second").trimEnd(), substring = true).assertIsDisplayed()
 
-        compose.onNodeWithText("▶ Delete").performClick()
+        compose.onNodeWithText("► Delete").performClick()
 
         compose.onNodeWithText("java.lang.IllegalStateException: first").assertIsDisplayed()
         assertEquals(listOf("java.lang.IllegalStateException: first"), store.list().map { it.summary })
@@ -847,7 +898,7 @@ class SettingsScreenTest {
         compose.onNodeWithText("Reports stay on this phone", substring = true).assertIsDisplayed()
 
         compose.onNodeWithText("java.lang.IllegalStateException: first").performClick()
-        compose.onNodeWithText("▶ Back").performClick()
+        compose.onNodeWithText("◄ Back").performClick()
         compose.onNodeWithText("java.lang.IllegalStateException: first").assertIsDisplayed()
     }
 
@@ -857,7 +908,7 @@ class SettingsScreenTest {
         showRoute()
         openCrashReports()
 
-        compose.onNodeWithText("▶ Delete all").performClick()
+        compose.onNodeWithText("► Delete all").performClick()
 
         compose.onNodeWithText("No crash reports. Nothing has crashed so far.").assertIsDisplayed()
         assertEquals(emptyList(), store.list())

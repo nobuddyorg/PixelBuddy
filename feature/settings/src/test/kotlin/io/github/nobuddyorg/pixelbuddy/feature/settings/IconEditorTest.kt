@@ -159,7 +159,7 @@ class IconEditorTest {
     fun `a control updates the preview but nothing is stored before Apply`() {
         showEditor()
         val loadsBefore = loader.loads
-        compose.onNodeWithText("▶ Apply").assertIsNotEnabled()
+        compose.onNodeWithText("► Apply").assertIsNotEnabled()
 
         compose.onNodeWithText("12").performScrollTo().performClick()
 
@@ -168,11 +168,11 @@ class IconEditorTest {
         assertEquals(IconStyleSetting(), stored)
         compose.onNodeWithText("Custom (based on 16-bit)").assertIsDisplayed()
 
-        compose.onNodeWithText("▶ Apply").performClick()
+        compose.onNodeWithText("► Apply").performClick()
         assertEquals(12, stored.style.grid)
         assertEquals("SixteenBit", stored.preset)
         assertEquals(1, changes)
-        compose.onNodeWithText("▶ Apply").assertIsNotEnabled()
+        compose.onNodeWithText("► Apply").assertIsNotEnabled()
     }
 
     @Test
@@ -181,7 +181,7 @@ class IconEditorTest {
 
         compose.onNodeWithContentDescription("8-bit").performScrollTo().performClick()
         compose.onNodeWithContentDescription("8-bit").assertIsSelected()
-        compose.onNodeWithText("▶ Apply").performClick()
+        compose.onNodeWithText("► Apply").performClick()
 
         assertEquals(IconStyleSetting.of(IconPreset.EightBit), stored)
     }
@@ -201,7 +201,7 @@ class IconEditorTest {
             SemanticsActions.SetProgress,
         ) { it(5f) }
         compose.onNodeWithText("50 %").assertIsDisplayed()
-        compose.onNodeWithText("▶ Apply").performClick()
+        compose.onNodeWithText("► Apply").performClick()
 
         assertEquals(PaletteChoice.Adaptive.toPalette(8), stored.style.palette)
         assertEquals(0.5f, stored.style.intensity)
@@ -225,10 +225,10 @@ class IconEditorTest {
 
         compose.onNodeWithText("Outline").performScrollTo().performClick()
         compose.onNodeWithText("Custom (based on Pocket)").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("▶ Reset").performClick()
+        compose.onNodeWithText("► Reset").performClick()
 
         compose.onNodeWithText("Custom (based on Pocket)").assertDoesNotExist()
-        compose.onNodeWithText("▶ Apply").assertIsNotEnabled()
+        compose.onNodeWithText("► Apply").assertIsNotEnabled()
         assertEquals(IconStyleSetting.of(IconPreset.Pocket), stored)
     }
 
@@ -237,14 +237,14 @@ class IconEditorTest {
         showEditor()
         compose.onNodeWithText("Dithering").performScrollTo().performClick()
 
-        compose.onNodeWithText("▶ Back").performScrollTo().performClick()
+        compose.onNodeWithText("◄ Back").performScrollTo().performClick()
         compose.onNodeWithText("Discard your changes?").assertIsDisplayed()
-        compose.onNodeWithText("▶ Keep editing").performClick()
+        compose.onNodeWithText("► Keep editing").performClick()
         compose.onNodeWithText("Discard your changes?").assertDoesNotExist()
 
         compose.waitForIdle()
         Espresso.pressBack()
-        compose.onNodeWithText("▶ Discard").performClick()
+        compose.onNodeWithText("► Discard").performClick()
 
         compose.onNodeWithText("Appearance & themes").assertIsDisplayed()
         assertEquals(IconStyleSetting(), stored)
@@ -255,7 +255,7 @@ class IconEditorTest {
     fun `leaving without changes needs no question`() {
         showEditor()
 
-        compose.onNodeWithText("▶ Back").performScrollTo().performClick()
+        compose.onNodeWithText("◄ Back").performScrollTo().performClick()
 
         compose.onNodeWithText("Appearance & themes").assertIsDisplayed()
     }
@@ -292,7 +292,7 @@ class IconEditorTest {
         showEditor()
         compose.assertAccessible(48 * compose.density.density)
 
-        compose.onNodeWithText("▶ Back").performScrollTo().performClick()
+        compose.onNodeWithText("◄ Back").performScrollTo().performClick()
         compose.onNodeWithText("Icons for single apps").performScrollTo().performClick()
         compose.assertAccessible(48 * compose.density.density)
         compose.onNodeWithText("Maps").performScrollTo().performClick()
@@ -308,7 +308,7 @@ class IconEditorTest {
 
         compose.onNodeWithText("Foreground only").performScrollTo().performClick()
         compose.onNodeWithText("Neon").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
-        compose.onNodeWithText("▶ Apply").performClick()
+        compose.onNodeWithText("► Apply").performClick()
 
         val override = settings.value.iconOverrideFor(maps.key)!!
         assertEquals(IconLayer.Foreground, override.layer)
@@ -318,7 +318,7 @@ class IconEditorTest {
         assertEquals(1, settings.value.iconOverrides.size)
         assertEquals(1, changes)
 
-        compose.onNodeWithText("▶ Like all icons").performClick()
+        compose.onNodeWithText("► Like all icons").performClick()
         assertNull(settings.value.iconOverrideFor(maps.key))
         assertEquals(2, changes)
         compose.onNodeWithText("Icons for single apps").assertIsDisplayed()
@@ -358,8 +358,8 @@ class IconEditorTest {
         val picture = createBitmap(200, 200).apply { eraseColor(0xFF39FF14.toInt()) }
 
         pickPicture(pictureFile("picture.png", picture))
-        compose.onNodeWithText("▶ Choose another picture").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("▶ Apply").performClick()
+        compose.onNodeWithText("► Choose another picture").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("► Apply").performClick()
 
         val image = settings.value.iconOverrideFor(maps.key)!!.image!!
         assertTrue(CustomIconStore.isValidName(image))
@@ -374,7 +374,7 @@ class IconEditorTest {
         pickPicture(corrupt)
 
         compose.onNodeWithText("That file couldn't be read as a picture.").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("▶ Apply").assertIsNotEnabled()
+        compose.onNodeWithText("► Apply").assertIsNotEnabled()
     }
 
     @Test
@@ -382,7 +382,7 @@ class IconEditorTest {
         showSettings(editIconOf = maps.key.id)
 
         compose.onNodeWithText("Icon of Maps").assertIsDisplayed()
-        compose.onNodeWithText("▶ Back").performScrollTo().performClick()
+        compose.onNodeWithText("◄ Back").performScrollTo().performClick()
 
         assertEquals(1, done)
     }
@@ -449,13 +449,13 @@ class IconEditorTest {
         compose.onNodeWithText("Glow").assertDoesNotExist()
         compose.onNodeWithText("32").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
 
-        compose.onNodeWithText("▶ Apply").performClick()
+        compose.onNodeWithText("► Apply").performClick()
         assertEquals(NeonStyle(OutlineColours.Sweep, pixelated = true), stored.style.neon)
         assertEquals(32, stored.style.grid)
 
         // back to pixels keeps the pixel values
         compose.onNodeWithText("Pixels").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
-        compose.onNodeWithText("▶ Apply").performClick()
+        compose.onNodeWithText("► Apply").performClick()
         assertNull(stored.style.neon)
         assertEquals(32, stored.style.grid)
     }
@@ -464,7 +464,7 @@ class IconEditorTest {
     fun `screenshot custom with the discard question`() {
         showEditor()
         compose.onNodeWithText("32").performScrollTo().performClick()
-        compose.onNodeWithText("▶ Back").performScrollTo().performClick()
+        compose.onNodeWithText("◄ Back").performScrollTo().performClick()
         compose.onRoot().captureRoboImage("IconEditor_discard.png")
     }
 }

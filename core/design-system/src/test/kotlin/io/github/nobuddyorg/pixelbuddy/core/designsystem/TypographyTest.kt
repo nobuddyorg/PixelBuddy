@@ -41,7 +41,7 @@ class TypographyTest {
         val typeface = ResourcesCompat.getFont(ApplicationProvider.getApplicationContext(), R.font.departure_mono)
         val paint = Paint().apply { this.typeface = typeface }
 
-        "AaZzÄäÖöÜüß„“0123456789%°:▶".forEach { char ->
+        "AaZzÄäÖöÜüß„“0123456789%°:►".forEach { char ->
             assertTrue(paint.hasGlyph(char.toString()), "missing glyph '$char'")
         }
     }

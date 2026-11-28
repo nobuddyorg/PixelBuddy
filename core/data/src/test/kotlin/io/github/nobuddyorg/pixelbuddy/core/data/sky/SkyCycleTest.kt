@@ -51,6 +51,40 @@ class SkyCycleTest {
     }
 
     @Test
+    fun `with four changes a day the blends join their twilight`() {
+        var time = Instant.parse("2026-06-21T00:00:00Z")
+        val phases = mutableListOf(SkyPhase.at(time, berlin, fourSteps = true))
+        repeat(6) {
+            time = SkyPhase.nextChange(time, berlin, fourSteps = true) ?: return@repeat
+            phases += SkyPhase.at(time, berlin, fourSteps = true)
+        }
+
+        // Only the four main looks, each change to a different one.
+        assertTrue(phases.all { it in listOf(SkyPhase.Night, SkyPhase.Dawn, SkyPhase.Day, SkyPhase.Dusk) }, "$phases")
+        assertTrue(phases.zipWithNext().all { (a, b) -> a != b }, "$phases")
+        assertTrue(phases.windowed(3).any { it == listOf(SkyPhase.Dawn, SkyPhase.Day, SkyPhase.Dusk) }, "$phases")
+        assertEquals(
+            listOf(SkyPhase.Night, SkyPhase.Dawn, SkyPhase.Day, SkyPhase.Dusk),
+            SkyPhase.day(fourSteps = true),
+        )
+        assertEquals(SkyPhase.entries, SkyPhase.day(fourSteps = false))
+    }
+
+    @Test
+    fun `dark nights are almost black, and so are the blends into them`() {
+        fun brightness(stops: List<Int>) = stops.sumOf { (it shr 16 and 0xFF) + (it shr 8 and 0xFF) + (it and 0xFF) }
+
+        assertTrue(brightness(SkyPhase.Night.stops(darkNight = true)) < brightness(SkyPhase.Night.stops) / 2)
+        assertTrue(SkyPhase.Night.stops(darkNight = true).first() == 0xFF000000.toInt())
+        assertTrue(brightness(SkyPhase.LateDusk.stops(darkNight = true)) < brightness(SkyPhase.LateDusk.stops))
+        assertTrue(brightness(SkyPhase.EarlyDawn.stops(darkNight = true)) < brightness(SkyPhase.EarlyDawn.stops))
+        // Day, dawn and dusk don't change.
+        listOf(SkyPhase.Dawn, SkyPhase.Day, SkyPhase.Dusk).forEach {
+            assertEquals(it.stops, it.stops(darkNight = true), "$it")
+        }
+    }
+
+    @Test
     fun `the next change is the first minute of the new phase`() {
         val start = Instant.parse("2026-12-21T05:00:00Z")
         val before = SkyPhase.at(start, berlin)

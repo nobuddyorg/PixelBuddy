@@ -96,7 +96,7 @@ class BackupTest {
 
     private fun export(): File {
         val file = File(folder.root, "pixelbuddy-settings.zip")
-        compose.onNodeWithText("▶ Export settings").performClick()
+        compose.onNodeWithText("► Export settings").performClick()
         val request = shadowOf(compose.activity).nextStartedActivityForResult
         assertEquals(Intent.ACTION_CREATE_DOCUMENT, request.intent.action)
         shadowOf(
@@ -116,7 +116,7 @@ class BackupTest {
         phone = 1
         compose.waitForIdle()
         openBackup()
-        compose.onNodeWithText("▶ Import settings").performClick()
+        compose.onNodeWithText("► Import settings").performClick()
         answerPicker(file)
 
         compose.onNodeWithText("Replace your settings?").assertIsDisplayed()
@@ -127,7 +127,7 @@ class BackupTest {
             ).assertIsDisplayed()
         // Nothing changes before the answer.
         assertEquals(Settings(setup = SetupStep.Done), phones[1].value)
-        compose.onNodeWithText("▶ Replace").performClick()
+        compose.onNodeWithText("► Replace").performClick()
 
         compose.onNodeWithText("Settings imported").assertIsDisplayed()
         assertEquals(oldPhone.copy(waitingApps = oldPhone.appKeys), phones[1].value)
@@ -140,9 +140,9 @@ class BackupTest {
         val file = export()
         phones[0].value = Settings(setup = SetupStep.Done)
 
-        compose.onNodeWithText("▶ Import settings").performClick()
+        compose.onNodeWithText("► Import settings").performClick()
         answerPicker(file)
-        compose.onNodeWithText("▶ Cancel").performClick()
+        compose.onNodeWithText("► Cancel").performClick()
 
         assertEquals(Settings(setup = SetupStep.Done), phones[0].value)
         compose.onNodeWithText("Replace your settings?").assertDoesNotExist()
@@ -153,7 +153,7 @@ class BackupTest {
         show()
         val notSettings = folder.newFile("holiday.zip").apply { writeText("just text") }
 
-        compose.onNodeWithText("▶ Import settings").performClick()
+        compose.onNodeWithText("► Import settings").performClick()
         answerPicker(notSettings)
 
         compose.onNodeWithText("That isn't a PixelBuddy settings file.").assertIsDisplayed()
@@ -164,7 +164,7 @@ class BackupTest {
     fun `screenshot import question`() {
         show()
         val file = export()
-        compose.onNodeWithText("▶ Import settings").performClick()
+        compose.onNodeWithText("► Import settings").performClick()
         answerPicker(file)
         compose.onRoot().captureRoboImage("Backup_import.png")
     }

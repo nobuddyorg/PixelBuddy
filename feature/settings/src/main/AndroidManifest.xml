@@ -3,4 +3,6 @@
 
     <!-- "Set as wallpaper" in the settings (#12); only when the user taps it. -->
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
+    <!-- With it, the wallpaper size the home app wants: the screen, so Android doesn't scale (blur) the sky. -->
+    <uses-permission android:name="android.permission.SET_WALLPAPER_HINTS" />
 </manifest>

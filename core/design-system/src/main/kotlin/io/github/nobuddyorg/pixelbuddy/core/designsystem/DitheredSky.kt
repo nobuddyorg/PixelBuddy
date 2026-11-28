@@ -74,8 +74,11 @@ object SkyImage {
     /** Size of one sky pixel. */
     val PixelSize: Dp = 1.5.dp
 
-    /** Scanline colour, drawn over every other row of sky pixels. */
-    val Scanline: Color = Color.Black.copy(alpha = 0.08f)
+    /**
+     * Scanline colour, drawn over every other row of sky pixels. Subtle but visible on a phone: at 8 % they could
+     * not be seen on the S24's dark sky.
+     */
+    val Scanline: Color = Color.Black.copy(alpha = 0.24f)
 
     /** One sky pixel in screen pixels, at least 1. */
     fun blockPx(pixelSizePx: Float): Int = max(1, pixelSizePx.roundToInt())
