@@ -38,6 +38,7 @@
     <string name="home_battery_charging">Battery %1$s, charging</string>
     <string name="home_battery_full">Battery full</string>
     <string name="home_search">Search</string>
+    <string name="home_search_release">Let go</string>
     <string name="home_back">Back</string>
     <string name="home_search_hint">Search apps</string>
     <string name="home_search_empty">No apps found</string>

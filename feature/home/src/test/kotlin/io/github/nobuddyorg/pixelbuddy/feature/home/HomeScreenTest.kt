@@ -794,6 +794,23 @@ class HomeScreenTest {
     }
 
     @Test
+    fun `a held pull raises the backdrop in blocks and asks to let go`() {
+        show(favorites = favorites)
+        searchButton().assertIsDisplayed()
+
+        compose.onRoot().performTouchInput {
+            down(Offset(centerX, height * 0.6f))
+            repeat(10) { moveBy(Offset(0f, -40f)) }
+        }
+        compose.mainClock.advanceTimeBy(500)
+
+        compose.onNodeWithText("▲ LET GO").assertExists()
+        compose.onRoot().captureRoboImage("HomeScreen_pulling.png")
+        compose.onRoot().performTouchInput { up() }
+        searchField().assertIsFocused()
+    }
+
+    @Test
     fun `a held swipe up survives a trembling finger`() {
         show(favorites = favorites)
 

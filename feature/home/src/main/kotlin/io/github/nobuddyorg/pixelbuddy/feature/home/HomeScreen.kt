@@ -1,11 +1,9 @@
 package io.github.nobuddyorg.pixelbuddy.feature.home
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -39,8 +37,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -134,6 +132,10 @@ fun HomeScreen(
     val reducedMotion = rememberReducedMotion()
     // How far an upward swipe has pulled the search in, in pixels; it opens on release past the threshold.
     val pull = remember { Animatable(0f) }
+    val threshold = with(LocalDensity.current) { SwipeDistance.toPx() }
+    // Pulled far enough: letting go opens the search.
+    val armed by remember { derivedStateOf { pull.value >= threshold } }
+    val edge = PixelBuddyTheme.style.accent.copy(alpha = EDGE_ALPHA)
     // The row whose menu is open; an app can have two rows (favorite and in the list).
     var menuRow by rememberSaveable(resetKey) { mutableStateOf<String?>(null) }
     // The row whose notification preview is open.
@@ -247,37 +249,50 @@ fun HomeScreen(
     ) {
         DitheredSky(Modifier.fillMaxSize())
         if (view == SEARCH) {
-            // Only the search is on screen then, for TalkBack too; it slides in once per opening.
-            val shown = remember { MutableTransitionState(reducedMotion) }.apply { targetState = true }
-            LaunchedEffect(Unit) { pull.snapTo(0f) }
-            AnimatedVisibility(
-                visibleState = shown,
-                enter = fadeIn() + slideInVertically { it / SLIDE_FRACTION },
-            ) {
-                Box(Modifier.fillMaxSize()) {
-                    Box(Modifier.fillMaxSize().background(SearchScrim))
-                    SearchPanel(
-                        apps = home.apps,
-                        onLaunch = { app ->
-                            // Enter in the search: no icon was tapped.
-                            onAppClick(app, null)
-                            view = Rail.FAVORITES
+            // Only the search is on screen then, for TalkBack too. Once per opening the blocks finish rising from
+            // where the pull left them, then the panel glides in.
+            val reveal = remember { Animatable(if (reducedMotion) 1f else pullProgress(pull.value, threshold)) }
+            LaunchedEffect(Unit) {
+                pull.snapTo(0f)
+                reveal.animateTo(1f, tween(((1f - reveal.value) * REVEAL_MILLIS).toInt(), easing = LinearEasing))
+            }
+            Box(Modifier.fillMaxSize().pixelDissolve({ reveal.value }, SearchScrim, edge)) {
+                SearchPanel(
+                    apps = home.apps,
+                    onLaunch = { app ->
+                        // Enter in the search: no icon was tapped.
+                        onAppClick(app, null)
+                        view = Rail.FAVORITES
+                    },
+                    entry = entry,
+                    modifier =
+                        Modifier.safeDrawingPadding().graphicsLayer {
+                            val shown = ((reveal.value - PANEL_FROM) / (1f - PANEL_FROM)).coerceIn(0f, 1f)
+                            alpha = shown
+                            translationY = (1f - shown) * PanelRise.toPx()
                         },
-                        entry = entry,
-                        modifier = Modifier.safeDrawingPadding(),
-                        onWebSearch =
-                            onWebSearch?.let { search ->
-                                { query ->
-                                    search(query)
-                                    view = Rail.FAVORITES
-                                }
-                            },
-                    )
-                }
+                    onWebSearch =
+                        onWebSearch?.let { search ->
+                            { query ->
+                                search(query)
+                                view = Rail.FAVORITES
+                            }
+                        },
+                )
             }
             return@Box
         }
-        Column(Modifier.fillMaxSize().safeDrawingPadding()) {
+        // While an upward swipe pulls, the search's backdrop rises behind home in blocks with the distance; read
+        // while drawing only, so a pull doesn't recompose home.
+        Box(Modifier.fillMaxSize().pixelDissolve({ pullProgress(pull.value, threshold) }, SearchScrim, edge))
+        Column(
+            Modifier.fillMaxSize().safeDrawingPadding().graphicsLayer {
+                // Home lifts and fades a little as the search is pulled in.
+                val progress = pullProgress(pull.value, threshold)
+                translationY = -progress * HomeLift.toPx()
+                alpha = 1f - progress * HOME_FADE
+            },
+        ) {
             // Full width, so the header can sit left, centred or right.
             Box(Modifier.fillMaxWidth().padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 16.dp)) { header() }
             Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -308,11 +323,15 @@ fun HomeScreen(
                                 ) { view = Rail.FAVORITES }
                             }
                             BottomButton(
-                                "▲ " + stringResource(R.string.home_search).uppercase(),
+                                "▲ " +
+                                    stringResource(
+                                        if (armed) R.string.home_search_release else R.string.home_search,
+                                    ).uppercase(),
                                 Modifier.weight(1f).graphicsLayer {
                                     // The button rises with an upward swipe that pulls the search in.
                                     translationY = -pull.value / 2
                                 },
+                                color = if (armed) PixelBuddyTheme.style.accent else PixelBuddyColors.Text,
                             ) { view = SEARCH }
                         }
                     }
@@ -324,11 +343,6 @@ fun HomeScreen(
                     modifier = Modifier.align(Alignment.CenterEnd).padding(top = 8.dp, bottom = 8.dp, end = 4.dp),
                 )
             }
-        }
-        // While an upward swipe pulls, the search's backdrop fades in with the distance.
-        if (pull.value > 0f) {
-            val progress = with(LocalDensity.current) { (pull.value / SwipeDistance.toPx()).coerceIn(0f, 1f) }
-            Box(Modifier.fillMaxSize().alpha(progress).background(SearchScrim))
         }
     }
 }
@@ -501,6 +515,7 @@ private val SectionPlate = PixelBuddyColors.Shadow.copy(alpha = 0.85f)
 private fun BottomButton(
     text: String,
     modifier: Modifier = Modifier,
+    color: Color = PixelBuddyColors.Text,
     onClick: () -> Unit,
 ) {
     Box(
@@ -510,15 +525,33 @@ private fun BottomButton(
                 .heightIn(min = 48.dp)
                 .clickable(role = Role.Button, onClick = onClick),
     ) {
-        BasicText(text, style = PixelText.small.copy(color = PixelBuddyColors.Text))
+        BasicText(text, style = PixelText.small.copy(color = color))
     }
 }
 
 private val SwipeDistance = 64.dp
 private const val SWIPE_VELOCITY = 1500f
 
-/** The search slides in from a quarter of its height below. */
-private const val SLIDE_FRACTION = 4
+/**
+ * How far the blocks have risen for a pull of [px]: a third of the way at the swipe threshold, so the rest rises on
+ * release.
+ */
+private fun pullProgress(
+    px: Float,
+    threshold: Float,
+) = (px / (threshold * PULL_SPAN)).coerceIn(0f, 1f)
+
+private const val PULL_SPAN = 3f
+
+/** The blocks rise over the whole screen in this long; from a pull, only the rest of the way. */
+private const val REVEAL_MILLIS = 280
+
+/** The panel glides in over the last part of the rise, from [PanelRise] below. */
+private const val PANEL_FROM = 0.6f
+private val PanelRise = 24.dp
+private val HomeLift = 24.dp
+private const val EDGE_ALPHA = 0.7f
+private const val HOME_FADE = 0.4f
 private val SearchScrim = PixelBuddyColors.Navy.copy(alpha = 0.82f)
 
 /** An app row with its menu while [menuOpen]; [onMenu] gets the app to open the menu, null to close it. */
