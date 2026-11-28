@@ -437,7 +437,8 @@ private fun rememberOverscrollSwipes(swipes: () -> VerticalSwipes): NestedScroll
     val threshold = with(LocalDensity.current) { SwipeDistance.toPx() }
     return remember(threshold) {
         object : NestedScrollConnection {
-            // Finger up = negative y. Keeps summing in one direction; a change of direction starts over.
+            // How far the finger went past the end of the list in this gesture, net (finger up = negative y). A
+            // held finger trembles in both directions; resetting on every turn made the pull snap back.
             private var pulled = 0f
 
             override fun onPostScroll(
@@ -445,9 +446,8 @@ private fun rememberOverscrollSwipes(swipes: () -> VerticalSwipes): NestedScroll
                 available: Offset,
                 source: NestedScrollSource,
             ): Offset {
-                if (source != NestedScrollSource.UserInput) return Offset.Zero
-                pulled =
-                    if (available.y == 0f || (available.y < 0f) != (pulled < 0f)) available.y else pulled + available.y
+                if (source != NestedScrollSource.UserInput || available.y == 0f) return Offset.Zero
+                pulled += available.y
                 current().onPull(-pulled)
                 return Offset.Zero
             }

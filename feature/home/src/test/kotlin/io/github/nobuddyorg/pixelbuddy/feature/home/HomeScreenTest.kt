@@ -754,6 +754,24 @@ class HomeScreenTest {
     }
 
     @Test
+    fun `a held swipe up survives a trembling finger`() {
+        show(favorites = favorites)
+
+        compose.onRoot().performTouchInput {
+            down(Offset(centerX, height * 0.6f))
+            repeat(10) { moveBy(Offset(0f, -40f)) }
+            // Holding still: the finger trembles a little, also downwards.
+            repeat(5) {
+                moveBy(Offset(0f, 2f))
+                moveBy(Offset(0f, -1f))
+            }
+            up()
+        }
+
+        searchField().assertIsFocused()
+    }
+
+    @Test
     fun `a swipe up held on the header only opens the search when the finger lifts`() {
         show(favorites = favorites)
 
