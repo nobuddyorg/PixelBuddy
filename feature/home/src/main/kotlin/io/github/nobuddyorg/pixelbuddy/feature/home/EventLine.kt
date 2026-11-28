@@ -55,7 +55,7 @@ internal sealed interface EventTime {
     }
 }
 
-/** The next calendar event under the date, e.g. "▶ 14:00 Dentist"; tapping it opens the event. */
+/** The next calendar event under the date, e.g. "► 14:00 Dentist"; tapping it opens the event. */
 @Composable
 internal fun EventLine(
     event: CalendarEvent,
@@ -98,7 +98,7 @@ internal fun EventLine(
                 ),
     ) {
         BasicText(
-            "▶ $text",
+            "► $text",
             style = PixelText.small.copy(color = PixelBuddyColors.Text),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

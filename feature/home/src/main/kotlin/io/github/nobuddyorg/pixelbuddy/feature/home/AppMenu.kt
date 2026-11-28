@@ -194,7 +194,7 @@ private fun MenuItem(
                 .clickable(role = Role.Button, onClick = onClick)
                 .padding(horizontal = 16.dp),
     ) {
-        BasicText("▶ $text", style = PixelText.body.copy(color = PixelBuddyTheme.style.accent), maxLines = 1)
+        BasicText("► $text", style = PixelText.body.copy(color = PixelBuddyTheme.style.accent), maxLines = 1)
     }
 }
 

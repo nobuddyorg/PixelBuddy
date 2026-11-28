@@ -96,7 +96,7 @@ class EventLineTest {
         var opened = 0
         show(EventTime.At("15:00", tomorrow = true), onClick = { opened++ })
 
-        compose.onNodeWithText("▶ Tomorrow 15:00 Dentist").performClick()
+        compose.onNodeWithText("► Tomorrow 15:00 Dentist").performClick()
 
         assertEquals(1, opened)
     }
@@ -104,14 +104,14 @@ class EventLineTest {
     @Test
     fun `running, all-day and untitled events read clearly`() {
         show(EventTime.Until("11:30"), title = "")
-        compose.onNodeWithText("▶ Until 11:30 (No title)").assertIsDisplayed()
+        compose.onNodeWithText("► Until 11:30 (No title)").assertIsDisplayed()
     }
 
     @Test
     fun `the event line is accessible`() {
         show(EventTime.AllDay(tomorrow = false))
 
-        compose.onNodeWithText("▶ Today: Dentist").assertIsDisplayed()
+        compose.onNodeWithText("► Today: Dentist").assertIsDisplayed()
         compose.assertAccessible(48 * compose.density.density)
     }
 

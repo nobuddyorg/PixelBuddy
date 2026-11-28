@@ -1,7 +1,10 @@
 package io.github.nobuddyorg.pixelbuddy.feature.home
 
 import android.app.Application
+import android.content.ComponentName
+import android.content.ContextWrapper
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.BatteryManager
 import android.provider.AlarmClock
 import androidx.compose.foundation.background
@@ -90,6 +93,42 @@ class HomeHeaderTest {
         val calendar = shadowOf(app).nextStartedActivity
         assertEquals(Intent.ACTION_VIEW, calendar.action)
         assertEquals("content://com.android.calendar/time", calendar.data.toString().substringBeforeLast('/'))
+    }
+
+    @Test
+    fun `a clock app that guards its alarms page opens itself instead`() {
+        // Like Samsung's clock: the alarms page needs a permission PixelBuddy doesn't have.
+        val clock = "com.example.clock"
+        val packages = shadowOf(app.packageManager)
+        val alarms = ComponentName(clock, "$clock.Alarms")
+        val main = ComponentName(clock, "$clock.Main")
+        packages.addActivityIfNotPresent(alarms)
+        packages.addIntentFilterForActivity(
+            alarms,
+            IntentFilter(AlarmClock.ACTION_SHOW_ALARMS).apply {
+                addCategory(Intent.CATEGORY_DEFAULT)
+            },
+        )
+        packages.addActivityIfNotPresent(main)
+        packages.addIntentFilterForActivity(
+            main,
+            IntentFilter(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_LAUNCHER)
+            },
+        )
+        val guarded =
+            object : ContextWrapper(app) {
+                override fun startActivity(intent: Intent) {
+                    if (intent.action == AlarmClock.ACTION_SHOW_ALARMS) throw SecurityException("needs SET_ALARM")
+                    super.startActivity(intent)
+                }
+            }
+
+        guarded.openAlarms()
+
+        val started = shadowOf(app).nextStartedActivity
+        assertEquals(clock, started.component?.packageName ?: started.`package`)
+        assertEquals(Intent.ACTION_MAIN, started.action)
     }
 
     @Test

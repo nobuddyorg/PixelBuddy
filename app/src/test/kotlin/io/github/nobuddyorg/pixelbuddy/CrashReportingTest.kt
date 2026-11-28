@@ -55,8 +55,8 @@ class CrashReportingTest {
 
     @Test
     fun `a new install shows the setup and skipping it shows home`() {
-        compose.waitUntil(5_000) { compose.onAllNodesWithText("▶ Skip setup").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("▶ Skip setup").performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("► Skip setup").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("► Skip setup").performClick()
 
         val home = SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Home screen")
         compose.waitUntil(5_000) { compose.onAllNodes(home).fetchSemanticsNodes().isNotEmpty() }
@@ -64,8 +64,8 @@ class CrashReportingTest {
 
     @Test
     fun `long press on home opens the settings`() {
-        compose.waitUntil(5_000) { compose.onAllNodesWithText("▶ Skip setup").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("▶ Skip setup").performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("► Skip setup").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("► Skip setup").performClick()
         // Home shows once the setup is stored as done.
         val home = SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Home screen")
         compose.waitUntil(5_000) { compose.onAllNodes(home).fetchSemanticsNodes().isNotEmpty() }

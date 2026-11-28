@@ -149,7 +149,7 @@ internal fun WeatherPlaceContent(
 
     Column {
         Title(stringResource(R.string.weather_location))
-        TextButton(stringResource(R.string.action_back), onBack, color = TextColor)
+        TextButton(stringResource(R.string.action_back), onBack, color = TextColor, pointer = "◄")
         BasicTextField(
             state = query,
             textStyle = BodyStyle,
@@ -230,7 +230,7 @@ internal fun WeatherTapAppContent(
     BackHandler(onBack = onBack)
     Column {
         Title(stringResource(R.string.weather_tap))
-        TextButton(stringResource(R.string.action_back), onBack, color = TextColor)
+        TextButton(stringResource(R.string.action_back), onBack, color = TextColor, pointer = "◄")
         LazyColumn(Modifier.fillMaxWidth()) {
             item {
                 ListRow(

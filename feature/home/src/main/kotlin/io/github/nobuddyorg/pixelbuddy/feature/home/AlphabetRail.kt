@@ -198,7 +198,7 @@ private fun SpeechBubble(
 
 /** True if the user turned animations off (developer options or accessibility "remove animations"). */
 @Composable
-private fun rememberReducedMotion(): Boolean {
+internal fun rememberReducedMotion(): Boolean {
     val resolver = LocalContext.current.contentResolver
     return remember(resolver) {
         Settings.Global.getFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f

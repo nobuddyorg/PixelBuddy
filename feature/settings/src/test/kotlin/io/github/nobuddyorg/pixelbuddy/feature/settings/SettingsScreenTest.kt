@@ -217,7 +217,7 @@ class SettingsScreenTest {
 
         open("About")
         open("Licences")
-        compose.onNodeWithText("▶ Back").performClick()
+        compose.onNodeWithText("◄ Back").performClick()
         compose.onNodeWithText("Source code").assertIsDisplayed()
     }
 
@@ -359,7 +359,7 @@ class SettingsScreenTest {
         repeat(4) { compose.onNodeWithText("Double tap on empty space").performClick() }
         assertEquals(GestureAction.Lock, settings.value.gestures.doubleTap)
         compose.onNodeWithText("Off: turn it on so the gesture can lock the screen.").assertIsDisplayed()
-        compose.onNodeWithText("▶ Turn on in accessibility settings").performScrollTo().performClick()
+        compose.onNodeWithText("► Turn on in accessibility settings").performScrollTo().performClick()
         assertEquals(
             android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS,
             shadowOf(ApplicationProvider.getApplicationContext<Application>()).nextStartedActivity.action,
@@ -367,7 +367,7 @@ class SettingsScreenTest {
 
         lock.available.value = true
         compose.onNodeWithText("On: the gesture locks the screen.").assertIsDisplayed()
-        compose.onNodeWithText("▶ Turn on in accessibility settings").assertDoesNotExist()
+        compose.onNodeWithText("► Turn on in accessibility settings").assertDoesNotExist()
 
         // Past "Lock" the cycle starts over, and nothing locks any more.
         compose.onNodeWithText("Double tap on empty space").performClick()
@@ -409,13 +409,13 @@ class SettingsScreenTest {
         showRoute(homeWidgets = HomeWidgets(ApplicationProvider.getApplicationContext()))
         open("Widget")
 
-        compose.onNodeWithText("▶ Add a widget").performClick()
+        compose.onNodeWithText("► Add a widget").performClick()
         compose.onNodeWithText("World clock").performClick()
 
         assertNotNull(settings.value.widget.id)
         compose.onNodeWithText("Below the favorites").performClick()
         assertTrue(settings.value.widget.below)
-        compose.onNodeWithText("▶ Remove the widget").performClick()
+        compose.onNodeWithText("► Remove the widget").performClick()
         assertNull(settings.value.widget.id)
     }
 
@@ -426,7 +426,7 @@ class SettingsScreenTest {
         open("Widget")
 
         compose.onNodeWithText("The widget's app is gone. It shows again when the app is back.").assertIsDisplayed()
-        compose.onNodeWithText("▶ Remove the widget").performClick()
+        compose.onNodeWithText("► Remove the widget").performClick()
 
         assertNull(settings.value.widget.id)
     }
@@ -515,14 +515,14 @@ class SettingsScreenTest {
 
         assertTrue(settings.value.notifications.dots)
         compose.onNodeWithText("Not granted: Android asks once you allow it.").assertIsDisplayed()
-        compose.onNodeWithText("▶ Allow notification access").performScrollTo().performClick()
+        compose.onNodeWithText("► Allow notification access").performScrollTo().performClick()
         assertEquals(
             android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS,
             shadowOf(ApplicationProvider.getApplicationContext<Application>()).nextStartedActivity.action,
         )
         access.connected.value = true
         compose.onNodeWithText("Granted").assertIsDisplayed()
-        compose.onNodeWithText("▶ Allow notification access").assertDoesNotExist()
+        compose.onNodeWithText("► Allow notification access").assertDoesNotExist()
     }
 
     @Test
@@ -626,7 +626,7 @@ class SettingsScreenTest {
         showRoute()
         open("Wallpaper & background")
 
-        compose.onNodeWithText("▶ Lock screen").performScrollTo().performClick()
+        compose.onNodeWithText("► Lock screen").performScrollTo().performClick()
 
         compose.onNodeWithText("Wallpaper set").assertIsDisplayed()
         val wallpapers = shadowOf(WallpaperManager.getInstance(app))
@@ -639,7 +639,7 @@ class SettingsScreenTest {
         showRoute()
         open("Wallpaper & background")
 
-        compose.onNodeWithText("▶ Both").performScrollTo().performClick()
+        compose.onNodeWithText("► Both").performScrollTo().performClick()
 
         val wallpapers = shadowOf(WallpaperManager.getInstance(app))
         val lock = assertNotNull(wallpapers.getBitmap(WallpaperManager.FLAG_LOCK))
@@ -655,7 +655,7 @@ class SettingsScreenTest {
         showRoute()
         open("Wallpaper & background")
 
-        compose.onNodeWithText("▶ Home screen").performScrollTo().performClick()
+        compose.onNodeWithText("► Home screen").performScrollTo().performClick()
 
         compose.onNodeWithText("This phone doesn't allow changing the wallpaper").assertIsDisplayed()
     }
@@ -829,7 +829,7 @@ class SettingsScreenTest {
         compose.onNodeWithText("Crash report").assertIsDisplayed()
         compose.onNodeWithText(reportText("second").trimEnd(), substring = true).assertIsDisplayed()
 
-        compose.onNodeWithText("▶ Delete").performClick()
+        compose.onNodeWithText("► Delete").performClick()
 
         compose.onNodeWithText("java.lang.IllegalStateException: first").assertIsDisplayed()
         assertEquals(listOf("java.lang.IllegalStateException: first"), store.list().map { it.summary })
@@ -847,7 +847,7 @@ class SettingsScreenTest {
         compose.onNodeWithText("Reports stay on this phone", substring = true).assertIsDisplayed()
 
         compose.onNodeWithText("java.lang.IllegalStateException: first").performClick()
-        compose.onNodeWithText("▶ Back").performClick()
+        compose.onNodeWithText("◄ Back").performClick()
         compose.onNodeWithText("java.lang.IllegalStateException: first").assertIsDisplayed()
     }
 
@@ -857,7 +857,7 @@ class SettingsScreenTest {
         showRoute()
         openCrashReports()
 
-        compose.onNodeWithText("▶ Delete all").performClick()
+        compose.onNodeWithText("► Delete all").performClick()
 
         compose.onNodeWithText("No crash reports. Nothing has crashed so far.").assertIsDisplayed()
         assertEquals(emptyList(), store.list())

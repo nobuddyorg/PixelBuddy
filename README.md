@@ -77,8 +77,8 @@ Apps → Choose default apps → Home app.
 |---|---|
 | Tap an app | Opens it, growing out of its icon |
 | Long-press an app | The app's shortcuts (e.g. "New message"), favorite, move, edit icon, hide, app info, uninstall |
-| Tap or drag the alphabet rail | Shows the apps of a letter |
-| Swipe up / ▲ Search | Search; Enter opens the top match |
+| Tap or drag the alphabet rail | All apps, at that letter (◄ Back returns) |
+| Swipe up / ▲ Search | Search (opens when you let go); Enter opens the top match |
 | Swipe down | Notifications |
 | Long-press empty space | Settings |
 | Double-tap empty space | Nothing, or e.g. lock the screen (opt-in) |

@@ -261,7 +261,12 @@ internal fun IconEditorScreen(
 
     SettingsFrame(modifier) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-            TextButton(stringResource(R.string.action_back), { onAction(IconEditorAction.Back) }, color = TextColor)
+            TextButton(
+                stringResource(R.string.action_back),
+                { onAction(IconEditorAction.Back) },
+                color = TextColor,
+                pointer = "◄",
+            )
             Title(
                 if (forApp == null) {
                     stringResource(R.string.settings_icons)

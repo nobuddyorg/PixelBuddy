@@ -88,6 +88,8 @@ internal fun TextButton(
     modifier: Modifier = Modifier,
     color: Color = PixelBuddyTheme.style.accent,
     enabled: Boolean = true,
+    /** ◄ for back buttons, ► (the press cursor) for everything else; both are in the pixel font. */
+    pointer: String = "►",
 ) {
     Box(
         contentAlignment = Alignment.CenterStart,
@@ -97,7 +99,10 @@ internal fun TextButton(
                 .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
                 .padding(end = 16.dp),
     ) {
-        BasicText("▶ $text", style = BodyStyle.copy(color = if (enabled) color else MutedTextColor.copy(alpha = 0.6f)))
+        BasicText(
+            "$pointer $text",
+            style = BodyStyle.copy(color = if (enabled) color else MutedTextColor.copy(alpha = 0.6f)),
+        )
     }
 }
 
@@ -156,7 +161,7 @@ internal fun ToggleRow(
     }
 }
 
-/** One of several options as a row; [selected] shows the "▶" cursor. */
+/** One of several options as a row; [selected] shows the "►" cursor. */
 @Composable
 internal fun OptionRow(
     title: String,
@@ -175,7 +180,7 @@ internal fun OptionRow(
                 .padding(vertical = 8.dp),
     ) {
         BasicText(
-            if (selected) "▶" else " ",
+            if (selected) "►" else " ",
             style = BodyStyle.copy(color = PixelBuddyTheme.style.accent),
             modifier = Modifier.padding(end = 12.dp),
         )

@@ -347,7 +347,11 @@ private fun every(period: Duration) =
 private val CALENDAR_REFRESH = Duration.ofMinutes(30)
 
 internal fun Context.openAlarms() {
-    startFirstAvailable(Intent(AlarmClock.ACTION_SHOW_ALARMS))
+    val alarms = Intent(AlarmClock.ACTION_SHOW_ALARMS)
+    // Some clock apps guard the alarms page (Samsung's may need a permission PixelBuddy doesn't have): then the
+    // clock app itself opens.
+    val clockApp = alarms.resolveActivity(packageManager)?.packageName?.let(packageManager::getLaunchIntentForPackage)
+    startFirstAvailable(*listOfNotNull(alarms, clockApp).toTypedArray())
 }
 
 internal fun Context.openCalendar() {
@@ -367,6 +371,8 @@ private fun Context.startFirstAvailable(vararg intents: Intent) {
             return
         } catch (_: ActivityNotFoundException) {
             // Try the next one; with no clock or calendar app, nothing happens.
+        } catch (_: SecurityException) {
+            // The app guards this page with a permission: try the next one.
         }
     }
 }

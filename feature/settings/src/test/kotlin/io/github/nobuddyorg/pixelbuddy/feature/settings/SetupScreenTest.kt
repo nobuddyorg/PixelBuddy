@@ -108,7 +108,7 @@ class SetupScreenTest {
         show()
 
         compose.onNodeWithText("SETUP · 1 OF 3").assertIsDisplayed()
-        compose.onNodeWithText("▶ Make PixelBuddy the home app").assertIsDisplayed()
+        compose.onNodeWithText("► Make PixelBuddy the home app").assertIsDisplayed()
     }
 
     @Test
@@ -128,7 +128,7 @@ class SetupScreenTest {
         val homeApp = FakeHomeApp(isHome = false)
         show(homeApp)
 
-        compose.onNodeWithText("▶ Make PixelBuddy the home app").performClick()
+        compose.onNodeWithText("► Make PixelBuddy the home app").performClick()
         val activity = shadowOf(compose.activity)
         val request = activity.nextStartedActivityForResult
         assertEquals(homeApp.roleDialog, request.intent)
@@ -144,14 +144,14 @@ class SetupScreenTest {
     fun `declining the home app explains how to change it later`() {
         show()
 
-        compose.onNodeWithText("▶ Make PixelBuddy the home app").performClick()
+        compose.onNodeWithText("► Make PixelBuddy the home app").performClick()
         val activity = shadowOf(compose.activity)
         val request = activity.nextStartedActivityForResult
         activity.receiveResult(request.intent, Activity.RESULT_CANCELED, null)
 
         compose.onNodeWithText("You can change that later", substring = true).assertIsDisplayed()
         assertEquals(SetupStep.HomeApp, step)
-        compose.onNodeWithText("▶ Not now").performClick()
+        compose.onNodeWithText("► Not now").performClick()
         assertEquals(SetupStep.Favorites, step)
     }
 
@@ -172,7 +172,7 @@ class SetupScreenTest {
         compose.onNodeWithText("Signal").assertIsOff()
         compose.onNodeWithText("Maps").assertIsOn()
 
-        compose.onNodeWithText("▶ Next").performClick()
+        compose.onNodeWithText("► Next").performClick()
         assertEquals(SetupStep.Weather, step)
     }
 
@@ -244,7 +244,7 @@ class SetupScreenTest {
     fun `skipping ends the setup from any step`() {
         show()
 
-        compose.onNodeWithText("▶ Skip setup").performClick()
+        compose.onNodeWithText("► Skip setup").performClick()
 
         assertEquals(SetupStep.Done, step)
         assertEquals(Settings(setup = SetupStep.Done), settings.value)
@@ -255,7 +255,7 @@ class SetupScreenTest {
         settings.value = Settings(setup = SetupStep.Favorites)
         show()
         compose.onNodeWithText("Bahn").performClick()
-        compose.onNodeWithText("▶ Next").performClick()
+        compose.onNodeWithText("► Next").performClick()
 
         process++
 

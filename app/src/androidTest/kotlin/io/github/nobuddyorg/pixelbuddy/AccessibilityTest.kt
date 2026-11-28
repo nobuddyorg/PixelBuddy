@@ -36,7 +36,7 @@ class AccessibilityTest {
         listOf("Appearance & themes", "Clock & typography", "Gestures", "Wallpaper & background").forEach { page ->
             compose.onNodeWithText(page).performScrollTo().performClick()
             compose.onRoot().tryPerformAccessibilityChecks()
-            compose.onNodeWithText("▶ Back").performClick()
+            compose.onNodeWithText("◄ Back").performClick()
         }
     }
 

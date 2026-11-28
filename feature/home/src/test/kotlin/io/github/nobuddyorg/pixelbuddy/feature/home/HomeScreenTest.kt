@@ -618,16 +618,45 @@ class HomeScreenTest {
         assertEquals(listOf("Telefon"), launched)
     }
 
+    private val allLabels get() = sampleApps.map { it.app.label }
+
+    private fun railState(letter: String) =
+        compose
+            .onNodeWithContentDescription("Alphabet")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, letter))
+
+    private fun backButton() = compose.onNodeWithText("◄ BACK")
+
     @Test
-    fun `tapping a rail letter shows that letter's apps until a tap elsewhere`() {
+    fun `a rail letter shows every app at that letter until Back or a tap elsewhere`() {
         show(favorites = favorites)
 
         tapRail("S")
 
-        assertEquals(listOf("Signal", "Spotify"), appRowLabels())
+        assertEquals(allLabels, appRowLabels())
         compose.onNode(hasText("S") and isHeading()).assertIsDisplayed()
-        compose.onRoot().performTouchInput { click(Offset(width / 2f, height - 300f)) }
+        railState("S")
+        backButton().performClick()
         assertEquals(favorites.map { it.label }, appRowLabels())
+        backButton().assertDoesNotExist()
+
+        tapRail("S")
+        compose.onRoot().performTouchInput { click(Offset(width / 2f, height * 0.15f)) }
+        assertEquals(favorites.map { it.label }, appRowLabels())
+    }
+
+    @Test
+    fun `swipes in the list of all apps scroll it and never open the search`() {
+        show(favorites = favorites)
+        tapRail("A")
+
+        compose.onRoot().performTouchInput { swipeUp(startY = height * 0.7f, endY = height * 0.2f) }
+        compose.onRoot().performTouchInput { swipeDown(startY = height * 0.3f, endY = height * 0.8f) }
+
+        searchField().assertDoesNotExist()
+        // Still the list of all apps.
+        backButton().assertIsDisplayed()
+        compose.onNode(hasText("A") and isHeading()).assertExists()
     }
 
     @Test
@@ -637,24 +666,26 @@ class HomeScreenTest {
         // No app starts with R; S is the nearest letter with apps.
         tapRail("R")
 
-        assertEquals(listOf("Signal", "Spotify"), appRowLabels())
+        railState("S")
+        compose.onNode(hasText("S") and isHeading()).assertIsDisplayed()
     }
 
     @Test
-    fun `dragging along the rail follows the finger and lifting keeps the group`() {
+    fun `dragging along the rail follows the finger and lifting keeps the letter`() {
         show(favorites = favorites)
 
         compose.onNodeWithContentDescription("Alphabet").performTouchInput {
             down(Offset(centerX, railY("A")))
             moveTo(Offset(centerX, railY("F")))
         }
-        assertEquals(listOf("Firefox"), appRowLabels())
+        railState("F")
         compose.onNodeWithContentDescription("Alphabet").performTouchInput {
             moveTo(Offset(centerX, railY("T")))
             up()
         }
 
-        assertEquals(listOf("Teams", "Telefon"), appRowLabels())
+        railState("T")
+        assertEquals(allLabels, appRowLabels())
     }
 
     @Test
@@ -662,7 +693,7 @@ class HomeScreenTest {
         show(favorites = favorites)
 
         tapRail("M")
-        assertEquals(listOf("Maps"), appRowLabels())
+        assertEquals(allLabels, appRowLabels())
         Espresso.pressBack()
         assertEquals(favorites.map { it.label }, appRowLabels())
 
@@ -693,8 +724,18 @@ class HomeScreenTest {
             actions,
         )
         compose.runOnIdle { custom.first { it.label == "Apps with P" }.action() }
-        assertEquals(listOf("Proton Mail"), appRowLabels())
-        rail.assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "P"))
+        compose.onNode(hasText("P") and isHeading()).assertIsDisplayed()
+        railState("P")
+    }
+
+    @Test
+    fun `a short swipe up springs back without opening the search`() {
+        show(favorites = favorites)
+
+        compose.onRoot().performTouchInput { swipeUp(startY = height * 0.2f, endY = height * 0.2f - 20f) }
+
+        searchField().assertDoesNotExist()
+        searchButton().assertIsDisplayed()
     }
 
     @Test

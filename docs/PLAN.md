@@ -27,7 +27,7 @@ is the source of truth for progress; each sub-issue is one small, independently 
 
 Niagara's layout and whitespace, styled like a retro game: pixel clock with 1 px drop shadow, info line
 `Fri 06 Nov  ▮▮▮▯ 58%  ☾ 4°` (battery as HP bar with charging state), navy→purple→orange dithered gradient,
-optional faint CRT scanlines (off by default), `▶` press cursor, pixel speech-bubble on the rail. Configurable
+optional faint CRT scanlines (off by default), `►` press cursor (`◄` on back buttons), pixel speech-bubble on the rail. Configurable
 accent colour (orange default). Icons: pixel presets (#6) and automatic neon outline icons (#29).
 
 ## Architecture

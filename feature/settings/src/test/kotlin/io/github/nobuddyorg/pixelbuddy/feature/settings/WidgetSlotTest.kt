@@ -83,7 +83,7 @@ class WidgetSlotTest {
             )
         }
         compose.onNodeWithText("Widget").performScrollTo().performClick()
-        compose.onNodeWithText("▶ Add a widget").performClick()
+        compose.onNodeWithText("► Add a widget").performClick()
         compose.onNodeWithText("Note").performClick()
     }
 

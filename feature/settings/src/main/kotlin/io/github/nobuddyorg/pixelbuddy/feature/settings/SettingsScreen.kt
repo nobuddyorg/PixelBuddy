@@ -212,6 +212,7 @@ fun SettingsScreen(
                         stringResource(R.string.action_back),
                         { onAction(SettingsAction.Navigate(page.parent)) },
                         color = TextColor,
+                        pointer = "◄",
                     )
                 }
                 Title(stringResource(page.title))
@@ -355,6 +356,7 @@ private fun CrashReportContent(
                 stringResource(R.string.action_back),
                 { onAction(SettingsAction.CloseReport) },
                 color = TextColor,
+                pointer = "◄",
             )
             TextButton(stringResource(R.string.crash_report_share), { onAction(SettingsAction.ShareReport(report)) })
             TextButton(
