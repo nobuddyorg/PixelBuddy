@@ -15,10 +15,14 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
-/** What home shows: favorites in the user's order and all apps sorted, both without hidden apps. */
+/**
+ * What home shows: favorites in the user's order and all apps sorted, both without hidden apps. The [hidden] ones
+ * are only found by the search.
+ */
 data class HomeApps(
     val favorites: List<LauncherApp> = emptyList(),
     val apps: List<AppListEntry> = emptyList(),
+    val hidden: List<AppListEntry> = emptyList(),
 )
 
 /** All launchable apps, sorted and live-updated, combined with the user's favorites and hidden apps. */
@@ -49,9 +53,9 @@ class AppRepository(
     /** Home content. Collect only while home is visible. */
     val home: Flow<HomeApps> =
         combine(installed, preferences.favorites, preferences.hidden) { apps, favorites, hidden ->
-            val visible = apps.filterNot { it.app.key in hidden }
+            val (hiddenApps, visible) = apps.partition { it.app.key in hidden }
             val byKey = visible.associateBy { it.app.key }
-            HomeApps(favorites = favorites.mapNotNull { byKey[it]?.app }, apps = visible)
+            HomeApps(favorites = favorites.mapNotNull { byKey[it]?.app }, apps = visible, hidden = hiddenApps)
         }.distinctUntilChanged()
 
     /** Hidden apps that are installed, in list order, e.g. to show them again from the settings. */

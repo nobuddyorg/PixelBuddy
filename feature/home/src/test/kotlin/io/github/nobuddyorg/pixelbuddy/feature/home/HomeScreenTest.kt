@@ -987,10 +987,24 @@ class HomeScreenTest {
         Espresso.pressBack()
         compose.waitUntil { appRowLabels() == listOf("Maps") }
 
-        assertEquals("Signal hidden. Show it again in the settings.", ShadowToast.getTextOfLatestToast())
+        assertEquals(
+            "Signal hidden. The search still finds it; show it again from there or in the settings.",
+            ShadowToast.getTextOfLatestToast(),
+        )
         val stored = runBlocking { settings.settings.first() }
         assertEquals(listOf(app("Maps").key), stored.favorites)
         assertEquals(setOf(app("Signal").key), stored.hidden)
+
+        // Hidden, but the search finds it, marked, and shows it again.
+        openSearch()
+        assertFalse(hasApp("Signal"))
+        searchField().performTextInput("sig")
+        compose.onNodeWithText("Signal  Hidden").assertIsDisplayed()
+        openMenu("Signal")
+        compose.onNodeWithText("Hide", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Add to favorites", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Show again", substring = true).performClick()
+        compose.waitUntil { runBlocking { settings.settings.first() }.hidden.isEmpty() }
     }
 
     @Test

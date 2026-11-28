@@ -65,12 +65,16 @@ internal fun SearchPanel(
     entry: SearchEntry,
     modifier: Modifier = Modifier,
     onWebSearch: ((String) -> Unit)? = null,
+    /** Hidden apps: not listed, but found when typed. */
+    hidden: List<AppListEntry> = emptyList(),
 ) {
     val state = rememberTextFieldState()
     val query = state.text.toString()
     // Recomputed per keystroke only; ~200 labels take well under a millisecond.
     val results =
-        remember(apps, query) { if (query.isBlank()) null else AppSearch.search(apps, query) { it.app.label } }
+        remember(apps, hidden, query) {
+            if (query.isBlank()) null else AppSearch.search(apps + hidden, query) { it.app.label }
+        }
     val focus = remember { FocusRequester() }
     LaunchedEffect(focus) { focus.requestFocus() }
     val hint = stringResource(R.string.home_search_hint)

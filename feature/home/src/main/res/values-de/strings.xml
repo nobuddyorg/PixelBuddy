@@ -49,10 +49,12 @@
     <string name="home_menu_move_down">Nach unten</string>
     <string name="home_menu_edit_icon">Symbol bearbeiten</string>
     <string name="home_menu_hide">Ausblenden</string>
+    <string name="home_menu_unhide">Wieder einblenden</string>
+    <string name="home_hidden_app">Ausgeblendet</string>
     <string name="home_menu_app_info">App-Info</string>
     <string name="home_menu_uninstall">Deinstallieren</string>
     <string name="home_menu_shortcuts_need_home">App-Verknüpfungen erscheinen hier, wenn PixelBuddy die Startbildschirm-App ist.</string>
-    <string name="home_app_hidden">%1$s ausgeblendet. In den Einstellungen wieder einblenden.</string>
+    <string name="home_app_hidden">%1$s ausgeblendet. Die Suche findet es weiterhin; dort oder in den Einstellungen wieder einblenden.</string>
     <string name="home_action_failed">Für %1$s nicht möglich</string>
     <string name="home_rail">Alphabet</string>
     <string name="home_rail_favorites">Favoriten</string>

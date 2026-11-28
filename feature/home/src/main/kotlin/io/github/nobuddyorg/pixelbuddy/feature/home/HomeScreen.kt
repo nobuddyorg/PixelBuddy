@@ -214,10 +214,12 @@ fun HomeScreen(
     val doubleTap by rememberUpdatedState { perform(gestures.doubleTap) }
     val hasDoubleTap = gestures.doubleTap != GestureAction.Nothing
 
+    val hiddenKeys = remember(home.hidden) { home.hidden.mapTo(HashSet()) { it.app.key } }
     val entry: SearchEntry = { rowId, app, highlight, top ->
         AppEntry(
             app = app,
             home = home,
+            hidden = app.key in hiddenKeys,
             showLabel = favoriteLabels || !rowId.startsWith(FAVORITE_ROW),
             menuOpen = rowId == menuRow,
             icon = icon,
@@ -347,6 +349,7 @@ fun HomeScreen(
         if (searching) {
             SearchPanel(
                 apps = home.apps,
+                hidden = home.hidden,
                 onLaunch = { app ->
                     // Enter in the search: no icon was tapped.
                     onAppClick(app, null)
@@ -612,10 +615,12 @@ private fun AppEntry(
     onPreview: () -> Unit = {},
     onNotification: (NotificationAction) -> Unit = {},
     showLabel: Boolean = true,
+    hidden: Boolean = false,
 ) {
     AppRow(
         app = app,
         showLabel = showLabel,
+        hidden = hidden,
         icon = { icon(app) },
         onClick = { from -> onAppClick(app, from) },
         onLongClick = { onMenu(app) },
@@ -639,6 +644,7 @@ private fun AppEntry(
             onDismiss = { onMenu(null) },
             shortcuts = appShortcuts,
             shortcutIcon = shortcutIcon,
+            hidden = hidden,
         )
     }
 }
@@ -660,10 +666,13 @@ private fun AppRow(
     trailing: @Composable () -> Unit = {},
     /** Without the name only the icon shows; TalkBack still reads the name. */
     showLabel: Boolean = true,
+    /** A hidden app found by the search: marked as such. */
+    hidden: Boolean = false,
 ) {
     // Where the icon is, so the app can open out of it.
     var iconBounds by remember { mutableStateOf<IntRect?>(null) }
     val workLabel = stringResource(R.string.home_work_app)
+    val hiddenLabel = stringResource(R.string.home_hidden_app)
     val optionsLabel = stringResource(R.string.home_app_options)
     val description =
         if (app.isMainProfile) {
@@ -704,6 +713,9 @@ private fun AppRow(
                         highlight.forEach { addStyle(matched, it.first, it.last + 1) }
                         if (!app.isMainProfile) {
                             withStyle(badge) { append("  $workLabel") }
+                        }
+                        if (hidden) {
+                            withStyle(badge) { append("  $hiddenLabel") }
                         }
                     },
                 style = style,

@@ -191,6 +191,10 @@ fun HomeRoute(
                     toast(R.string.home_app_hidden, app)
                 }
 
+                is AppAction.Unhide -> {
+                    scope.launch { settings.unhide(app.key) }
+                }
+
                 is AppAction.AppInfo -> {
                     if (repository.openDetails(app) is LaunchResult.Failed) toast(R.string.home_action_failed, app)
                 }

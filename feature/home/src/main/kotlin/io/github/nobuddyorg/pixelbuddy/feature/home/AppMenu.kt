@@ -63,6 +63,11 @@ sealed interface AppAction {
         override val app: LauncherApp,
     ) : AppAction
 
+    /** Shows a hidden app (found by the search) on home again. */
+    data class Unhide(
+        override val app: LauncherApp,
+    ) : AppAction
+
     /** Opens the editor for this app's own icon (#14). */
     data class EditIcon(
         override val app: LauncherApp,
@@ -106,6 +111,8 @@ internal fun AppMenu(
     onDismiss: () -> Unit,
     shortcuts: AppShortcuts? = AppShortcuts.None,
     shortcutIcon: @Composable (AppShortcut) -> Unit = {},
+    /** A hidden app, found by the search: it can be shown again, but is no favorite until then. */
+    hidden: Boolean = false,
 ) {
     Popup(
         popupPositionProvider = BelowOrAboveAnchor,
@@ -159,7 +166,9 @@ internal fun AppMenu(
                 // Still loading: the rest of the menu is there already.
                 null -> {}
             }
-            if (favorite == null) {
+            if (hidden) {
+                MenuItem(stringResource(R.string.home_menu_unhide)) { pick(AppAction.Unhide(app)) }
+            } else if (favorite == null) {
                 MenuItem(stringResource(R.string.home_menu_add_favorite)) { pick(AppAction.AddFavorite(app)) }
             } else {
                 if (!favorite.isFirst) {
@@ -171,7 +180,7 @@ internal fun AppMenu(
                 MenuItem(stringResource(R.string.home_menu_remove_favorite)) { pick(AppAction.RemoveFavorite(app)) }
             }
             MenuItem(stringResource(R.string.home_menu_edit_icon)) { pick(AppAction.EditIcon(app)) }
-            MenuItem(stringResource(R.string.home_menu_hide)) { pick(AppAction.Hide(app)) }
+            if (!hidden) MenuItem(stringResource(R.string.home_menu_hide)) { pick(AppAction.Hide(app)) }
             MenuItem(stringResource(R.string.home_menu_app_info)) { pick(AppAction.AppInfo(app)) }
             if (app.canUninstall) {
                 MenuItem(stringResource(R.string.home_menu_uninstall)) { pick(AppAction.Uninstall(app)) }
