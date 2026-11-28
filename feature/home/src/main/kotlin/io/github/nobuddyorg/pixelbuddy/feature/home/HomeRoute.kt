@@ -8,6 +8,7 @@ import android.provider.AlarmClock
 import android.provider.CalendarContract
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -15,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -43,6 +45,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotifications
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.CalendarSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockPosition
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyles
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.NotificationSettings
@@ -224,6 +227,7 @@ fun HomeRoute(
                                 event = event,
                                 time = EventTime.of(event, instant, ZoneId.systemDefault(), is24Hour),
                                 onClick = { context.startFirstAvailable(calendarSource.openIntent(event)) },
+                                align = appearance.clockPosition.alignment,
                             )
                         }
                     }
@@ -301,7 +305,8 @@ private fun LiveHomeHeader(
             ClockFormat.TwelveHour -> false
             ClockFormat.TwentyFourHour -> true
         }
-    Column {
+    val align = appearance.clockPosition.alignment
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = align) {
         HomeHeader(
             now = now,
             is24Hour = is24Hour,
@@ -310,6 +315,7 @@ private fun LiveHomeHeader(
             onDateClick = onDateClick,
             clockHeight = appearance.clockSize.clockHeightDp.dp,
             clockShadow = appearance.clockShadow,
+            align = align,
         ) {
             weather(now.atZone(ZoneId.systemDefault()).toInstant())
         }
@@ -376,3 +382,12 @@ private fun Context.startFirstAvailable(vararg intents: Intent) {
         }
     }
 }
+
+/** The clock's place as a layout alignment. */
+internal val ClockPosition.alignment: Alignment.Horizontal
+    get() =
+        when (this) {
+            ClockPosition.Start -> Alignment.Start
+            ClockPosition.Center -> Alignment.CenterHorizontally
+            ClockPosition.End -> Alignment.End
+        }

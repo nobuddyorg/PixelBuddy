@@ -64,6 +64,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.apps.LauncherApp
 import io.github.nobuddyorg.pixelbuddy.core.data.notifications.AppNotification
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockPosition
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SettingsRepository
@@ -1227,6 +1228,47 @@ class HomeScreenTest {
             }
         }
         compose.onRoot().captureRoboImage("HomeScreen_appearance.png")
+    }
+
+    private fun showWithClock(position: ClockPosition) =
+        compose.setContent {
+            HomeScreen(
+                home = HomeApps(favorites, sampleApps),
+                onAppClick = { _, _ -> },
+                onAppAction = {},
+                onOpenSettings = {},
+                header = {
+                    HomeHeader(
+                        LocalDateTime.of(2026, 11, 6, 21, 45),
+                        true,
+                        BatteryState(58, charging = false),
+                        {},
+                        {},
+                        align = position.alignment,
+                    )
+                },
+                icon = { app -> AppIcon(app, icons, IconPreset.Default.style) },
+            )
+        }
+
+    @Test
+    fun `the clock can sit in the middle`() {
+        showWithClock(ClockPosition.Center)
+        val screen = compose.onRoot().fetchSemanticsNode().boundsInRoot
+        val clock = compose.onNodeWithContentDescription("21:45").fetchSemanticsNode().boundsInRoot
+        assertTrue(kotlin.math.abs(clock.center.x - screen.center.x) < 8f, "clock at ${clock.center.x}")
+        compose.onRoot().captureRoboImage("HomeScreen_clock_center.png")
+    }
+
+    @Test
+    fun `the clock can sit on the right`() {
+        showWithClock(ClockPosition.End)
+        val screen = compose.onRoot().fetchSemanticsNode().boundsInRoot
+        val clock = compose.onNodeWithContentDescription("21:45").fetchSemanticsNode().boundsInRoot
+        // Right edge, inside the 32 dp padding.
+        assertTrue(screen.right - clock.right < 40 * compose.density.density, "clock ends at ${clock.right}")
+        // Away from the left edge (32 dp padding when on the left).
+        assertTrue(clock.left > 64 * compose.density.density, "clock starts at ${clock.left}")
     }
 
     @Test

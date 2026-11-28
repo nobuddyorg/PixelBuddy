@@ -38,6 +38,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.Accent
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.CalendarSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockPosition
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconSize
@@ -218,6 +219,21 @@ internal fun ClockPage(
         onChange = { on -> update.appearance { it.copy(clockShadow = on) } },
         on = stringResource(R.string.toggle_on),
         off = stringResource(R.string.toggle_off),
+    )
+    ChoiceRow(
+        label = stringResource(R.string.clock_position),
+        options = ClockPosition.entries,
+        selected = appearance.clockPosition,
+        text = {
+            stringResource(
+                when (it) {
+                    ClockPosition.Start -> R.string.clock_position_left
+                    ClockPosition.Center -> R.string.clock_position_center
+                    ClockPosition.End -> R.string.clock_position_right
+                },
+            )
+        },
+        onSelect = { position -> update.appearance { it.copy(clockPosition = position) } },
     )
     ListRow(
         title = stringResource(R.string.clock_size),

@@ -74,6 +74,10 @@
     <string name="clock_format_12">12 h</string>
     <string name="clock_format_24">24 h</string>
     <string name="clock_shadow">Schatten der Uhr</string>
+    <string name="clock_position">Position der Uhr</string>
+    <string name="clock_position_left">Links</string>
+    <string name="clock_position_center">Mitte</string>
+    <string name="clock_position_right">Rechts</string>
     <string name="clock_size">Größe der Uhr</string>
     <string name="text_size">Textgröße auf dem Startbildschirm</string>
     <string name="text_size_summary">Zusätzlich zur Schriftgröße des Telefons</string>

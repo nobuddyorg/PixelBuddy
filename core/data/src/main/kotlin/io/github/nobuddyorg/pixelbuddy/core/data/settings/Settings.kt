@@ -92,6 +92,8 @@ data class Appearance(
     val clockFormat: ClockFormat = ClockFormat.System,
     /** 1-pixel drop shadow under the clock. */
     val clockShadow: Boolean = true,
+    /** Where the clock and the lines under it sit: left, centred or right. */
+    val clockPosition: ClockPosition = ClockPosition.Start,
     val clockSize: SizeStep = SizeStep.Medium,
     /** Size of the text on home (app names, info line), on top of the system font size. */
     val textSize: SizeStep = SizeStep.Medium,
@@ -123,6 +125,10 @@ enum class WallpaperSync { Off, Home, Lock, Both }
 
 @Serializable
 enum class ClockFormat { System, TwelveHour, TwentyFourHour }
+
+/** Where the clock sits on home. Stored in the settings: don't rename. */
+@Serializable
+enum class ClockPosition { Start, Center, End }
 
 @Serializable
 enum class SizeStep(

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -43,12 +44,15 @@ fun HomeHeader(
     modifier: Modifier = Modifier,
     clockHeight: Dp = 72.dp,
     clockShadow: Boolean = true,
+    /** Left (start), centred or right (end): the clock and the info line. */
+    align: Alignment.Horizontal = Alignment.Start,
     weather: (@Composable () -> Unit)? = null,
 ) {
     val locale = LocalConfiguration.current.locales[0]
     val clockText = HeaderFormat.clock(now.toLocalTime(), is24Hour)
     val small = PixelText.small
-    Column(modifier = modifier) {
+    // Full width, so the clock can sit left, centred or right in it.
+    Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = align) {
         Row(
             verticalAlignment = Alignment.Bottom,
             modifier =

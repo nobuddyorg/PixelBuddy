@@ -45,6 +45,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.Accent
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Appearance
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.CalendarSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockPosition
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconSize
@@ -275,6 +276,9 @@ class SettingsScreenTest {
 
         compose.onNodeWithText("Clock shadow").performClick()
         assertFalse(settings.value.appearance.clockShadow)
+
+        compose.onNodeWithText("Centre").performScrollTo().performClick()
+        assertEquals(ClockPosition.Center, settings.value.appearance.clockPosition)
 
         compose.onNodeWithText("Clock size").performClick()
         assertEquals(SizeStep.Large, settings.value.appearance.clockSize)

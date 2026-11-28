@@ -74,6 +74,10 @@
     <string name="clock_format_12">12 h</string>
     <string name="clock_format_24">24 h</string>
     <string name="clock_shadow">Clock shadow</string>
+    <string name="clock_position">Clock position</string>
+    <string name="clock_position_left">Left</string>
+    <string name="clock_position_center">Centre</string>
+    <string name="clock_position_right">Right</string>
     <string name="clock_size">Clock size</string>
     <string name="text_size">Text size on home</string>
     <string name="text_size_summary">On top of the phone\'s font size</string>

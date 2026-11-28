@@ -269,7 +269,8 @@ fun HomeScreen(
             return@Box
         }
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
-            Box(Modifier.padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 16.dp)) { header() }
+            // Full width, so the header can sit left, centred or right.
+            Box(Modifier.fillMaxWidth().padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 16.dp)) { header() }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 Column(Modifier.fillMaxSize().padding(end = 40.dp)) {
                     if (view == ALL_APPS) {

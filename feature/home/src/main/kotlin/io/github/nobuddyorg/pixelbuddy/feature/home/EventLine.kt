@@ -62,6 +62,8 @@ internal fun EventLine(
     time: EventTime,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Where the line sits, like the clock above it. */
+    align: Alignment.Horizontal = Alignment.Start,
 ) {
     val title = event.title.ifBlank { stringResource(R.string.home_event_untitled) }
     val text =
@@ -86,7 +88,12 @@ internal fun EventLine(
             }
         }
     Box(
-        contentAlignment = Alignment.CenterStart,
+        contentAlignment =
+            when (align) {
+                Alignment.CenterHorizontally -> Alignment.Center
+                Alignment.End -> Alignment.CenterEnd
+                else -> Alignment.CenterStart
+            },
         modifier =
             modifier
                 .fillMaxWidth()
