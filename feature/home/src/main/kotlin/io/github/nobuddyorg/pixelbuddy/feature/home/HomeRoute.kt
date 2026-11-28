@@ -195,6 +195,9 @@ fun HomeRoute(
                     scope.launch { settings.unhide(app.key) }
                 }
 
+                // Home itself switches to reordering; nothing to store yet.
+                is AppAction.ReorderFavorites -> {}
+
                 is AppAction.AppInfo -> {
                     if (repository.openDetails(app) is LaunchResult.Failed) toast(R.string.home_action_failed, app)
                 }

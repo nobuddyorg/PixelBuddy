@@ -827,6 +827,71 @@ class HomeScreenTest {
     }
 
     @Test
+    fun `favorites are reordered by dragging their grip`() {
+        show(favorites = favorites)
+
+        openMenu("Signal")
+        compose.onNodeWithText("Reorder favorites", substring = true).performClick()
+        searchButton().assertDoesNotExist()
+        compose.onRoot().captureRoboImage("HomeScreen_reorder.png")
+
+        // Signal's grip, down past Firefox.
+        compose.onNodeWithContentDescription("Move Signal").performTouchInput {
+            down(center)
+            repeat(10) { moveBy(Offset(0f, 22f)) }
+            up()
+        }
+        assertEquals(listOf<AppAction>(AppAction.MoveFavorite(app("Signal"), 1)), actions)
+
+        compose.onNodeWithText("► DONE").performClick()
+        searchButton().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Move Signal").assertDoesNotExist()
+    }
+
+    @Test
+    fun `TalkBack moves a favorite with the grip's actions`() {
+        show(favorites = favorites)
+        openMenu("Firefox")
+        compose.onNodeWithText("Reorder favorites", substring = true).performClick()
+
+        val grip = compose.onNodeWithContentDescription("Move Firefox")
+
+        fun perform(label: String) =
+            compose.runOnIdle {
+                grip
+                    .fetchSemanticsNode()
+                    .config[SemanticsActions.CustomActions]
+                    .first { it.label == label }
+                    .action()
+            }
+        perform("Move up")
+        perform("Move down")
+
+        assertEquals(
+            listOf<AppAction>(AppAction.MoveFavorite(app("Firefox"), -1), AppAction.MoveFavorite(app("Firefox"), 1)),
+            actions,
+        )
+        // The first one can't move up.
+        compose
+            .onNodeWithContentDescription("Move Signal")
+            .assert(
+                SemanticsMatcher("only down") { node ->
+                    node.config[SemanticsActions.CustomActions].map { it.label } == listOf("Move down")
+                },
+            )
+    }
+
+    @Test
+    fun `moving an entry keeps the others in order`() {
+        val list = listOf("a", "b", "c", "d")
+        assertEquals(listOf("b", "a", "c", "d"), list.moved(0, 1))
+        assertEquals(listOf("a", "b", "d", "c"), list.moved(3, -1))
+        assertEquals(list, list.moved(0, -1))
+        assertEquals(list, list.moved(3, 1))
+        assertEquals(list, list.moved(9, 1))
+    }
+
+    @Test
     fun `scrolling down a long list of favorites doesn't open the search on the way`() {
         val many = (0 until 40).map { app("App " + ('A' + it / 26) + ('A' + it % 26)) }
         show(apps = many.map { AppListEntry(it, "A") }, favorites = many)

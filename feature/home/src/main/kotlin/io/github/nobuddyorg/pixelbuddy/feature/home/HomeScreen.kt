@@ -142,6 +142,8 @@ fun HomeScreen(
     val openSettings by rememberUpdatedState(onOpenSettings)
     // Rail.FAVORITES, ALL_APPS or SEARCH; Home (a new resetKey) goes back to the favorites.
     var view by rememberSaveable(resetKey) { mutableStateOf(Rail.FAVORITES) }
+    // Reordering the favorites by dragging (#69); Home ends it like any other view.
+    var reordering by rememberSaveable(resetKey) { mutableStateOf(false) }
     val allApps = remember(resetKey) { LazyListState() }
     val scope = rememberCoroutineScope()
     val reducedMotion = rememberReducedMotion()
@@ -239,7 +241,14 @@ fun HomeScreen(
                 // A search is done once an app starts.
                 if (view == SEARCH) view = Rail.FAVORITES
             },
-            onAppAction = onAppAction,
+            onAppAction = { action ->
+                if (action is AppAction.ReorderFavorites) {
+                    view = Rail.FAVORITES
+                    reordering = true
+                } else {
+                    onAppAction(action)
+                }
+            },
             onMenu = { menuRow = it?.let { rowId } },
             highlight = highlight,
             top = top,
@@ -315,6 +324,13 @@ fun HomeScreen(
                                 entry = { rowId, app -> entry(rowId, app, emptyList(), false) },
                                 modifier = Modifier.weight(1f),
                             )
+                        } else if (reordering) {
+                            ReorderFavorites(
+                                favorites = home.favorites,
+                                icon = icon,
+                                onMove = { app, offset -> onAppAction(AppAction.MoveFavorite(app, offset)) },
+                                modifier = Modifier.weight(1f),
+                            )
                         } else {
                             Favorites(
                                 home = home,
@@ -327,6 +343,13 @@ fun HomeScreen(
                         }
                         if (home.apps.isNotEmpty()) {
                             Row(Modifier.fillMaxWidth()) {
+                                if (reordering && view == Rail.FAVORITES) {
+                                    BottomButton(
+                                        "► " + stringResource(R.string.home_reorder_done).uppercase(),
+                                        Modifier.weight(1f),
+                                    ) { reordering = false }
+                                    return@Row
+                                }
                                 if (view == ALL_APPS) {
                                     BottomButton(
                                         "◄ " + stringResource(R.string.home_back).uppercase(),

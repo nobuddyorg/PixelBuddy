@@ -48,6 +48,9 @@
     <string name="home_app_options">App options</string>
     <string name="home_menu_add_favorite">Add to favorites</string>
     <string name="home_menu_remove_favorite">Remove from favorites</string>
+    <string name="home_menu_reorder">Reorder favorites</string>
+    <string name="home_reorder_done">Done</string>
+    <string name="home_reorder_grip">Move %1$s</string>
     <string name="home_menu_move_up">Move up</string>
     <string name="home_menu_move_down">Move down</string>
     <string name="home_menu_edit_icon">Edit icon</string>

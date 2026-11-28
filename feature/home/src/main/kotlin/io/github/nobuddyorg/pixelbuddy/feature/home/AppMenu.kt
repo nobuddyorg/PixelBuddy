@@ -63,6 +63,11 @@ sealed interface AppAction {
         override val app: LauncherApp,
     ) : AppAction
 
+    /** Switches home to reordering the favorites by dragging (#69). */
+    data class ReorderFavorites(
+        override val app: LauncherApp,
+    ) : AppAction
+
     /** Shows a hidden app (found by the search) on home again. */
     data class Unhide(
         override val app: LauncherApp,
@@ -176,6 +181,9 @@ internal fun AppMenu(
                 }
                 if (!favorite.isLast) {
                     MenuItem(stringResource(R.string.home_menu_move_down)) { pick(AppAction.MoveFavorite(app, 1)) }
+                }
+                if (!(favorite.isFirst && favorite.isLast)) {
+                    MenuItem(stringResource(R.string.home_menu_reorder)) { pick(AppAction.ReorderFavorites(app)) }
                 }
                 MenuItem(stringResource(R.string.home_menu_remove_favorite)) { pick(AppAction.RemoveFavorite(app)) }
             }
