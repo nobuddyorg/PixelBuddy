@@ -58,8 +58,9 @@ python3 experiments.py out/                             # comparison sheets of t
 python3 experiments.py out/ --icons ~/my-icons/         # plus your own PNGs
 ```
 
-**Never commit brand icons** (trademarks). Validation with real app icons happens locally; comparisons are shared
-in the issue or pull request only. The tests and committed fixtures are synthetic (`synth.py`). `out/` is ignored.
+**Never commit brand icon files** (trademarks). Validation with real app icons happens locally; comparisons are
+shared in the issue or pull request only. The tests and committed fixtures are synthetic (`synth.py`). `out/` is
+ignored. Screenshots of PixelBuddy showing installed apps, like the README's (`docs/screenshots/`), are fine.
 
 ## Known limitations
 

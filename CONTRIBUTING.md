@@ -42,6 +42,7 @@ change is one focused pull request with green CI, following [docs/PLAN.md](docs/
 | Memory leaks | Debug builds include LeakCanary (a "Leaks" app appears next to the debug build) and the emulator tests fail on a leak; release builds don't include it |
 | Benchmark check scripts | `python3 -m unittest discover -s scripts` |
 | Mutation tests (nightly in CI) | `./gradlew :core:pixel-engine:pitest :core:search:pitest` → `core/<module>/build/reports/pitest/index.html` |
+| README screenshots (#71: real apps on an emulator with the Play Store image) | Actions → *README screenshots* → run on a branch; it commits `docs/screenshots/`. Locally on an emulator: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=io.github.nobuddyorg.pixelbuddy.ReadmeScreenshots -Pandroid.testInstrumentationRunnerArguments.readmeScreenshots=true`, then `adb pull /data/local/tmp/readme-screenshots` |
 
 Reference screenshots are recorded on Linux, like CI. Rendering on macOS or Windows can differ slightly; if
 `verifyRoborazziDebug` fails locally without a UI change, rely on CI.

@@ -8,11 +8,16 @@ A minimalist Android launcher with a retro-game / pixel-art look: Niagara's calm
 HP bar, a dithered navy→purple→orange sky and pixelized app icons.
 
 <p>
-  <img src="feature/home/src/test/screenshots/HomeScreen_en.png" width="200" alt="Home: pixel clock, date, battery HP bar, favorites on the dithered sky, alphabet rail">
-  <img src="feature/home/src/test/screenshots/HomeScreen_rail.png" width="200" alt="Dragging along the alphabet rail shows the apps of a letter">
-  <img src="feature/home/src/test/screenshots/HomeScreen_search.png" width="200" alt="Search with highlighted matches">
-  <img src="feature/settings/src/test/screenshots/IconEditor_neon.png" width="200" alt="Icon style editor with live preview and presets">
+  <img src="docs/screenshots/home.png" width="200" alt="Home: pixel clock, date, battery HP bar, weather, pixelated favorites on the dithered sky, alphabet rail">
+  <img src="docs/screenshots/home-neon.png" width="200" alt="The same home with the icons drawn as neon lines">
+  <img src="docs/screenshots/rail.png" width="200" alt="Dragging along the alphabet rail shows the apps of a letter">
+  <img src="docs/screenshots/search.png" width="200" alt="Search with highlighted matches">
+  <img src="docs/screenshots/icon-editor.png" width="200" alt="Icon style editor with live preview and presets">
 </p>
+
+<sub>Real apps on an Android emulator, captured by the
+[README screenshots](.github/workflows/readme-screenshots.yml) workflow. App names and icons belong to their
+respective owners; PixelBuddy isn't affiliated with them.</sub>
 
 - **Home:** big pixel clock, date, battery as an HP bar and optional weather; your favorites; an alphabet rail with
   haptic ticks; swipe up to search (accents, word starts and initials match).
