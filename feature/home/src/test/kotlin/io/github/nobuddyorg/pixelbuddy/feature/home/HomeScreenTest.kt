@@ -827,6 +827,94 @@ class HomeScreenTest {
     }
 
     @Test
+    fun `favorites are reordered by dragging their grip`() {
+        show(favorites = favorites)
+
+        openMenu("Signal")
+        compose.onNodeWithText("Reorder favorites", substring = true).performClick()
+        searchButton().assertDoesNotExist()
+        compose.onRoot().captureRoboImage("HomeScreen_reorder.png")
+
+        // Signal's grip, down past Firefox.
+        compose.onNodeWithContentDescription("Move Signal").performTouchInput {
+            down(center)
+            repeat(10) { moveBy(Offset(0f, 22f)) }
+            up()
+        }
+        assertEquals(listOf<AppAction>(AppAction.MoveFavorite(app("Signal"), 1)), actions)
+
+        compose.onNodeWithText("► DONE").performClick()
+        searchButton().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Move Signal").assertDoesNotExist()
+    }
+
+    @Test
+    fun `TalkBack moves a favorite with the grip's actions`() {
+        show(favorites = favorites)
+        openMenu("Firefox")
+        compose.onNodeWithText("Reorder favorites", substring = true).performClick()
+
+        val grip = compose.onNodeWithContentDescription("Move Firefox")
+
+        fun perform(label: String) =
+            compose.runOnIdle {
+                grip
+                    .fetchSemanticsNode()
+                    .config[SemanticsActions.CustomActions]
+                    .first { it.label == label }
+                    .action()
+            }
+        perform("Move up")
+        perform("Move down")
+
+        assertEquals(
+            listOf<AppAction>(AppAction.MoveFavorite(app("Firefox"), -1), AppAction.MoveFavorite(app("Firefox"), 1)),
+            actions,
+        )
+        // The first one can't move up.
+        compose
+            .onNodeWithContentDescription("Move Signal")
+            .assert(
+                SemanticsMatcher("only down") { node ->
+                    node.config[SemanticsActions.CustomActions].map { it.label } == listOf("Move down")
+                },
+            )
+    }
+
+    @Test
+    fun `moving an entry keeps the others in order`() {
+        val list = listOf("a", "b", "c", "d")
+        assertEquals(listOf("b", "a", "c", "d"), list.moved(0, 1))
+        assertEquals(listOf("a", "b", "d", "c"), list.moved(3, -1))
+        assertEquals(list, list.moved(0, -1))
+        assertEquals(list, list.moved(3, 1))
+        assertEquals(list, list.moved(9, 1))
+    }
+
+    @Test
+    fun `scrolling down a long list of favorites doesn't open the search on the way`() {
+        val many = (0 until 40).map { app("App " + ('A' + it / 26) + ('A' + it % 26)) }
+        show(apps = many.map { AppListEntry(it, "A") }, favorites = many)
+
+        // One long swipe up: it scrolls to the end of the list and keeps going, and flicks off.
+        compose.onRoot().performTouchInput {
+            down(Offset(centerX, height * 0.9f))
+            repeat(80) { moveBy(Offset(0f, -60f)) }
+            up()
+        }
+        compose.onNodeWithContentDescription(many.last().label).assertIsDisplayed()
+        searchField().assertDoesNotExist()
+
+        // A new swipe that starts at the end opens it.
+        compose.onRoot().performTouchInput {
+            down(Offset(centerX, height * 0.6f))
+            repeat(10) { moveBy(Offset(0f, -40f)) }
+            up()
+        }
+        searchField().assertIsFocused()
+    }
+
+    @Test
     fun `a held swipe up survives a trembling finger`() {
         show(favorites = favorites)
 
@@ -964,10 +1052,24 @@ class HomeScreenTest {
         Espresso.pressBack()
         compose.waitUntil { appRowLabels() == listOf("Maps") }
 
-        assertEquals("Signal hidden. Show it again in the settings.", ShadowToast.getTextOfLatestToast())
+        assertEquals(
+            "Signal hidden. The search still finds it; show it again from there or in the settings.",
+            ShadowToast.getTextOfLatestToast(),
+        )
         val stored = runBlocking { settings.settings.first() }
         assertEquals(listOf(app("Maps").key), stored.favorites)
         assertEquals(setOf(app("Signal").key), stored.hidden)
+
+        // Hidden, but the search finds it, marked, and shows it again.
+        openSearch()
+        assertFalse(hasApp("Signal"))
+        searchField().performTextInput("sig")
+        compose.onNodeWithText("Signal  Hidden").assertIsDisplayed()
+        openMenu("Signal")
+        compose.onNodeWithText("Hide", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Add to favorites", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Show again", substring = true).performClick()
+        compose.waitUntil { runBlocking { settings.settings.first() }.hidden.isEmpty() }
     }
 
     @Test
@@ -1268,6 +1370,40 @@ class HomeScreenTest {
     }
 
     @Test
+    fun `the finger can move left of the rail, which bends towards it and keeps selecting`() {
+        show(favorites = favorites)
+
+        compose.onNodeWithContentDescription("Alphabet").performTouchInput {
+            down(Offset(centerX, railY("F")))
+            // Far left of the rail, at M's height.
+            moveTo(Offset(centerX - 200f, railY("M")))
+        }
+        compose.onRoot().captureRoboImage("HomeScreen_rail_bent.png")
+        compose.onNodeWithContentDescription("Alphabet").performTouchInput { up() }
+
+        compose.onNodeWithText("M").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Maps").assertIsDisplayed()
+    }
+
+    @Test
+    fun `screenshot rail only while touched`() {
+        compose.setContent {
+            HomeScreen(
+                home = HomeApps(favorites, sampleApps),
+                onAppClick = { _, _ -> },
+                onAppAction = {},
+                onOpenSettings = {},
+                icon = { app -> AppIcon(app, icons, IconPreset.Default.style) },
+                railOnlyWhileTouched = true,
+            )
+        }
+        compose.onRoot().captureRoboImage("HomeScreen_rail_hidden.png")
+        // Still there for touch: it opens the letter.
+        tapRail("S")
+        compose.onNodeWithText("Signal").assertIsDisplayed()
+    }
+
+    @Test
     fun `screenshot with the user's appearance`() {
         val style =
             PixelBuddyStyle(
@@ -1368,6 +1504,43 @@ class HomeScreenTest {
         // Rows still give every app a 48 dp touch target.
         compose.onAllNodesWithContentDescription("Maps")[0].assertHeightIsAtLeast(48.dp)
         compose.onRoot().captureRoboImage("HomeScreen_compact.png")
+    }
+
+    @Test
+    fun `without names the favorites are icons, still named for TalkBack and in the list of all apps`() {
+        compose.setContent {
+            HomeScreen(
+                home = HomeApps(favorites, sampleApps),
+                onAppClick = { _, _ -> },
+                onAppAction = {},
+                onOpenSettings = {},
+                icon = { app -> AppIcon(app, icons, IconPreset.Default.style) },
+                favoriteLabels = false,
+            )
+        }
+        compose.onNodeWithText("Signal").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Signal").assertIsDisplayed()
+        compose.onRoot().captureRoboImage("HomeScreen_favorites_icons_only.png")
+
+        tapRail("S")
+        compose.onNodeWithText("Signal").assertIsDisplayed()
+    }
+
+    @Test
+    fun `screenshot extra large rail letters, apart from small text`() {
+        compose.setContent {
+            PixelBuddyTheme(PixelBuddyStyle(textScale = 0.85f)) {
+                HomeScreen(
+                    home = HomeApps(favorites, sampleApps),
+                    onAppClick = { _, _ -> },
+                    onAppAction = {},
+                    onOpenSettings = {},
+                    icon = { app -> AppIcon(app, icons, IconPreset.Default.style) },
+                    railLetterSp = 18f,
+                )
+            }
+        }
+        compose.onRoot().captureRoboImage("HomeScreen_rail_extra_large.png")
     }
 
     @Test

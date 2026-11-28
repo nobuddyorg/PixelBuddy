@@ -65,4 +65,18 @@ class RailTest {
         assertEquals(1f, Rail.waveScale(3f))
         assertTrue((-10..10).all { Rail.waveScale(it / 2f, reducedMotion = true) == 1f })
     }
+
+    @Test
+    fun `the rail bends towards the finger in a smooth curve of whole steps`() {
+        assertEquals(60f, Rail.bend(0f, pull = 60f, step = 2f))
+        // Less further away, the same above and below, nothing from BEND_CELLS on.
+        val curve = (0..6).map { Rail.bend(it.toFloat(), pull = 60f, step = 2f) }
+        assertEquals(curve.sortedDescending(), curve)
+        assertEquals(curve, (0..6).map { Rail.bend(-it.toFloat(), pull = 60f, step = 2f) })
+        assertEquals(0f, Rail.bend(Rail.BEND_CELLS, pull = 60f, step = 2f))
+        assertTrue(curve.all { it % 2f == 0f })
+        // No pull, no bend; without a step it isn't rounded.
+        assertEquals(0f, Rail.bend(0f, pull = 0f, step = 2f))
+        assertEquals(45f, Rail.bend(2f, pull = 60f, step = 0f), 0.01f)
+    }
 }

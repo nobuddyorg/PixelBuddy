@@ -86,6 +86,13 @@
     <string name="size_small">Klein</string>
     <string name="size_medium">Mittel</string>
     <string name="size_large">Groß</string>
+    <string name="rail_size">Buchstaben am Rand</string>
+    <string name="rail_only_while_touched">Alphabet nur bei Berührung</string>
+    <string name="rail_only_while_touched_summary">Die Buchstaben bleiben verborgen, bis du den rechten Rand des Startbildschirms berührst</string>
+    <string name="info_size">Schriftgröße unter der Uhr</string>
+    <string name="favorite_labels">Namen der Favoriten</string>
+    <string name="favorite_labels_summary">Aus: Auf dem Startbildschirm sind nur ihre Symbole zu sehen</string>
+    <string name="size_extra_large">Sehr groß</string>
     <string name="preview">Vorschau</string>
 
     <string name="icon_preset_eight_bit">8-Bit</string>

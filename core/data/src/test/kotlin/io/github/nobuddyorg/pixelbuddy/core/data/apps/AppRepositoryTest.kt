@@ -114,6 +114,8 @@ class AppRepositoryTest {
                 val home = awaitItem()
                 assertEquals(listOf("Bahn"), home.apps.map { it.app.label })
                 assertEquals(emptyList(), home.favorites)
+                // Only the search finds it.
+                assertEquals(listOf("Maps"), home.hidden.map { it.app.label })
             }
         }
 

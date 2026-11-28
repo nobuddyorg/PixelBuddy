@@ -14,11 +14,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.systemGestures
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -47,6 +51,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -81,6 +86,9 @@ import kotlinx.coroutines.launch
 
 /** The view with the search field; without a query it lists every app. */
 internal const val SEARCH = "search"
+
+/** Row ids of the favorites start with this. */
+private const val FAVORITE_ROW = "favorite/"
 
 /** Every app, A to Z with section labels; the rail jumps between the sections. */
 internal const val ALL_APPS = "all"
@@ -121,6 +129,12 @@ fun HomeScreen(
     widgetBelow: Boolean = false,
     /** Searches the web for a query typed in the search; null leaves that out. */
     onWebSearch: ((String) -> Unit)? = null,
+    /** Letter size on the alphabet rail, in sp. */
+    railLetterSp: Float = DEFAULT_LETTER_SP,
+    /** Names next to the favorites; without them only the icons show. */
+    favoriteLabels: Boolean = true,
+    /** The alphabet rail's letters show only while it is touched. */
+    railOnlyWhileTouched: Boolean = false,
 ) {
     val title = stringResource(R.string.home_screen_title)
     val openSettingsLabel = stringResource(R.string.home_open_settings)
@@ -128,6 +142,8 @@ fun HomeScreen(
     val openSettings by rememberUpdatedState(onOpenSettings)
     // Rail.FAVORITES, ALL_APPS or SEARCH; Home (a new resetKey) goes back to the favorites.
     var view by rememberSaveable(resetKey) { mutableStateOf(Rail.FAVORITES) }
+    // Reordering the favorites by dragging (#69); Home ends it like any other view.
+    var reordering by rememberSaveable(resetKey) { mutableStateOf(false) }
     val allApps = remember(resetKey) { LazyListState() }
     val scope = rememberCoroutineScope()
     val reducedMotion = rememberReducedMotion()
@@ -138,6 +154,10 @@ fun HomeScreen(
     val armed by remember { derivedStateOf { pull.value >= threshold } }
     val edge = PixelBuddyTheme.style.accent.copy(alpha = EDGE_ALPHA)
     val searching = view == SEARCH
+    // With gesture navigation, a swipe in from the right edge goes back: the rail stays out of that strip, so a
+    // finger on it can move left freely (#69).
+    val gestureEdge =
+        WindowInsets.systemGestures.asPaddingValues().calculateEndPadding(LocalLayoutDirection.current)
     // Once the search opens, the blocks finish rising from where the pull left them.
     val reveal = remember { Animatable(0f) }
     LaunchedEffect(searching) {
@@ -207,10 +227,13 @@ fun HomeScreen(
     val doubleTap by rememberUpdatedState { perform(gestures.doubleTap) }
     val hasDoubleTap = gestures.doubleTap != GestureAction.Nothing
 
+    val hiddenKeys = remember(home.hidden) { home.hidden.mapTo(HashSet()) { it.app.key } }
     val entry: SearchEntry = { rowId, app, highlight, top ->
         AppEntry(
             app = app,
             home = home,
+            hidden = app.key in hiddenKeys,
+            showLabel = favoriteLabels || !rowId.startsWith(FAVORITE_ROW),
             menuOpen = rowId == menuRow,
             icon = icon,
             onAppClick = { app, from ->
@@ -218,7 +241,14 @@ fun HomeScreen(
                 // A search is done once an app starts.
                 if (view == SEARCH) view = Rail.FAVORITES
             },
-            onAppAction = onAppAction,
+            onAppAction = { action ->
+                if (action is AppAction.ReorderFavorites) {
+                    view = Rail.FAVORITES
+                    reordering = true
+                } else {
+                    onAppAction(action)
+                }
+            },
             onMenu = { menuRow = it?.let { rowId } },
             highlight = highlight,
             top = top,
@@ -286,12 +316,19 @@ fun HomeScreen(
                     Modifier.fillMaxWidth().padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 16.dp),
                 ) { header() }
                 Box(Modifier.weight(1f).fillMaxWidth()) {
-                    Column(Modifier.fillMaxSize().padding(end = 40.dp)) {
+                    Column(Modifier.fillMaxSize().padding(end = 40.dp + gestureEdge)) {
                         if (view == ALL_APPS) {
                             AllApps(
                                 home = home,
                                 state = allApps,
                                 entry = { rowId, app -> entry(rowId, app, emptyList(), false) },
+                                modifier = Modifier.weight(1f),
+                            )
+                        } else if (reordering) {
+                            ReorderFavorites(
+                                favorites = home.favorites,
+                                icon = icon,
+                                onMove = { app, offset -> onAppAction(AppAction.MoveFavorite(app, offset)) },
                                 modifier = Modifier.weight(1f),
                             )
                         } else {
@@ -306,6 +343,13 @@ fun HomeScreen(
                         }
                         if (home.apps.isNotEmpty()) {
                             Row(Modifier.fillMaxWidth()) {
+                                if (reordering && view == Rail.FAVORITES) {
+                                    BottomButton(
+                                        "► " + stringResource(R.string.home_reorder_done).uppercase(),
+                                        Modifier.weight(1f),
+                                    ) { reordering = false }
+                                    return@Row
+                                }
                                 if (view == ALL_APPS) {
                                     BottomButton(
                                         "◄ " + stringResource(R.string.home_back).uppercase(),
@@ -330,7 +374,12 @@ fun HomeScreen(
                         entries = railEntries,
                         selected = if (view == ALL_APPS) visibleSection else view,
                         onSelect = showSection,
-                        modifier = Modifier.align(Alignment.CenterEnd).padding(top = 8.dp, bottom = 8.dp, end = 4.dp),
+                        modifier =
+                            Modifier
+                                .align(Alignment.CenterEnd)
+                                .padding(top = 8.dp, bottom = 8.dp, end = 4.dp + gestureEdge),
+                        letterSp = railLetterSp,
+                        onlyWhileTouched = railOnlyWhileTouched,
                     )
                 }
             }
@@ -338,6 +387,7 @@ fun HomeScreen(
         if (searching) {
             SearchPanel(
                 apps = home.apps,
+                hidden = home.hidden,
                 onLaunch = { app ->
                     // Enter in the search: no icon was tapped.
                     onAppClick(app, null)
@@ -415,7 +465,7 @@ private fun Favorites(
         modifier = modifier.fillMaxWidth().nestedScroll(overscroll),
     ) {
         if (widget != null && !widgetBelow) item(key = "widget") { widget() }
-        items(home.favorites, key = { "favorite/" + it.key.id }) { app -> entry("favorite/" + app.key.id, app) }
+        items(home.favorites, key = { FAVORITE_ROW + it.key.id }) { app -> entry(FAVORITE_ROW + app.key.id, app) }
         // No apps yet means they are still loading; the hint would only flash.
         if (home.favorites.isEmpty() && home.apps.isNotEmpty()) {
             item(key = "favorites-hint") {
@@ -469,7 +519,8 @@ private fun Modifier.verticalSwipes(swipes: () -> VerticalSwipes): Modifier =
 
 /**
  * Dragging past the end of the list (up) or its top (down) is a swipe: it follows the finger and acts on release,
- * as does a fling there.
+ * as does a fling there. Only a gesture that starts at the end counts: one that scrolled the list never opens
+ * anything, so scrolling down a long list of favorites doesn't open the search on the way (#69).
  */
 @Composable
 private fun rememberOverscrollSwipes(swipes: () -> VerticalSwipes): NestedScrollConnection {
@@ -481,12 +532,21 @@ private fun rememberOverscrollSwipes(swipes: () -> VerticalSwipes): NestedScroll
             // held finger trembles in both directions; resetting on every turn made the pull snap back.
             private var pulled = 0f
 
+            // Whether this gesture scrolled the list: then it is a scroll, not a swipe.
+            private var scrolled = false
+
             override fun onPostScroll(
                 consumed: Offset,
                 available: Offset,
                 source: NestedScrollSource,
             ): Offset {
-                if (source != NestedScrollSource.UserInput || available.y == 0f) return Offset.Zero
+                if (source != NestedScrollSource.UserInput) return Offset.Zero
+                if (consumed.y != 0f && !scrolled) {
+                    scrolled = true
+                    if (pulled != 0f) current().onRelease()
+                    pulled = 0f
+                }
+                if (scrolled || available.y == 0f) return Offset.Zero
                 pulled += available.y
                 current().onPull(-pulled)
                 return Offset.Zero
@@ -495,11 +555,13 @@ private fun rememberOverscrollSwipes(swipes: () -> VerticalSwipes): NestedScroll
             // Called when the finger lifts, before any fling.
             override suspend fun onPreFling(available: Velocity): Velocity {
                 when {
+                    scrolled -> Unit
                     pulled < -threshold || (pulled < 0f && available.y < -SWIPE_VELOCITY) -> current().onUp()
                     pulled > threshold || (pulled > 0f && available.y > SWIPE_VELOCITY) -> current().onDown()
                     else -> current().onRelease()
                 }
                 pulled = 0f
+                scrolled = false
                 return Velocity.Zero
             }
         }
@@ -590,9 +652,13 @@ private fun AppEntry(
     previewOpen: Boolean = false,
     onPreview: () -> Unit = {},
     onNotification: (NotificationAction) -> Unit = {},
+    showLabel: Boolean = true,
+    hidden: Boolean = false,
 ) {
     AppRow(
         app = app,
+        showLabel = showLabel,
+        hidden = hidden,
         icon = { icon(app) },
         onClick = { from -> onAppClick(app, from) },
         onLongClick = { onMenu(app) },
@@ -616,6 +682,7 @@ private fun AppEntry(
             onDismiss = { onMenu(null) },
             shortcuts = appShortcuts,
             shortcutIcon = shortcutIcon,
+            hidden = hidden,
         )
     }
 }
@@ -635,10 +702,15 @@ private fun AppRow(
     top: Boolean = false,
     /** After the name, e.g. the notification dot (#24). */
     trailing: @Composable () -> Unit = {},
+    /** Without the name only the icon shows; TalkBack still reads the name. */
+    showLabel: Boolean = true,
+    /** A hidden app found by the search: marked as such. */
+    hidden: Boolean = false,
 ) {
     // Where the icon is, so the app can open out of it.
     var iconBounds by remember { mutableStateOf<IntRect?>(null) }
     val workLabel = stringResource(R.string.home_work_app)
+    val hiddenLabel = stringResource(R.string.home_hidden_app)
     val optionsLabel = stringResource(R.string.home_app_options)
     val description =
         if (app.isMainProfile) {
@@ -671,19 +743,24 @@ private fun AppRow(
         val style = PixelText.body
         val badge = SpanStyle(color = PixelBuddyTheme.style.accent, fontSize = PixelText.small.fontSize)
         val matched = SpanStyle(color = PixelBuddyTheme.style.accent)
-        BasicText(
-            text =
-                buildAnnotatedString {
-                    append(app.label)
-                    highlight.forEach { addStyle(matched, it.first, it.last + 1) }
-                    if (!app.isMainProfile) {
-                        withStyle(badge) { append("  $workLabel") }
-                    }
-                },
-            style = style,
-            maxLines = 1,
-            modifier = Modifier.weight(1f, fill = false),
-        )
+        if (showLabel) {
+            BasicText(
+                text =
+                    buildAnnotatedString {
+                        append(app.label)
+                        highlight.forEach { addStyle(matched, it.first, it.last + 1) }
+                        if (!app.isMainProfile) {
+                            withStyle(badge) { append("  $workLabel") }
+                        }
+                        if (hidden) {
+                            withStyle(badge) { append("  $hiddenLabel") }
+                        }
+                    },
+                style = style,
+                maxLines = 1,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+        }
         trailing()
     }
 }

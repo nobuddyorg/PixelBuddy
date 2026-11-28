@@ -99,6 +99,14 @@ data class Appearance(
     val textSize: SizeStep = SizeStep.Medium,
     /** Size of the app icons on home. */
     val iconSize: IconSize = IconSize.Medium,
+    /** Size of the lines under the clock (date, battery, weather, next event, media), apart from the text size. */
+    val infoSize: SizeStep = SizeStep.Medium,
+    /** Names next to the favorites on home; without them only the icons show. */
+    val favoriteLabels: Boolean = true,
+    /** Size of the letters on the alphabet rail, apart from the text size. */
+    val railSize: RailSize = RailSize.Medium,
+    /** The alphabet rail's letters show only while it is touched. */
+    val railOnlyWhileTouched: Boolean = false,
     val accent: Accent = Accent.Orange,
     /** Faint CRT scanlines over the sky. */
     val scanlines: Boolean = false,
@@ -151,6 +159,17 @@ enum class IconSize(
     Small(36),
     Medium(48),
     Large(56),
+}
+
+/** Size of the alphabet rail's letters, in sp. Stored in the settings: don't rename. */
+@Serializable
+enum class RailSize(
+    val sp: Float,
+) {
+    Small(10f),
+    Medium(12f),
+    Large(15f),
+    ExtraLarge(18f),
 }
 
 /** Accent colours: section letters, highlights, buttons. All readable on the dark sky. */
