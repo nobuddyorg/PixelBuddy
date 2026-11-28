@@ -24,9 +24,11 @@ runs:
       if: inputs.cache-disabled != 'true' && github.ref == 'refs/heads/main'
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
+        # Absolute, as setup-gradle wrote them: an entry only restores for the exact paths it was saved with, so
+        # the old shared entry (last restore key) stays usable until each job has its own. ubuntu-latest's home.
         path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
+          /home/runner/.gradle/caches
+          /home/runner/.gradle/wrapper
         key: gradle-${{ runner.os }}-${{ github.workflow }}-${{ github.job }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/*.versions.toml', 'gradle/verification-metadata.xml') }}
         restore-keys: |
           gradle-${{ runner.os }}-${{ github.workflow }}-${{ github.job }}-
@@ -37,9 +39,11 @@ runs:
       if: inputs.cache-disabled != 'true' && github.ref != 'refs/heads/main'
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
+        # Absolute, as setup-gradle wrote them: an entry only restores for the exact paths it was saved with, so
+        # the old shared entry (last restore key) stays usable until each job has its own. ubuntu-latest's home.
         path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
+          /home/runner/.gradle/caches
+          /home/runner/.gradle/wrapper
         key: gradle-${{ runner.os }}-${{ github.workflow }}-${{ github.job }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/*.versions.toml', 'gradle/verification-metadata.xml') }}
         restore-keys: |
           gradle-${{ runner.os }}-${{ github.workflow }}-${{ github.job }}-
