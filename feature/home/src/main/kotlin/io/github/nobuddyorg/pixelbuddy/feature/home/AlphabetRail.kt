@@ -62,6 +62,8 @@ internal fun AlphabetRail(
     selected: String,
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
+    /** Letter size in sp: a setting of its own, not scaled with the text. */
+    letterSp: Float = DEFAULT_LETTER_SP,
 ) {
     val haptics = LocalHapticFeedback.current
     val reducedMotion = rememberReducedMotion()
@@ -156,7 +158,7 @@ internal fun AlphabetRail(
                 ) {
                     // Letters without apps are faded; without their drop shadow, which stays dark and made them look
                     // like dark smudges instead of faded letters.
-                    val style = PixelText.style(12f, color).copy(textAlign = TextAlign.Center)
+                    val style = PixelText.style(letterSp, color, scaled = false).copy(textAlign = TextAlign.Center)
                     BasicText(entry.key, style = if (entry.active) style else style.copy(shadow = null))
                 }
             }
@@ -208,6 +210,7 @@ internal fun rememberReducedMotion(): Boolean {
     }
 }
 
+internal const val DEFAULT_LETTER_SP = 12f
 private val RailWidth = 40.dp
 private val WaveShift = 16.dp
 private val BubbleSize = 64.dp

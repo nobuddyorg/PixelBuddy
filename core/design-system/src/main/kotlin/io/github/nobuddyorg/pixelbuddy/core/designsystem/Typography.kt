@@ -42,15 +42,19 @@ fun pixelTextSize(sp: Float): TextUnit {
     return snapToPixelGrid(sp, density.density, density.fontScale).sp
 }
 
-/** Text styles in the pixel font, scaled by [PixelBuddyStyle.textScale], with a one-font-pixel drop shadow. */
+/**
+ * Text styles in the pixel font, scaled by [PixelBuddyStyle.textScale] unless not [scaled] (text with a size setting
+ * of its own), with a one-font-pixel drop shadow.
+ */
 object PixelText {
     @Composable
     @ReadOnlyComposable
     fun style(
         sp: Float,
         color: Color = PixelBuddyColors.Text,
+        scaled: Boolean = true,
     ): TextStyle {
-        val size = pixelTextSize(sp * PixelBuddyTheme.style.textScale)
+        val size = pixelTextSize(if (scaled) sp * PixelBuddyTheme.style.textScale else sp)
         val density = LocalDensity.current
         // One font pixel: the snapped size is a whole number of them, PIXEL_FONT_GRID_PX each.
         val fontPixel = size.value * density.density * density.fontScale / PIXEL_FONT_GRID_PX

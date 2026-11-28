@@ -212,6 +212,7 @@ fun HomeRoute(
         resetKey = resetKey,
         gestures = gestures,
         onWebSearch = if (gestures.webSearch) context::searchWeb else null,
+        railLetterSp = appearance.railSize.sp,
         onOpenNotifications = context::expandNotificationShade,
         onLock = {
             if (screenLock?.lock() != true) {

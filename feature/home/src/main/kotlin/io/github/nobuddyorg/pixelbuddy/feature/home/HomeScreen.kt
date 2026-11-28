@@ -121,6 +121,8 @@ fun HomeScreen(
     widgetBelow: Boolean = false,
     /** Searches the web for a query typed in the search; null leaves that out. */
     onWebSearch: ((String) -> Unit)? = null,
+    /** Letter size on the alphabet rail, in sp. */
+    railLetterSp: Float = DEFAULT_LETTER_SP,
 ) {
     val title = stringResource(R.string.home_screen_title)
     val openSettingsLabel = stringResource(R.string.home_open_settings)
@@ -331,6 +333,7 @@ fun HomeScreen(
                         selected = if (view == ALL_APPS) visibleSection else view,
                         onSelect = showSection,
                         modifier = Modifier.align(Alignment.CenterEnd).padding(top = 8.dp, bottom = 8.dp, end = 4.dp),
+                        letterSp = railLetterSp,
                     )
                 }
             }

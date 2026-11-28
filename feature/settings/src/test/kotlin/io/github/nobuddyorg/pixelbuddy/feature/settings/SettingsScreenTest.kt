@@ -50,6 +50,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconSize
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.NotificationSettings
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.RailSize
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SizeStep
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Sky
@@ -290,6 +291,9 @@ class SettingsScreenTest {
         compose.onNodeWithText("Icon size on home").performScrollTo().performClick()
         compose.onNodeWithText("Icon size on home").performClick()
         assertEquals(IconSize.Small, settings.value.appearance.iconSize)
+
+        compose.onNodeWithText("Alphabet letters on the side").performScrollTo().performClick()
+        assertEquals(RailSize.Large, settings.value.appearance.railSize)
     }
 
     // Favorites and hidden apps

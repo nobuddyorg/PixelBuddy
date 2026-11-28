@@ -86,6 +86,8 @@
     <string name="size_small">Small</string>
     <string name="size_medium">Medium</string>
     <string name="size_large">Large</string>
+    <string name="rail_size">Alphabet letters on the side</string>
+    <string name="size_extra_large">Extra large</string>
     <string name="preview">Preview</string>
 
     <string name="icon_preset_eight_bit">8-bit</string>

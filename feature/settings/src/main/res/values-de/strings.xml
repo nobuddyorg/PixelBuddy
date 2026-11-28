@@ -86,6 +86,8 @@
     <string name="size_small">Klein</string>
     <string name="size_medium">Mittel</string>
     <string name="size_large">Groß</string>
+    <string name="rail_size">Buchstaben am Rand</string>
+    <string name="size_extra_large">Sehr groß</string>
     <string name="preview">Vorschau</string>
 
     <string name="icon_preset_eight_bit">8-Bit</string>

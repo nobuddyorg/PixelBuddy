@@ -1371,6 +1371,23 @@ class HomeScreenTest {
     }
 
     @Test
+    fun `screenshot extra large rail letters, apart from small text`() {
+        compose.setContent {
+            PixelBuddyTheme(PixelBuddyStyle(textScale = 0.85f)) {
+                HomeScreen(
+                    home = HomeApps(favorites, sampleApps),
+                    onAppClick = { _, _ -> },
+                    onAppAction = {},
+                    onOpenSettings = {},
+                    icon = { app -> AppIcon(app, icons, IconPreset.Default.style) },
+                    railLetterSp = 18f,
+                )
+            }
+        }
+        compose.onRoot().captureRoboImage("HomeScreen_rail_extra_large.png")
+    }
+
+    @Test
     fun `the route uses the clock format from the settings`() {
         val settings = SettingsRepository.create(File(folder.root, "settings.json"), Dispatchers.IO + storeJob)
         compose.setContent {
