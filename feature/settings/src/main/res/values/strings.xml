@@ -172,6 +172,9 @@
     <string name="wallpaper_done">Wallpaper set</string>
     <string name="wallpaper_failed">Couldn\'t set the wallpaper</string>
     <string name="wallpaper_not_allowed">This phone doesn\'t allow changing the wallpaper</string>
+    <string name="wallpaper_sync">Keep in sync</string>
+    <string name="wallpaper_sync_off">Off</string>
+    <string name="wallpaper_sync_summary">Sets the sky as wallpaper again whenever it changes, including a sky that follows the sun (updated when you return to home).</string>
 
     <string name="source_code">Source code</string>
     <string name="source_code_link" translatable="false">github.com/nobuddyorg/PixelBuddy</string>

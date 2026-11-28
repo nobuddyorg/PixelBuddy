@@ -13,6 +13,7 @@ import android.os.Process
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasSetTextAction
@@ -23,6 +24,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso
@@ -50,6 +52,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SizeStep
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Sky
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.TemperatureUnit
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.WallpaperSync
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherPlace
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WidgetSettings
@@ -632,6 +635,18 @@ class SettingsScreenTest {
         val wallpapers = shadowOf(WallpaperManager.getInstance(app))
         assertNotNull(wallpapers.getBitmap(WallpaperManager.FLAG_LOCK))
         assertNull(wallpapers.getBitmap(WallpaperManager.FLAG_SYSTEM))
+    }
+
+    @Test
+    fun `the wallpaper can be kept in sync with the sky`() {
+        showRoute()
+        open("Wallpaper & background")
+        assertEquals(WallpaperSync.Off, settings.value.appearance.wallpaperSync)
+
+        compose.onNodeWithText("Keep in sync").performScrollTo()
+        compose.onAllNodesWithText("Both")[0].performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+
+        assertEquals(WallpaperSync.Both, settings.value.appearance.wallpaperSync)
     }
 
     @Test

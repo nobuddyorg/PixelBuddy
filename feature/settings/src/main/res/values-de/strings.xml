@@ -172,6 +172,9 @@
     <string name="wallpaper_done">Hintergrundbild festgelegt</string>
     <string name="wallpaper_failed">Hintergrundbild konnte nicht festgelegt werden</string>
     <string name="wallpaper_not_allowed">Dieses Telefon erlaubt keine Änderung des Hintergrundbilds</string>
+    <string name="wallpaper_sync">Automatisch abgleichen</string>
+    <string name="wallpaper_sync_off">Aus</string>
+    <string name="wallpaper_sync_summary">Setzt den Himmel bei jeder Änderung neu als Hintergrundbild, auch einen Himmel, der dem Sonnenstand folgt (beim Zurückkehren zum Startbildschirm).</string>
 
     <string name="source_code">Quellcode</string>
     <string name="licenses">Lizenzen</string>

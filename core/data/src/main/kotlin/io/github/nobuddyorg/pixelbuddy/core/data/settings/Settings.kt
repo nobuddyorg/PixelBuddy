@@ -103,7 +103,13 @@ data class Appearance(
     val skyFollowsSun: Boolean = false,
     /** Dithered bands (pixel look) or a smooth gradient. */
     val dithering: Boolean = true,
+    /** Sets the sky as wallpaper again whenever it changes; off until chosen. */
+    val wallpaperSync: WallpaperSync = WallpaperSync.Off,
 )
+
+/** Where the sky is kept as wallpaper. Stored in the settings: don't rename. */
+@Serializable
+enum class WallpaperSync { Off, Home, Lock, Both }
 
 @Serializable
 enum class ClockFormat { System, TwelveHour, TwentyFourHour }

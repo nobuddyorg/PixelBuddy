@@ -45,6 +45,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.NotificationSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SizeStep
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Sky
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.WallpaperSync
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WidgetSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.sky.SkyPhase
 import io.github.nobuddyorg.pixelbuddy.core.data.widgets.WidgetProvider
@@ -675,6 +676,14 @@ internal fun WallpaperPage(
             }
         }
     }
+    ChoiceRow(
+        label = stringResource(R.string.wallpaper_sync),
+        options = WallpaperSync.entries,
+        selected = appearance.wallpaperSync,
+        text = { stringResource(it.label) },
+        onSelect = { sync -> update.appearance { it.copy(wallpaperSync = sync) } },
+    )
+    BasicText(stringResource(R.string.wallpaper_sync_summary), style = MutedStyle)
     val message =
         when (status) {
             WallpaperStatus.Idle -> null
@@ -904,6 +913,15 @@ private val GestureAction.label: Int
             GestureAction.Notifications -> R.string.gesture_notifications
             GestureAction.Settings -> R.string.gesture_settings
             GestureAction.Lock -> R.string.gesture_lock
+        }
+
+private val WallpaperSync.label: Int
+    get() =
+        when (this) {
+            WallpaperSync.Off -> R.string.wallpaper_sync_off
+            WallpaperSync.Home -> R.string.wallpaper_home
+            WallpaperSync.Lock -> R.string.wallpaper_lock
+            WallpaperSync.Both -> R.string.wallpaper_both
         }
 
 internal val IconPreset.label: Int
