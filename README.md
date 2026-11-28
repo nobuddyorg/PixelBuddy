@@ -45,6 +45,8 @@ It needs Android 10 (API 29) or newer; the primary test device is a Galaxy S24 w
 2. Optional, check the download:
    - `sha256sum --check SHA256SUMS` (macOS: `shasum -a 256 -c SHA256SUMS`)
    - provenance: `gh attestation verify PixelBuddy-vX.Y.Z.apk --repo nobuddyorg/PixelBuddy`
+   - signing certificate: `apksigner verify --print-certs PixelBuddy-vX.Y.Z.apk` must show the SHA-256 digest
+     `b1bf8fba5de420e031246510c205196c0cd59fff48aa3ace7b058fe76205fa98`
 3. Open the APK on the phone and allow your browser or file manager to install unknown apps when asked.
 
 **Samsung:** *Auto Blocker* (Settings → Security and privacy → Auto Blocker) blocks apps from outside the Galaxy
