@@ -225,7 +225,7 @@ class HomeScreenTest {
                 .mapNotNull { it.config.getOrNull(SemanticsProperties.ContentDescription)?.single() }
         val expected = sampleApps.map { it.app }.map { if (it.isMainProfile) it.label else "${it.label}, work profile" }
         // The header (clock, battery) has descriptions too; compare only the app rows.
-        assertEquals(expected, labels.filter { it in expected })
+        assertInOrder(expected, labels.filter { it in expected })
     }
 
     @Test
@@ -627,13 +627,23 @@ class HomeScreenTest {
 
     private fun backButton() = compose.onNodeWithText("◄ BACK")
 
+    /** The rows on screen are a run of [all] in its order; the list may be longer than the screen. */
+    private fun assertInOrder(
+        all: List<String>,
+        shown: List<String>,
+    ) {
+        assertTrue(shown.size >= 5, "only $shown on screen")
+        val start = all.indexOf(shown.first())
+        assertEquals(all.subList(start, start + shown.size), shown)
+    }
+
     @Test
     fun `a rail letter shows every app at that letter until Back or a tap elsewhere`() {
         show(favorites = favorites)
 
         tapRail("S")
 
-        assertEquals(allLabels, appRowLabels())
+        assertInOrder(allLabels, appRowLabels())
         compose.onNode(hasText("S") and isHeading()).assertIsDisplayed()
         railState("S")
         backButton().performClick()
@@ -685,7 +695,7 @@ class HomeScreenTest {
         }
 
         railState("T")
-        assertEquals(allLabels, appRowLabels())
+        assertInOrder(allLabels, appRowLabels())
     }
 
     @Test
@@ -693,7 +703,7 @@ class HomeScreenTest {
         show(favorites = favorites)
 
         tapRail("M")
-        assertEquals(allLabels, appRowLabels())
+        assertInOrder(allLabels, appRowLabels())
         Espresso.pressBack()
         assertEquals(favorites.map { it.label }, appRowLabels())
 
@@ -726,6 +736,36 @@ class HomeScreenTest {
         compose.runOnIdle { custom.first { it.label == "Apps with P" }.action() }
         compose.onNode(hasText("P") and isHeading()).assertIsDisplayed()
         railState("P")
+    }
+
+    @Test
+    fun `a swipe up held on the list only opens the search when the finger lifts`() {
+        show(favorites = favorites)
+
+        compose.onRoot().performTouchInput {
+            down(Offset(centerX, height * 0.6f))
+            repeat(10) { moveBy(Offset(0f, -40f)) }
+        }
+        compose.mainClock.advanceTimeBy(2_000)
+        searchField().assertDoesNotExist()
+
+        compose.onRoot().performTouchInput { up() }
+        searchField().assertIsFocused()
+    }
+
+    @Test
+    fun `a swipe up held on the header only opens the search when the finger lifts`() {
+        show(favorites = favorites)
+
+        compose.onRoot().performTouchInput {
+            down(Offset(centerX, height * 0.25f))
+            repeat(10) { moveBy(Offset(0f, -25f)) }
+        }
+        compose.mainClock.advanceTimeBy(2_000)
+        searchField().assertDoesNotExist()
+
+        compose.onRoot().performTouchInput { up() }
+        searchField().assertIsFocused()
     }
 
     @Test

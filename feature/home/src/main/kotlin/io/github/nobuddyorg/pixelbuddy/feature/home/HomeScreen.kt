@@ -466,14 +466,26 @@ private fun rememberOverscrollSwipes(swipes: () -> VerticalSwipes): NestedScroll
     }
 }
 
+/**
+ * A section's letter as a small dark pixel tab: in the accent colour on the sky alone it vanished where the sky
+ * has the same colour (orange letters on the orange bottom).
+ */
 @Composable
 internal fun SectionLabel(section: String) {
-    BasicText(
-        section,
-        style = PixelText.small.copy(color = PixelBuddyTheme.style.accent),
-        modifier = Modifier.padding(top = 16.dp, bottom = 4.dp).semantics { heading() },
-    )
+    Box(Modifier.padding(top = 16.dp, bottom = 4.dp)) {
+        BasicText(
+            section,
+            style = PixelText.body.copy(color = PixelBuddyTheme.style.accent),
+            modifier =
+                Modifier
+                    .background(SectionPlate)
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                    .semantics { heading() },
+        )
+    }
 }
+
+private val SectionPlate = PixelBuddyColors.Shadow.copy(alpha = 0.85f)
 
 @Composable
 private fun BottomButton(
