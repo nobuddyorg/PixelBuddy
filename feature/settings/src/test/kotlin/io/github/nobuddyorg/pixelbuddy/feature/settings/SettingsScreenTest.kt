@@ -51,6 +51,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.NotificationSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SizeStep
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Sky
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.SkySteps
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.TemperatureUnit
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WallpaperSync
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WeatherPlace
@@ -635,6 +636,20 @@ class SettingsScreenTest {
         val wallpapers = shadowOf(WallpaperManager.getInstance(app))
         assertNotNull(wallpapers.getBitmap(WallpaperManager.FLAG_LOCK))
         assertNull(wallpapers.getBitmap(WallpaperManager.FLAG_SYSTEM))
+    }
+
+    @Test
+    fun `a sky that follows the sun can change four times a day and have dark nights`() {
+        settings.value = settings.value.copy(appearance = settings.value.appearance.copy(skyFollowsSun = true))
+        showRoute()
+        open("Wallpaper & background")
+
+        compose.onNodeWithText("Changes per day").performScrollTo()
+        compose.onNodeWithText("4").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("Dark nights").performScrollTo().performClick()
+
+        assertEquals(SkySteps.Four, settings.value.appearance.skySteps)
+        assertTrue(settings.value.appearance.darkNights)
     }
 
     @Test

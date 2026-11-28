@@ -161,6 +161,11 @@
     <string name="sky_follows_sun_place">Sunrise and sunset at your weather place</string>
     <string name="sky_follows_sun_zone">From your time zone. Pick a weather place for exact times.</string>
     <string name="sky_phases">Night → dawn → day → dusk. The sky changes a few times a day while home is open.</string>
+    <string name="sky_steps">Changes per day</string>
+    <string name="sky_steps_four">4</string>
+    <string name="sky_steps_eight">8, with blends</string>
+    <string name="sky_dark_nights">Dark nights</string>
+    <string name="sky_dark_nights_summary">An almost black sky at night</string>
     <string name="dithering">Dithering</string>
     <string name="dithering_summary">Pixel bands instead of a smooth gradient</string>
     <string name="wallpaper_set">Set as wallpaper</string>

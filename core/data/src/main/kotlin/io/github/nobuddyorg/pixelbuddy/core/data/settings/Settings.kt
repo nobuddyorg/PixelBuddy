@@ -101,11 +101,19 @@ data class Appearance(
     val sky: Sky = Sky.Dusk,
     /** The sky follows the sun instead (#28): night, dawn, day and dusk from local sunrise and sunset. */
     val skyFollowsSun: Boolean = false,
+    /** While it follows the sun: four changes a day (night, dawn, day, dusk) or eight, with blends between. */
+    val skySteps: SkySteps = SkySteps.Eight,
+    /** While it follows the sun: an almost black night. */
+    val darkNights: Boolean = false,
     /** Dithered bands (pixel look) or a smooth gradient. */
     val dithering: Boolean = true,
     /** Sets the sky as wallpaper again whenever it changes; off until chosen. */
     val wallpaperSync: WallpaperSync = WallpaperSync.Off,
 )
+
+/** How often a sky that follows the sun changes a day. Stored in the settings: don't rename. */
+@Serializable
+enum class SkySteps { Four, Eight }
 
 /** Where the sky is kept as wallpaper. Stored in the settings: don't rename. */
 @Serializable

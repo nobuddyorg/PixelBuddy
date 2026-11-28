@@ -45,6 +45,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.NotificationSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SizeStep
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Sky
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.SkySteps
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WallpaperSync
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.WidgetSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.sky.SkyPhase
@@ -633,7 +634,22 @@ internal fun WallpaperPage(
         off = stringResource(R.string.toggle_off),
     )
     if (appearance.skyFollowsSun) {
-        SkyPhaseStrip(appearance.dithering)
+        SkyPhaseStrip(appearance)
+        ChoiceRow(
+            label = stringResource(R.string.sky_steps),
+            options = SkySteps.entries,
+            selected = appearance.skySteps,
+            text = { stringResource(if (it == SkySteps.Four) R.string.sky_steps_four else R.string.sky_steps_eight) },
+            onSelect = { steps -> update.appearance { it.copy(skySteps = steps) } },
+        )
+        ToggleRow(
+            title = stringResource(R.string.sky_dark_nights),
+            subtitle = stringResource(R.string.sky_dark_nights_summary),
+            checked = appearance.darkNights,
+            onChange = { on -> update.appearance { it.copy(darkNights = on) } },
+            on = stringResource(R.string.toggle_on),
+            off = stringResource(R.string.toggle_off),
+        )
     } else {
         SwatchRow(
             options = Sky.entries,
@@ -865,18 +881,18 @@ private val Accent.label: Int
             Accent.Lavender -> R.string.accent_lavender
         }
 
-/** The day's skies from night to night, as a preview of what following the sun looks like. */
+/** The day's skies from night to night, as a preview of what following the sun looks like with these settings. */
 @Composable
-private fun SkyPhaseStrip(dithering: Boolean) {
+private fun SkyPhaseStrip(appearance: Appearance) {
     Column(Modifier.padding(vertical = 8.dp)) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.clearAndSetSemantics {},
         ) {
-            SkyPhase.entries.forEach { phase ->
+            SkyPhase.day(fourSteps = appearance.skySteps == SkySteps.Four).forEach { phase ->
                 DitheredSky(
-                    colors = phase.stops.map { Color(it) },
-                    dithering = dithering,
+                    colors = phase.stops(appearance.darkNights).map { Color(it) },
+                    dithering = appearance.dithering,
                     scanlines = false,
                     modifier = Modifier.size(width = 24.dp, height = 72.dp),
                 )

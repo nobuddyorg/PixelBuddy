@@ -160,6 +160,11 @@
     <string name="sky_follows_sun_place">Sonnenauf- und -untergang am Wetterort</string>
     <string name="sky_follows_sun_zone">Nach deiner Zeitzone. Für genaue Zeiten einen Wetterort wählen.</string>
     <string name="sky_phases">Nacht → Morgen → Tag → Abend. Der Himmel wechselt ein paar Mal am Tag, während der Startbildschirm offen ist.</string>
+    <string name="sky_steps">Wechsel pro Tag</string>
+    <string name="sky_steps_four">4</string>
+    <string name="sky_steps_eight">8, mit Übergängen</string>
+    <string name="sky_dark_nights">Dunkle Nächte</string>
+    <string name="sky_dark_nights_summary">Ein fast schwarzer Himmel in der Nacht</string>
     <string name="sky_mono">Grau</string>
     <string name="dithering">Dithering</string>
     <string name="dithering_summary">Pixelstufen statt eines weichen Verlaufs</string>

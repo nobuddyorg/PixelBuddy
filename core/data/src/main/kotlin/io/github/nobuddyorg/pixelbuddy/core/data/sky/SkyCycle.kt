@@ -8,7 +8,8 @@ import kotlin.math.roundToInt
 
 /**
  * The phases of the sky that follows the sun (#28), like a retro game's day/night cycle. Between the four looks
- * (night, dawn, day, dusk) lies a half-and-half blend, so a phase change is a small step.
+ * (night, dawn, day, dusk) lies a half-and-half blend, so a phase change is a small step; with four changes a day
+ * ([main]) the blends are left out. Nights can be almost black ([stops]).
  */
 enum class SkyPhase {
     Night,
@@ -22,17 +23,30 @@ enum class SkyPhase {
     ;
 
     /** Gradient stops (ARGB), top to bottom, like [Sky.stops]. */
-    val stops: List<Int>
+    val stops: List<Int> get() = stops(darkNight = false)
+
+    /** Gradient stops; with [darkNight] the night is almost black, and so are the blends into it. */
+    fun stops(darkNight: Boolean): List<Int> {
+        val night = if (darkNight) DARK_NIGHT else NIGHT
+        return when (this) {
+            Night -> night
+            EarlyDawn -> blend(night, DAWN)
+            Dawn -> DAWN
+            Morning -> blend(DAWN, DAY)
+            Day -> DAY
+            Evening -> blend(DAY, DUSK)
+            Dusk -> DUSK
+            LateDusk -> blend(DUSK, night)
+        }
+    }
+
+    /** With four changes a day, the blended looks join their twilight: dawn and dusk last from night to day. */
+    val main: SkyPhase
         get() =
             when (this) {
-                Night -> NIGHT
-                EarlyDawn -> blend(NIGHT, DAWN)
-                Dawn -> DAWN
-                Morning -> blend(DAWN, DAY)
-                Day -> DAY
-                Evening -> blend(DAY, DUSK)
-                Dusk -> DUSK
-                LateDusk -> blend(DUSK, NIGHT)
+                EarlyDawn, Morning -> Dawn
+                Evening, LateDusk -> Dusk
+                else -> this
             }
 
     companion object {
@@ -48,10 +62,12 @@ enum class SkyPhase {
             }
         }
 
+        /** The phase at [time]; with [fourSteps] only night, dawn, day and dusk. */
         fun at(
             time: Instant,
             place: GeoPoint,
-        ): SkyPhase = of(SunPosition.at(time, place))
+            fourSteps: Boolean = false,
+        ): SkyPhase = of(SunPosition.at(time, place)).let { if (fourSteps) it.main else it }
 
         /**
          * When the phase after [time] changes, to the minute; null if it doesn't within a day (polar day or night).
@@ -60,21 +76,25 @@ enum class SkyPhase {
         fun nextChange(
             time: Instant,
             place: GeoPoint,
+            fourSteps: Boolean = false,
         ): Instant? {
-            val now = at(time, place)
+            val now = at(time, place, fourSteps)
             var step = time
             val end = time.plus(Duration.ofDays(1))
             while (step < end) {
                 step = step.plus(SEARCH_STEP)
-                if (at(step, place) != now) {
+                if (at(step, place, fourSteps) != now) {
                     // Back to the first minute of the new phase.
                     var minute = step.minus(SEARCH_STEP)
-                    while (at(minute, place) == now) minute = minute.plusSeconds(60)
+                    while (at(minute, place, fourSteps) == now) minute = minute.plusSeconds(60)
                     return minute
                 }
             }
             return null
         }
+
+        /** The phases a day shows, night to night. */
+        fun day(fourSteps: Boolean): List<SkyPhase> = if (fourSteps) entries.map { it.main }.distinct() else entries
 
         /** Degrees of sun elevation where the looks change. */
         private const val NIGHT_BELOW = -10.0
@@ -84,6 +104,10 @@ enum class SkyPhase {
         private val SEARCH_STEP = Duration.ofMinutes(5)
 
         private val NIGHT = Sky.Night.stops.toList()
+
+        /** Almost black, a faint blue towards the bottom; light text stays readable. */
+        internal val DARK_NIGHT =
+            listOf(0xFF000000.toInt(), 0xFF03040C.toInt(), 0xFF070A1C.toInt(), 0xFF0D1230.toInt())
         private val DAWN = Sky.Dawn.stops.toList()
         private val DUSK = Sky.Dusk.stops.toList()
 
