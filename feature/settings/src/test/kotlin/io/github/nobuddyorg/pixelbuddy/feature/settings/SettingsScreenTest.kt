@@ -47,6 +47,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.CalendarSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconSize
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.NotificationSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.SizeStep
@@ -279,7 +280,12 @@ class SettingsScreenTest {
         assertEquals(SizeStep.Large, settings.value.appearance.clockSize)
         compose.onNodeWithText("Text size on home").performScrollTo().performClick()
         compose.onNodeWithText("Text size on home").performClick()
-        assertEquals(SizeStep.Small, settings.value.appearance.textSize)
+        // Medium → Large → Extra small: the steps go round.
+        assertEquals(SizeStep.ExtraSmall, settings.value.appearance.textSize)
+
+        compose.onNodeWithText("Icon size on home").performScrollTo().performClick()
+        compose.onNodeWithText("Icon size on home").performClick()
+        assertEquals(IconSize.Small, settings.value.appearance.iconSize)
     }
 
     // Favorites and hidden apps

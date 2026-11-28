@@ -19,7 +19,7 @@ HP bar, a dithered navy→purple→orange sky and pixelized app icons.
 - **Pixel icons:** every app icon pixelated in one of five presets or drawn as glowing neon lines, or your own style
   made in the live editor; single apps can get their own style, layer or picture.
 - **Your look:** accent colours, six sky gradients or a sky that follows the sun (night, dawn, day, dusk), dithering,
-  CRT scanlines, clock and text sizes, and the sky as your wallpaper (home and lock screen), optionally kept in sync.
+  CRT scanlines, clock, text and icon sizes, and the sky as your wallpaper (home and lock screen), optionally kept in sync.
 - **Private by design:** no tracking, no ads, no accounts. The only network access is optional weather.
 - **Fast and small:** no background work, no services, under 3.5 MB.
 - **Accessible:** TalkBack labels, 48 dp touch targets, large fonts and display sizes are tested.

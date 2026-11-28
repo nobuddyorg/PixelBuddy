@@ -95,6 +95,8 @@ data class Appearance(
     val clockSize: SizeStep = SizeStep.Medium,
     /** Size of the text on home (app names, info line), on top of the system font size. */
     val textSize: SizeStep = SizeStep.Medium,
+    /** Size of the app icons on home. */
+    val iconSize: IconSize = IconSize.Medium,
     val accent: Accent = Accent.Orange,
     /** Faint CRT scanlines over the sky. */
     val scanlines: Boolean = false,
@@ -129,9 +131,20 @@ enum class SizeStep(
     /** Height of the big clock in dp. */
     val clockHeightDp: Int,
 ) {
+    ExtraSmall(0.7f, 48),
     Small(0.85f, 56),
     Medium(1f, 72),
     Large(1.2f, 96),
+}
+
+/** Size of the app icons on home. Stored in the settings: don't rename. */
+@Serializable
+enum class IconSize(
+    val dp: Int,
+) {
+    Small(36),
+    Medium(48),
+    Large(56),
 }
 
 /** Accent colours: section letters, highlights, buttons. All readable on the dark sky. */

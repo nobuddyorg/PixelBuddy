@@ -98,7 +98,11 @@ class AppContainer(
                     .first()
                     .apps
                     .map { it.app }
-            iconRepository.prewarm(apps, settings.iconStyles.first(), densityDpi)
+            val iconDp =
+                settings.appearance
+                    .first()
+                    .iconSize.dp
+            iconRepository.prewarm(apps, settings.iconStyles.first(), densityDpi, iconDp)
         }
     }
 

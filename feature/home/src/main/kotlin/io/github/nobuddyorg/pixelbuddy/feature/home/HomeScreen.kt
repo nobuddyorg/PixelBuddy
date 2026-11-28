@@ -594,7 +594,8 @@ private fun AppRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .heightIn(min = 56.dp)
+                // A touch target at least; the icon and its padding set the height (56 dp with 48 dp icons).
+                .heightIn(min = 48.dp)
                 .combinedClickable(
                     role = Role.Button,
                     onLongClickLabel = optionsLabel,

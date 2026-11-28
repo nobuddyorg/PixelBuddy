@@ -255,7 +255,7 @@ fun HomeRoute(
                 }
             }
         },
-        icon = { app -> AppIcon(app, icons, iconStyles.lookFor(app.key)) },
+        icon = { app -> AppIcon(app, icons, iconStyles.lookFor(app.key), size = appearance.iconSize.dp.dp) },
         widget =
             if (homeWidgets != null && widgetId != null && widgetHeights != null) {
                 { WidgetSlot(homeWidgets, widgetId, widgetSettings.heightDp ?: widgetHeights.default) }

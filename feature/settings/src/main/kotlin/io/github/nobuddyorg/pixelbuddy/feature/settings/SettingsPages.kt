@@ -40,6 +40,7 @@ import io.github.nobuddyorg.pixelbuddy.core.data.settings.CalendarSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.ClockFormat
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.GestureAction
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Gestures
+import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconSize
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.IconStyleSetting
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.NotificationSettings
 import io.github.nobuddyorg.pixelbuddy.core.data.settings.Settings
@@ -227,6 +228,11 @@ internal fun ClockPage(
         title = stringResource(R.string.text_size),
         subtitle = stringResource(appearance.textSize.label) + " · " + stringResource(R.string.text_size_summary),
         onClick = { update.appearance { it.copy(textSize = it.textSize.next()) } },
+    )
+    ListRow(
+        title = stringResource(R.string.icon_size),
+        subtitle = stringResource(appearance.iconSize.label),
+        onClick = { update.appearance { it.copy(iconSize = it.iconSize.next()) } },
     )
 }
 
@@ -913,9 +919,18 @@ private val Sky.label: Int
             Sky.Mono -> R.string.sky_mono
         }
 
+private val IconSize.label: Int
+    get() =
+        when (this) {
+            IconSize.Small -> R.string.size_small
+            IconSize.Medium -> R.string.size_medium
+            IconSize.Large -> R.string.size_large
+        }
+
 private val SizeStep.label: Int
     get() =
         when (this) {
+            SizeStep.ExtraSmall -> R.string.size_extra_small
             SizeStep.Small -> R.string.size_small
             SizeStep.Medium -> R.string.size_medium
             SizeStep.Large -> R.string.size_large

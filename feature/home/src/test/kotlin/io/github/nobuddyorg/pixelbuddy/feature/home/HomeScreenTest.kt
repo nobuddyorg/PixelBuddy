@@ -21,6 +21,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.TouchInjectionScope
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.click
@@ -1226,6 +1227,34 @@ class HomeScreenTest {
             }
         }
         compose.onRoot().captureRoboImage("HomeScreen_appearance.png")
+    }
+
+    @Test
+    fun `screenshot compact, with small icons and extra small text`() {
+        compose.setContent {
+            PixelBuddyTheme(PixelBuddyStyle(textScale = 0.7f)) {
+                HomeScreen(
+                    home = HomeApps(favorites, sampleApps),
+                    onAppClick = { _, _ -> },
+                    onAppAction = {},
+                    onOpenSettings = {},
+                    header = {
+                        HomeHeader(
+                            LocalDateTime.of(2026, 11, 6, 21, 45),
+                            true,
+                            BatteryState(58, charging = false),
+                            {},
+                            {},
+                            clockHeight = 48.dp,
+                        )
+                    },
+                    icon = { app -> AppIcon(app, icons, IconPreset.Default.style, size = 36.dp) },
+                )
+            }
+        }
+        // Rows still give every app a 48 dp touch target.
+        compose.onAllNodesWithContentDescription("Maps")[0].assertHeightIsAtLeast(48.dp)
+        compose.onRoot().captureRoboImage("HomeScreen_compact.png")
     }
 
     @Test

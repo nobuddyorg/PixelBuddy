@@ -77,6 +77,8 @@
     <string name="clock_size">Clock size</string>
     <string name="text_size">Text size on home</string>
     <string name="text_size_summary">On top of the phone\'s font size</string>
+    <string name="size_extra_small">Extra small</string>
+    <string name="icon_size">Icon size on home</string>
     <string name="size_small">Small</string>
     <string name="size_medium">Medium</string>
     <string name="size_large">Large</string>
