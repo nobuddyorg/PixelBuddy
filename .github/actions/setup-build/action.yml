@@ -1,5 +1,5 @@
 name: Set up build
-description: JDK, Gradle (with wrapper validation and cache) and the Android SDK packages the build needs.
+description: JDK, Gradle (with wrapper validation and a cache per job) and the Android SDK packages the build needs.
 
 inputs:
   cache-disabled:
@@ -16,12 +16,41 @@ runs:
         distribution: temurin
         java-version: "21"
 
+    # The Gradle cache, one per workflow and job: setup-gradle's open-source "basic" cache has one key for every job,
+    # so only the first job to finish kept its dependencies and the others fetched theirs from Maven Central on every
+    # run, until it answered 429 Too Many Requests. Written only on main (scheduled runs included), read everywhere.
+    # The last restore key picks up an entry of that old shared cache until each job has its own.
+    - name: Restore and save the Gradle cache
+      if: inputs.cache-disabled != 'true' && github.ref == 'refs/heads/main'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: gradle-${{ runner.os }}-${{ github.workflow }}-${{ github.job }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/*.versions.toml', 'gradle/verification-metadata.xml') }}
+        restore-keys: |
+          gradle-${{ runner.os }}-${{ github.workflow }}-${{ github.job }}-
+          gradle-${{ runner.os }}-
+          setup-java-${{ runner.os }}-
+
+    - name: Restore the Gradle cache
+      if: inputs.cache-disabled != 'true' && github.ref != 'refs/heads/main'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: gradle-${{ runner.os }}-${{ github.workflow }}-${{ github.job }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/*.versions.toml', 'gradle/verification-metadata.xml') }}
+        restore-keys: |
+          gradle-${{ runner.os }}-${{ github.workflow }}-${{ github.job }}-
+          gradle-${{ runner.os }}-
+          setup-java-${{ runner.os }}-
+
     - name: Set up Gradle
       uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
       with:
-        # Open-source cache based on actions/cache; writes only from the default branch.
-        cache-provider: basic
-        cache-disabled: ${{ inputs.cache-disabled }}
+        # Wrapper validation and build summaries; the cache is the step above.
+        cache-disabled: true
 
     - name: Install Android SDK packages
       shell: bash
